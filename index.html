@@ -2167,24 +2167,28 @@ function relSecBal(d){
 }
 
 function relSecBalMeses(d,meses){
-  var ult=meses[meses.length-1],dense=meses.length>6;
-  var xr=[['Grupo','Conta'].concat(meses.map(function(i){return MF[i];}))];
+  var ult=meses[meses.length-1],ant=meses[meses.length-2],dense=meses.length>6;
+  var xr=[['Grupo','Conta'].concat(meses.map(function(i){return MF[i];}),['Var. '+M[ult]+'×'+M[ant]])];
+  // variação do último mês do período sobre o anterior (como no balanço de um mês só)
+  var varPc=function(k){var v=relNum(BALHIST[ult][k]),pv=relNum(BALHIST[ant][k]);return pv?(v-pv)/Math.abs(pv):null;};
   var tbl=function(title,L){
-    var t='<table class="rp-t'+(dense?' dense':'')+'"><thead><tr><th>'+title+'</th>'+meses.map(function(i){return '<th>'+M[i]+'/26</th>';}).join('')+'</tr></thead><tbody>';
+    var t='<table class="rp-t'+(dense?' dense':'')+'"><thead><tr><th>'+title+'</th>'+meses.map(function(i){return '<th>'+M[i]+'/26</th>';}).join('')+'<th title="Variação de '+MF[ult]+' sobre '+MF[ant]+'">Var.</th></tr></thead><tbody>';
     L.forEach(function(it){
       var lbl=it[0],cls='rs';
       if(lbl[0]==='='){cls='rst';lbl=lbl.slice(1);}else if(lbl[0]==='#'){cls='rt';lbl=lbl.slice(1);}
       var row=[title,lbl];
-      t+='<tr class="'+cls+'"><td>'+lbl+'</td>'+meses.map(function(i){var v=relNum(BALHIST[i][it[1]]);row.push(v);return '<td'+(v<0?' class="neg"':'')+'>'+relN(v)+'</td>';}).join('')+'</tr>';
+      var vr=varPc(it[1]);
+      t+='<tr class="'+cls+'"><td>'+lbl+'</td>'+meses.map(function(i){var v=relNum(BALHIST[i][it[1]]);row.push(v);return '<td'+(v<0?' class="neg"':'')+'>'+relN(v)+'</td>';}).join('')+'<td>'+(vr===null?'—':(vr>=0?'+':'')+(vr*100).toFixed(1).replace('.',',')+'%')+'</td></tr>';
+      row.push(vr===null?'':{p:vr});
       xr.push(row);
     });
     return t+'</tbody></table>';
   };
   var h=tbl('ATIVO',REL_BA)+'<div style="height:10px"></div>'+tbl('PASSIVO E PATRIMÔNIO LÍQUIDO',REL_BP);
   var semFechar=meses.filter(function(i){return Math.abs(relNum(BALHIST[i].at)-relNum(BALHIST[i].pt))>=1;});
-  h+='<div class="rp-note">Saldos acumulados no fim de cada mês ('+M[meses[0]]+' a '+M[ult]+'/2026), extraídos dos balancetes; valores em '+d.unitLbl+' (sem centavos). '+
+  h+='<div class="rp-note">Saldos acumulados no fim de cada mês ('+M[meses[0]]+' a '+M[ult]+'/2026), extraídos dos balancetes; valores em '+d.unitLbl+' (sem centavos). Var. = '+MF[ult]+' sobre '+MF[ant]+'. '+
      (semFechar.length?'<b style="color:#C0392B">Atenção: Ativo diferente de Passivo + PL em '+semFechar.map(function(i){return M[i];}).join(', ')+'.</b>':'Conferência: Ativo Total = Passivo + PL em todos os meses ✓')+'</div>';
-  return {html:h,xl:{name:'Balanço',rows:xr,w:[30,36].concat(meses.map(function(){return 16;}))}};
+  return {html:h,xl:{name:'Balanço',rows:xr,w:[30,36].concat(meses.map(function(){return 16;}),[12])}};
 }
 
 /* ---------- 6. Índices ---------- */
