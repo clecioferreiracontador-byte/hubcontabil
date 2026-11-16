@@ -61,7 +61,7 @@ html,body{height:100%;background:var(--navy);color:var(--white);font-family:Cali
 .conc-tab[data-p="book"]:hover{background:var(--g2);border-color:var(--g2)}
 .conc-tab[data-p="book"]:not(.active){opacity:.82}
 .conc-tab[data-p="book"].active{background:var(--g2);color:var(--navy);box-shadow:0 0 0 2px rgba(232,201,106,.35)}
-.conc-area{position:relative}
+.conc-area{position:relative;overflow:hidden;border-radius:10px}
 /* "Abrir em nova aba" no canto superior direito do cabeçalho azul de cada conciliador */
 .conc-open{position:absolute;top:10px;right:26px;z-index:5;text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;
   background:rgba(255,255,255,.08);border:1px solid rgba(205,154,86,.65);color:#fff}
@@ -2723,6 +2723,15 @@ function concTab(p){
   /* de volta ao Book: ele rola até a linha que estava sendo conciliada */
   if(p==='book')setTimeout(function(){try{f.contentWindow.aoVoltar&&f.contentWindow.aoVoltar();}catch(e){}},80);
   document.getElementById('concOpen').href=CONC_PAINEIS[p]+'?v='+Date.now();
+  seguirRolagem(f);
+}
+/* "Abrir em nova aba" fica no canto do cabeçalho do painel e sobe junto quando o painel é rolado (não fica congelado) */
+function seguirRolagem(f){
+  var a=document.getElementById('concOpen');
+  var pos=function(){var y=0;try{y=f.contentWindow.scrollY||f.contentWindow.document.documentElement.scrollTop||0;}catch(e){}
+    a.style.transform='translateY('+(-y)+'px)';a.style.visibility=y>60?'hidden':'';};
+  var ligar=function(){try{var w=f.contentWindow;if(w&&!w.__segueBotao){w.__segueBotao=1;w.addEventListener('scroll',function(){if(f.style.display!=='none')pos();},{passive:true});}}catch(e){}pos();};
+  ligar();if(!f.__ligaLoad){f.__ligaLoad=1;f.addEventListener('load',function(){ligar();});}
 }
 /* Book de conciliação carregado em segundo plano para o admin: o salvamento automático no portal (de hora em hora)
    roda enquanto o Hub estiver aberto, mesmo sem entrar na Conciliação */
