@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Folha de pagamento Audicon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tema Audicon (mesmo padrão da Conferência de Faturamento): azul #122A4F, dourado #CD9A56, Red Hat Display */
+:root{
+  --aud-primary:#122A4F; --aud-primary-dark:#0C182B; --aud-secondary:#CD9A56; --aud-secondary-hover:#B5833F;
+  --aud-text:#231F20; --aud-white:#FFFFFF; --aud-gray-100:#F1F1F1; --aud-gray-500:#69727D; --aud-gray-700:#33373D;
+  --aud-gold-soft:rgba(205,154,86,.55);
+  --aud-success:#04751A; --aud-warning:#F5AD00; --aud-info:#46CECD; --aud-danger:#FF0016; --aud-danger-text:#B0000F;
+  --aud-radius:.5rem;
+  --font:"Red Hat Display","Segoe UI",Calibri,Arial,sans-serif;
+  /* nomes usados pelo código dos painéis */
+  --page-bg:var(--aud-gray-100); --panel:#fff; --panel-2:#F7F8FA; --border:#e1e4e8;
+  --text:var(--aud-text); --muted:var(--aud-gray-500); --accent:var(--aud-primary); --accent-2:var(--aud-secondary);
+  --good:var(--aud-success); --warn:#8A5A00; --bad:var(--aud-danger-text); --bad-border:#f5b5bb;
+  --btn-bg:#fff; --textarea-bg:#fff; --textarea-border:#c5cbd3;
+  --results-bg:#F7F8FA; --results-border:#e1e4e8; --item-bg:#fff; --item-border:#e1e4e8; --badge-bg:var(--aud-gray-100);
+  --radius:var(--aud-radius);
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--aud-gray-100);color:var(--aud-text);font-family:var(--font);font-weight:400;line-height:1.5}
+h1,h2,h3,h4{font-weight:600;color:var(--aud-primary);margin:0}
+.wrap{width:100%;margin:0 auto;padding:0 16px}
+@media (min-width:576px){.wrap{max-width:540px}}
+@media (min-width:768px){.wrap{max-width:720px}}
+@media (min-width:992px){.wrap{max-width:960px}}
+@media (min-width:1200px){.wrap{max-width:1140px}}
+@media (min-width:1400px){.wrap{max-width:1320px}}
+/* cabeçalho */
+header.top{background:var(--aud-primary);color:var(--aud-white);padding:10px 0 9px;border-bottom:3px solid var(--aud-secondary)}
+header.top .eyebrow{color:var(--aud-secondary);font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
+header.top h1{color:var(--aud-white);font-size:clamp(1.05rem,.95rem + .45vw,1.3rem);line-height:1.25}
+header.top p{margin:2px 0 0;font-size:.78rem;color:#dbe3ef}
+/* menu de etapas (hambúrguer abaixo de 992px) */
+nav.tabs{background:var(--aud-primary-dark);position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(5,11,20,.25)}
+nav.tabs .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between}
+nav.tabs .brand{color:var(--aud-white);font-weight:600;font-size:.875rem;padding:12px 0}
+nav.tabs .toggler{display:inline-flex;border:1px solid var(--aud-gold-soft);background:transparent;color:var(--aud-white);border-radius:var(--aud-radius);padding:6px 10px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer}
+nav.tabs .menu{display:none;width:100%;flex-direction:column;padding-bottom:8px}
+nav.tabs .menu.open{display:flex}
+nav.tabs .menu button{border:0;border-left:3px solid transparent;background:transparent;color:var(--aud-white);padding:10px 12px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;text-align:left;border-radius:0}
+nav.tabs .menu button:hover{color:var(--aud-secondary);filter:none}
+nav.tabs .menu button[aria-selected="true"]{color:var(--aud-secondary);border-left-color:var(--aud-secondary)}
+@media (min-width:992px){
+  nav.tabs .toggler{display:none}
+  nav.tabs .menu{display:flex;flex-direction:row;width:auto;padding-bottom:0;gap:4px}
+  nav.tabs .menu button{border-left:0;border-bottom:3px solid transparent;padding:14px 16px;text-align:center}
+  nav.tabs .menu button[aria-selected="true"]{border-bottom-color:var(--aud-secondary)}
+}
+main{padding-top:24px;padding-bottom:40px}
+@media (min-width:992px){main{padding-top:32px;padding-bottom:56px}}
+section.panel{display:none}
+section.panel.active{display:block}
+/* cartões: blocos da página (.box, .summary) e cartões de cada cota/parcelamento (.card) */
+.box,.summary{background:var(--aud-white);border:0;border-radius:var(--aud-radius);padding:20px;margin-bottom:20px;box-shadow:0 .125rem .5rem rgba(18,42,79,.12);overflow-x:auto}
+.box h2,.summary h2{margin:0 0 12px;font-size:clamp(1.15rem,1rem + .6vw,1.4rem);color:var(--aud-primary);padding-bottom:8px;border-bottom:2px solid var(--aud-gold-soft)}
+.box h3{margin:14px 0 6px;font-size:1rem;color:var(--aud-primary)}
+.summary h2 .tag{font-size:.8rem!important;font-weight:500!important;color:var(--aud-gray-500)!important;margin-left:6px}
+.summary h2 select{font-size:.85rem!important}
+.muted{color:var(--aud-gray-500)}
+.small{font-size:.85rem}
+/* barra de ações */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar label{display:flex;align-items:center;gap:6px;margin:0;font-size:.85rem!important;font-weight:600;color:var(--aud-gray-700)!important}
+.toolbar select{width:auto!important}
+.pdf-msg{font-size:.85rem;margin-left:4px}
+/* botões: principal dourado com texto azul; demais brancos com borda azul */
+button{cursor:pointer;border:1px solid var(--aud-primary);background:var(--aud-white);color:var(--aud-primary);padding:8px 14px;border-radius:var(--aud-radius);font:inherit;font-size:.8125rem;font-weight:600;line-height:1.3}
+button:hover{background:var(--aud-primary);color:var(--aud-white)}
+button.primary{background:var(--aud-secondary);border-color:var(--aud-secondary);color:var(--aud-primary)}
+button.primary:hover{background:var(--aud-secondary-hover);border-color:var(--aud-secondary-hover);color:var(--aud-primary)}
+button.ghost{border-color:#c5cbd3;color:var(--aud-gray-700)}
+button.ghost:hover{background:var(--aud-gray-100);color:var(--aud-primary)}
+button.danger{color:var(--aud-danger-text);border-color:var(--bad-border);background:var(--aud-white)}
+button.danger:hover{background:#FFE3E6;color:var(--aud-danger-text)}
+:focus-visible{outline:3px solid var(--aud-secondary);outline-offset:2px}
+input[type=file]{display:none}
+/* tabelas: cabeçalho azul, total com linha dourada */
+table{border-collapse:collapse;width:100%;font-size:.875rem}
+th,td{padding:7px 9px;text-align:right;border-bottom:1px solid #e1e4e8;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child,td.left,th.left{text-align:left}
+thead th{background:var(--aud-primary);color:var(--aud-white);font-weight:600;font-size:.8rem}
+tfoot td{font-weight:700;background:var(--aud-gray-100);border-top:2px solid var(--aud-secondary)}
+tbody tr:hover td{background:#fbf3e8}
+/* cartão de cada cota / parcelamento */
+.card{background:var(--aud-white);border:0;border-radius:var(--aud-radius);margin-bottom:16px;overflow:hidden;box-shadow:0 .125rem .5rem rgba(18,42,79,.12)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--aud-white);padding:12px 18px;border-left:5px solid var(--aud-secondary);border-bottom:1px solid #e1e4e8;cursor:pointer}
+.card-head .title{font-weight:600;font-size:1rem;color:var(--aud-primary)}
+.card-head .title .tag{font-weight:500;color:var(--aud-gray-500);font-size:.8rem;margin-left:8px}
+.card-body{padding:18px;display:none}
+.card.open .card-body{display:block}
+.card-head .chev{transition:transform .15s;color:var(--aud-secondary)}
+.card.open .card-head .chev{transform:rotate(90deg)}
+.paste-box{margin-bottom:14px}
+.paste-box textarea{width:100%;min-height:90px;font-family:Consolas,monospace;font-size:.75rem;border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:10px;resize:vertical;background:#fff;color:var(--aud-text)}
+.paste-actions{display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap}
+.parse-msg{font-size:.85rem;color:var(--aud-success)}
+.parse-msg.err{color:var(--aud-danger-text)}
+fieldset{border:1px solid #e1e4e8;border-radius:var(--aud-radius);margin:0 0 14px;padding:12px 14px}
+legend{font-size:.8rem;font-weight:600;color:var(--aud-primary);padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 14px}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--aud-gray-700);margin-bottom:3px}
+input[type=text],input[type=date],input[type=number],select{width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);background:var(--aud-white);color:var(--aud-text)}
+select:focus,input:focus{outline:none;border-color:var(--aud-secondary)}
+input[readonly]{background:#F7F8FA}
+/* resultados (indicadores no estilo KPI) */
+.results{background:#F7F8FA;border:1px solid #e1e4e8;border-radius:var(--aud-radius);padding:14px 16px}
+.results h3{font-size:.95rem;margin:0 0 10px;color:var(--aud-primary)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px}
+.rgrid .item{background:var(--aud-white);border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary);border-radius:var(--aud-radius);padding:8px 10px}
+.rgrid .item .lbl{font-size:.75rem;color:var(--aud-gray-500)}
+.rgrid .item .val{font-size:1rem;font-weight:700;margin-top:2px;color:var(--aud-text)}
+.rgrid .item.hi{border-top-color:var(--aud-primary)}
+.rgrid .item.hi .val{color:var(--aud-primary)}
+/* notas e etiquetas */
+.note{font-size:.8rem;margin-top:10px;padding:8px 12px;border-radius:var(--aud-radius);background:#FFF8E6;border-left:4px solid var(--aud-warning);color:var(--aud-text)}
+.note.exact{background:#EAF6EC;border-left-color:var(--aud-success);color:#0b4f1a}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap;background:var(--aud-gray-100);color:var(--aud-primary);margin-left:6px}
+.badge.ok{background:var(--aud-success);color:var(--aud-white)}
+.badge.warn{background:var(--aud-warning);color:var(--aud-text)}
+.dif-ok{color:var(--aud-success);font-weight:700}
+.dif-bad{color:var(--aud-danger-text);font-weight:700}
+.conc-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 14px;margin-bottom:12px}
+/* roteiro (etapa 1) */
+ol.steps{padding-left:22px;margin:6px 0}
+ol.steps li{margin:8px 0}
+ul.cl{padding-left:0;margin:6px 0}
+ul.cl li{list-style:none;margin:6px 0}
+ul.cl label{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;font-weight:400;color:var(--aud-text)}
+.box table td,.box table th{white-space:normal;text-align:left}
+footer{display:none}
+@media (max-width:575px){html{font-size:15px}.box,.summary{padding:14px}}
+@media print{
+  header.top,nav.tabs,.toolbar,.card-head button,.paste-actions,.paste-box{display:none!important}
+  body{background:#fff}.box,.summary,.card{box-shadow:none}
+  section.panel{display:block!important}
+}
+/* modo visualização (usuário com permissão "Book: visualizar"): nada de importar, salvar ou editar */
+body.leitura .upl-grid,body.leitura .so-admin,body.leitura .lupa,body.leitura nav.tabs button[data-tab="lanc"],body.leitura nav.tabs button[data-tab="fontes"],
+body.leitura ul.cl,body.leitura #btnLimparChecklist,body.leitura .so-admin-box{display:none!important}
+body.leitura #bkBody input,body.leitura #bkBody textarea,body.leitura #bkBody select{pointer-events:none;background:transparent;border-color:transparent;resize:none;color:inherit;opacity:1;-webkit-appearance:none;appearance:none}
+.ro-aviso{display:none;margin:0 0 10px;padding:9px 12px;border-radius:8px;background:#EAF2FB;color:#1A3A6B;font-size:.9rem;border:1px solid #BBD3EE}
+body.leitura .ro-aviso{display:block}
+</style>
+<style>
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--aud-success);color:#fff}
+.pill.bad{background:#FFE3E6;color:var(--aud-danger-text);border:1px solid #f5b5bb}
+.pill.warn{background:var(--aud-warning);color:var(--aud-text)}
+.pill.info{background:var(--aud-info);color:var(--aud-primary)}
+.pill.cinza{background:var(--aud-gray-100);color:var(--aud-gray-500)}
+.msg{padding:10px 14px;border-radius:var(--aud-radius);margin:8px 0;font-size:.9rem;background:#fff;border:1px solid #e1e4e8;border-left:5px solid var(--aud-primary)}
+.msg.err{border-left-color:var(--aud-danger);background:#FFF1F2;color:var(--aud-danger-text)}
+.msg.warn{border-left-color:var(--aud-warning);background:#FFF8E6}
+.msg.ok{border-left-color:var(--aud-success);background:#EAF6EC;color:#0b4f1a}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.filters label{display:flex;flex-direction:column;font-size:.78rem;font-weight:600;color:var(--aud-gray-700);gap:3px;margin:0}
+.filters select,.filters input[type=text]{width:auto}
+.filters label.ck{flex-direction:row;align-items:center;gap:6px}
+.tscroll{overflow:auto;max-height:680px;border:1px solid #e1e4e8;border-radius:var(--aud-radius)}
+.tscroll thead th{position:sticky;top:0;z-index:2}
+/* Bens: filtros e cabeçalho da tabela ficam congelados ao descer pelos lançamentos */
+.box.bensMain{overflow:visible}
+.bensTopo{position:sticky;top:var(--navH,0px);z-index:6;background:var(--aud-white);margin:0 -20px;padding:8px 20px 10px}
+.bensMain .tscroll{overflow:visible;max-height:none}
+.bensMain .tscroll thead th{top:calc(var(--navH,0px) + var(--topoH,0px))}
+td.wrap,th.wrap{white-space:normal;text-align:left}
+td input[type=text]{padding:4px 6px;font-size:.82rem;min-width:110px}
+td input.obs{min-width:220px}
+td select{padding:3px 4px;font-size:.8rem;width:auto}
+/* Book compacto: usa a largura toda e cabe sem rolagem lateral */
+.wrap{max-width:none!important;padding:0 8px}
+#tab-conferencia .box{padding:12px 10px}
+table.bk{font-size:.72rem;table-layout:auto}
+table.bk th,table.bk td{padding:4px 4px}
+table.bk thead th{font-size:.68rem;white-space:normal;line-height:1.15;text-align:center}
+table.bk .dsc{width:112px;white-space:normal;line-height:1.2;overflow-wrap:anywhere}
+table.bk td input[type=text]{min-width:0;width:68px;padding:2px 4px;font-size:.72rem}
+table.bk td.obs{width:30%;min-width:175px}
+table.bk td.c-raz{width:22px;text-align:center}
+table.bk textarea.obs{width:100%;min-height:30px;font:inherit;font-size:.76rem;line-height:1.25;padding:3px 6px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);resize:vertical;background:#fff;color:var(--aud-text)}
+table.bk textarea.obs:focus{outline:none;border-color:var(--aud-secondary)}
+table.bk .auto{font-size:.66rem;line-height:1.2}
+table.bk .lupa{font-size:.9rem;padding:0 2px}
+/* status: a própria etiqueta abre as opções */
+select.stsel{appearance:none;-webkit-appearance:none;border:0;cursor:pointer;padding:3px 18px 3px 8px;border-radius:999px;font:inherit;font-size:.68rem;font-weight:600;width:auto;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23122A4F' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
+select.stsel.ok{background-color:var(--aud-success);color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23fff' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
+select.stsel.bad{background-color:#FFE3E6;color:var(--aud-danger-text);box-shadow:inset 0 0 0 1px #f5b5bb}
+select.stsel.warn{background-color:var(--aud-warning);color:var(--aud-text)}
+select.stsel.info{background-color:var(--aud-info);color:var(--aud-primary)}
+select.stsel.cinza{background-color:var(--aud-gray-100);color:var(--aud-gray-500)}
+select.stsel option{background:#fff;color:var(--aud-text);font-weight:400}
+select.stsel.manual{outline:2px dashed var(--aud-secondary);outline-offset:1px}
+tr.grp td{background:#EEF2F8;font-weight:700;color:var(--aud-primary)}
+tr.grp1 td{background:var(--aud-primary);color:#fff;font-weight:700}
+tr.grp0 td{background:#0C182B;color:#fff;font-weight:700;font-size:.95rem}
+tr.grp0 td .dsc{color:#CD9A56}
+.fech{margin-bottom:14px}
+.fech h2{margin-bottom:4px}
+.fech .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:10px}
+.fech .card{border:1px solid #e1e4e8;border-radius:var(--aud-radius);padding:12px 14px;background:#fff}
+.fech .card h3{font-size:.85rem;margin:0 0 8px;color:var(--aud-primary)}
+.fech .card table{width:100%;border-collapse:collapse;font-size:.85rem}
+.fech .card td{padding:3px 0;border-bottom:1px dashed #eceff3}
+.fech .card td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fech .card tr.tot td{font-weight:700;border-bottom:0;padding-top:6px}
+.fech .res{font-size:1.25rem;font-weight:700}
+.fech .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:700}
+.fech .pill.ok{background:#E3F4E7;color:var(--aud-success)}
+.fech .pill.bad{background:#FDE7E9;color:var(--aud-danger-text)}
+.fech .pill.info{background:#EEF2F8;color:var(--aud-primary)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-bottom:14px}
+.kpi{border-radius:var(--aud-radius);padding:12px 14px;background:#fff;border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary)}
+.kpi .t{font-size:.78rem;font-weight:600;color:var(--aud-gray-500)}
+.kpi .v{font-size:1.15rem;font-weight:700;color:var(--aud-primary)}
+.upl{border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:14px;background:#fff}
+.upl h3{margin:0 0 4px;font-size:1rem}
+.empty{padding:24px;text-align:center;color:var(--aud-gray-500)}
+.dbad{color:var(--aud-danger-text);font-weight:600}
+.dok{color:var(--aud-success);font-weight:600}
+.lupa{border:0;background:transparent;cursor:pointer;font-size:1rem;padding:2px 4px}
+.lupa:hover{background:var(--aud-gray-100);color:inherit}
+.auto{font-size:.72rem;color:var(--aud-gray-500)}
+</style>
+<script src="vendor/pdfjs/pdf.min.js"></script>
+<script src="hub-db.js?v=2"></script>
+<script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=1"></script>
+<style>
+.wrap{max-width:none!important;padding:0 8px}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:14px}
+.kpi .s{font-size:.72rem;color:var(--aud-gray-500)}
+.kpi.ok{border-top-color:var(--aud-success)}.kpi.bad{border-top-color:var(--aud-danger)}
+table.pc{font-size:.8rem}
+table.pc th,table.pc td{padding:5px 8px}
+table.pc td:first-child{white-space:normal;text-align:left}
+table.pc tr.sub td{background:#F7F8FA;font-weight:700;color:var(--aud-primary)}
+table.pc td.ex{font-size:.72rem;color:var(--aud-gray-500);white-space:normal;text-align:left;max-width:380px}
+table.pc td.left{white-space:normal}
+table.pc .neg{color:var(--aud-danger-text)}
+td input.vv{width:110px;text-align:right;padding:2px 6px;font-size:.78rem}
+tr.inferido td{background:#FFF8E6}
+.upl-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#EEF2F8;color:var(--aud-primary);border-radius:999px;padding:2px 4px 2px 10px;font-size:.74rem;font-weight:600}
+.chip button{border:0;background:transparent;padding:0 6px;font-size:.9rem;line-height:1;color:var(--aud-gray-500)}
+.chip button:hover{background:#fff;color:var(--aud-danger-text)}
+.prog{font-size:.85rem;color:var(--aud-primary);margin-top:8px}
+.cols2{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="eyebrow">Audicon Contadores · Controladoria</div>
+  <h1>Folha de pagamento — Folha × Contabilidade</h1>
+  <p>NHD Foods · Saldo que as contas da folha deveriam ter no fim do mês, a partir do resumo da folha (Folha Analítica, total geral), conferido com o balancete e o razão do Book de conciliação</p>
+</div></header>
+<nav class="tabs" role="navigation" aria-label="Etapas"><div class="wrap">
+  <span class="brand">Fol. Pag.</span>
+  <button type="button" class="toggler" id="navToggle" aria-expanded="false" aria-controls="menuAbas" aria-label="Alternar menu">☰ Menu</button>
+  <div class="menu" id="menuAbas" role="tablist">
+    <button type="button" role="tab" aria-selected="false" data-tab="processo">1 · Processo mensal</button>
+    <button type="button" role="tab" aria-selected="true" data-tab="conferencia">2 · Conferência</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="resumo">3 · Resumo da folha</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="razao">4 · Razão do mês</button>
+  </div>
+</div></nav>
+<main class="wrap">
+
+<div class="box">
+  <div class="upl" id="recImport" data-recolher="Importação (resumo da folha e das rescisões)">
+    <h3>🧾 Resumo da folha (PDF)</h3>
+    <div class="muted small">Folha Analítica do Protheus com a página <b>TOTAL GERAL</b>: o resumo <b>Geral</b> da competência e, se houver, o <b>Resumo de rescisões</b> (o nome do arquivo com “RESC” indica rescisões). PDF com texto é lido direto; PDF em imagem é lido por OCR neste computador (leva uns 15 segundos por página e os dados não saem daqui). O mês vem do “Comp:” do relatório.</div>
+    <div class="paste-actions"><button class="primary" type="button" onclick="$('inFol').click()">Importar resumo da folha (PDF)</button></div>
+    <div class="prog" id="prog"></div>
+    <div class="chips" id="chFol"></div>
+    <input type="file" id="inFol" accept=".pdf" multiple onchange="importarFolha([...this.files]);this.value=''">
+    <div class="muted small" style="margin-top:10px">O balancete e o razão vêm do <b>Book de conciliação</b>. As provisões de férias e 13º seguem a tela <b>Provisões Trab.</b></div>
+  </div>
+  <div class="toolbar" style="margin-top:12px">
+    <label>Competência:<select id="selMes" onchange="mesAtual=this.value;render()"></select></label>
+    <span class="muted small" id="stTopo"></span>
+    <span class="muted small" id="stNuvem" style="flex-basis:100%"></span>
+  </div>
+  <div id="msgs"></div>
+</div>
+
+<section class="panel" id="tab-processo">
+  <div class="box"><h2>Objetivo</h2><p>Conferir todo mês se as contas da folha no balancete — <b>obrigações trabalhistas</b>, <b>adiantamento a empregados</b>, <b>antecipação de férias e 13º</b> e <b>provisões</b> — estão com o saldo que a folha indica.</p></div>
+  <div class="box"><h2>Passo a passo</h2><ol class="steps">
+    <li>No <b>Book de conciliação</b>, importar o balancete e o razão do mês (o mês escolhido lá abre aqui).</li>
+    <li>Aqui, importar o PDF do <b>resumo da folha (Geral)</b> e o do <b>resumo de rescisões</b>.</li>
+    <li>Na etapa <b>3 · Resumo da folha</b>, conferir se as somas fecham com os totais (proventos, descontos e líquido). Linha que o OCR não leu aparece em amarelo, calculada pela diferença do total; qualquer valor pode ser corrigido.</li>
+    <li>Na etapa <b>2 · Conferência</b>, ver para cada conta o valor da folha, o que foi lançado no mês, o saldo esperado, o saldo do balancete e a diferença.</li>
+    <li>As provisões de férias e 13º são conciliadas na tela <b>Provisões Trab.</b> e aparecem aqui só para conferência.</li>
+    <li>O saldo esperado de cada conta vai sozinho para o Book de conciliação como suporte.</li>
+  </ol></div>
+  <div class="box"><h2>Regras</h2><table><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
+    <tr><td>R1</td><td><b>Salários a pagar</b> (2.1.10.1001): líquido da folha menos o líquido das rescisões. É pago no mês seguinte, então é o saldo esperado (mais o que tiver sobrado sem pagar do mês anterior).</td></tr>
+    <tr><td>R2</td><td><b>Rescisões a pagar</b> (2.1.10.1010): o lançado no mês tem de ser o líquido do resumo de rescisões; salários + rescisões lançados = líquido total da folha.</td></tr>
+    <tr><td>R3</td><td><b>Pensão</b> (2.1.10.1002): descontos de pensão da folha. <b>FGTS</b> (2.1.10.1003): FGTS (SEFIP) do mês + FGTS 13º (SEFIP), recolhidos no mês seguinte.</td></tr>
+    <tr><td>R4</td><td><b>INSS</b> (2.1.10.1004) e <b>IRRF</b> (2.1.10.1005) da folha: o lançado no mês tem de bater com a folha (INSS dos empregados + INSS empresa/SAT/terceiros − salário-família − salário-maternidade; IRRF dos descontos). O saldo é transferido para a DCTFWeb (2.1.15.1011, conciliada em Tributos a pagar).</td></tr>
+    <tr><td>R5</td><td><b>Adiantamento a empregados</b> (1.1.02.2002): o adiantamento pago no mês é descontado na folha do mesmo mês — saldo esperado zero.</td></tr>
+    <tr><td>R6</td><td><b>Antecipação de férias e 13º</b> (1.1.02.2003): saldo esperado = férias do mês seguinte já pagas (férias + 1/3 no próximo mês − INSS/IRRF dessas férias). O desconto “Adiantamento conf. recibo” baixa as férias pagas no mês anterior.</td></tr>
+    <tr><td>R7</td><td>Diferença até R$ 0,01 é arredondamento.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="panel active" id="tab-conferencia">
+  <div class="kpis" id="kpis"></div>
+  <div class="box">
+    <h2>Conferência por conta <span class="muted small" id="titConf"></span></h2>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Conta</th><th>Valor da folha</th><th>Lançado no mês</th><th>Lançado × folha</th><th>Saldo esperado</th><th>Saldo no balancete</th><th>Diferença</th><th class="left">Como chega</th></tr></thead>
+      <tbody id="confBody"></tbody>
+    </table></div>
+    <div class="muted small" id="confInfo" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-resumo">
+  <div class="box">
+    <h2>Resumo da folha <span class="muted small" id="titRes"></span></h2>
+    <div id="resBox"></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-razao">
+  <div class="box">
+    <h2>Razão do mês <span class="muted small" id="titRaz"></span></h2>
+    <div class="filters"><label>Conta<select id="fContaR" onchange="renderRazao()"></select></label></div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Data</th><th class="left">Histórico</th><th>Débito</th><th>Crédito</th></tr></thead>
+      <tbody id="razBody"></tbody><tfoot id="razFoot"></tfoot>
+    </table></div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ===================== utilitários =====================
+const $ = id => document.getElementById(id);
+const LS = 'aud-folha-v1';
+const r2 = v => Math.round((v + Number.EPSILON) * 100) / 100;
+const fmt = v => (v === null || v === undefined || isNaN(v)) ? '—' : (Math.abs(v) < 0.005 ? 0 : v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+const MES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const mesLbl = m => m ? MES[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4) : '';
+const br = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '';
+const fimMes = m => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm, 0); return y + '-' + String(mm).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const ok = d => Math.abs(d) < 0.015;
+function lsGet(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+function msg(t, tipo){ const d = document.createElement('div'); d.className = 'msg ' + (tipo || ''); d.innerHTML = t; $('msgs').appendChild(d); setTimeout(() => d.remove(), tipo === 'err' ? 15000 : 9000); }
+function num(v){ if (v === null || v === undefined || v === '') return NaN; if (typeof v === 'number') return v; let s = String(v).trim().replace(/\s|R\$/g, ''); if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.'); return parseFloat(s); }
+const chk = (d, vazio) => isNaN(d) ? `<span class="muted small">${vazio || '—'}</span>` : ok(d) ? '<span class="dok">✓ OK</span>' : `<span class="dbad">${fmt(d)}</span>`;
+
+// ===================== dados (navegador + Firebase) =====================
+// dados.meses['aaaa-mm'] = { geral: { arquivo, em, ocr, itens:[{cod, desc, nf, ref, valor, lado:'P'|'D', inferido}], tot:{...} }, resc: {...} }
+let dados = lsGet(LS, null);
+if (!dados || typeof dados.meses !== 'object') dados = { meses: {} };
+let mesAtual = '', balMes = null, mesesBal = [], RAZ = {};
+const HUB = (() => { try { return window.parent !== window && window.parent.HubAuth ? window.parent.HubAuth : null; } catch(e){ return null; } })();
+const DOC_NUVEM = 'folha-pagamento';
+let tNuvem = null;
+function stNuvem(t, tipo){ const el = $('stNuvem'); if (!el) return; el.textContent = t; el.style.color = tipo === 'err' ? 'var(--aud-danger-text)' : tipo === 'ok' ? 'var(--aud-success)' : ''; }
+function salvar(){ dados.savedAt = new Date().toISOString(); if (!lsSet(LS, dados)) msg('Não foi possível salvar neste navegador (espaço cheio).', 'err'); agendarNuvem(); }
+function agendarNuvem(){
+  if (!HUB || HUB.papel !== 'admin') return;
+  clearTimeout(tNuvem); stNuvem('☁ Salvando no Firebase…');
+  tNuvem = setTimeout(async () => {
+    try { await HUB.gravarDoc(DOC_NUVEM, dados); stNuvem('☁ Base salva no Firebase às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.', 'ok'); }
+    catch(e){ stNuvem('⚠ Não foi possível salvar no Firebase: ' + (e && e.code === 'permission-denied' ? 'o seu acesso não permite salvar' : (e && e.message) || e) + ' (os dados continuam neste navegador).', 'err'); }
+  }, 2500);
+}
+async function carregarNuvem(){
+  if (!HUB){ stNuvem('Base guardada neste navegador (abra pelo Hub para salvar no Firebase).'); return; }
+  try {
+    const d = await HUB.lerDoc(DOC_NUVEM);
+    if (d && d.meses && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){ dados = d; lsSet(LS, dados); stNuvem('☁ Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok'); }
+    else if (dados.savedAt && (!d || (d.savedAt || '') < dados.savedAt)) agendarNuvem();
+    else if (d) stNuvem('☁ Base em dia com o Firebase.', 'ok');
+  } catch(e){ stNuvem('⚠ Não foi possível ler a base no Firebase: ' + ((e && e.message) || e) + ' — usando a deste navegador.', 'err'); }
+}
+let assinBase = '';
+async function assinaturaBase(){
+  if (!window.HubDB) return '';
+  try {
+    const i = await HubDB.getMeta('razao'), ks = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).sort(), partes = [];
+    for (const k of ks){ const b = await HubDB.getMeta(k); const c = (b && b.contas) || {}; partes.push(k + ':' + Object.keys(c).length + ':' + Math.round(Object.values(c).reduce((a, x) => a + Math.abs(x.sf || 0) + Math.abs(x.d || 0), 0))); }
+    return JSON.stringify([((i && i.arquivos) || []).map(a => a.nome + '@' + a.em), partes]);
+  } catch(e){ return ''; }
+}
+async function vigiarBase(){ const a = await assinaturaBase(); if (assinBase && a && a !== assinBase){ assinBase = a; await render(); msg('Razão/balancete novo no Book de conciliação: valores atualizados.', 'ok'); } else if (a) assinBase = a; }
+setInterval(vigiarBase, 15000);
+window.addEventListener('focus', vigiarBase);
+
+// ===================== leitura do PDF (texto ou OCR) =====================
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+const TESS_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+let tessP = null;
+function carregarTesseract(){
+  if (window.Tesseract) return Promise.resolve();
+  return tessP = tessP || new Promise((res, rej) => { const s = document.createElement('script'); s.src = TESS_URL; s.onload = res; s.onerror = () => rej(new Error('não foi possível carregar o leitor de imagem (OCR)')); document.head.appendChild(s); });
+}
+function prog(t){ $('prog').textContent = t || ''; }
+// palavras com posição → linhas (mesmo y), cada linha dividida em metade esquerda (proventos) e direita (descontos)
+function montarLinhas(pal, larg){
+  pal.sort((a, b) => a.y - b.y || a.x - b.x);
+  const L = [];
+  pal.forEach(w => { const l = L.find(x => Math.abs(x.y - w.y) <= x.h * 0.6); if (l) l.w.push(w); else L.push({ y: w.y, h: Math.max(w.h, 4), w: [w] }); });
+  return L.map(l => { l.w.sort((a, b) => a.x - b.x); const esq = l.w.filter(w => w.x < larg * 0.495).map(w => w.s).join(' '), dir = l.w.filter(w => w.x >= larg * 0.495).map(w => w.s).join(' '); return { esq, dir, txt: l.w.map(w => w.s).join(' ') }; });
+}
+async function palavrasTexto(page){
+  const vp = page.getViewport({ scale: 1 }), c = await page.getTextContent();
+  const pal = c.items.filter(i => i.str && i.str.trim()).map(i => ({ s: i.str.trim(), x: i.transform[4], y: vp.height - i.transform[5], h: Math.abs(i.transform[3]) || 8 }));
+  return { pal, larg: vp.width };
+}
+async function palavrasOCR(page, worker){
+  const vp = page.getViewport({ scale: 3.4 }), cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height;
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+  await page.render({ canvasContext: g, viewport: vp }).promise;
+  const r = await worker.recognize(cv);
+  const pal = [];
+  (r.data.words || []).forEach(w => pal.push({ s: w.text, x: w.bbox.x0, y: (w.bbox.y0 + w.bbox.y1) / 2, h: w.bbox.y1 - w.bbox.y0 }));
+  return { pal, larg: cv.width, texto: r.data.text };
+}
+const VAL = '(\\d{1,3}(?:\\.\\d{3})*,\\d{2})';
+const RE_ITEM = new RegExp('^\\D{0,3}(\\d{4})\\s*[^A-Za-z0-9À-ú]*\\s*(.+?)\\s+(\\d{1,4})\\s+' + VAL + '\\s+' + VAL + '\\s*$');
+function lerItem(t){
+  t = String(t || '').replace(/[|]/g, ' ').replace(/\s+/g, ' ').trim(); if (!t) return null;
+  const m = t.match(RE_ITEM); if (!m) return null;
+  return { cod: m[1], desc: m[2].replace(/^[—–\-"“”'.=\s]+/, '').trim(), nf: +m[3], ref: num(m[4]), valor: num(m[5]) };
+}
+// totais do rodapé do total geral (rótulo seguido do valor)
+const TOTAIS = [
+  ['prov', /PROVENTOS\s+([\d.]+,\d{2})/], ['desc', /DESCONTOS\s+([\d.]+,\d{2})/], ['liq', /L[IÍ]QUIDO\s+([\d.]+,\d{2})/],
+  ['fgtsDep', /FGTS DEP\.?\s+([\d.]+,\d{2})/], ['fgts13Dep', /FGTS 13\S? DEP\.?\s+([\d.]+,\d{2})/],
+  ['fgtsSefip', /FGTS DEP\.? \(SEFIP\)\s+([\d.]+,\d{2})/], ['fgts13Sefip', /FGTS 13\S? DEP\.? \(SEFIP\)\s+([\d.]+,\d{2})/],
+  ['fgtsResc', /FGTS RESCIS\S*O \(SEFIP\)\s+([\d.]+,\d{2})/], ['fgts13Resc', /FGTS 13\S? RESCIS\S*O \(SEFIP\)\s+([\d.]+,\d{2})/],
+  ['inssEmp', /INSS EMPRESA\s+([\d.]+,\d{2})/], ['inssSat', /INSS SAT\s+([\d.]+,\d{2})/], ['inssTerc', /INSS TERCEIRO\s+([\d.]+,\d{2})/],
+  ['inssTotal', /INSS TOTAL \(EMP\S*\)\s+([\d.]+,\d{2})/], ['baseInss', /BASE INSS - GPS\s+([\d.]+,\d{2})/], ['baseFgts', /BASE FGTS\s+([\d.]+,\d{2})/]
+];
+function lerPagina(linhas, textoBruto){
+  const itens = [], tot = {};
+  linhas.forEach(l => {
+    const a = lerItem(l.esq), b = lerItem(l.dir);
+    if (a) itens.push(Object.assign(a, { lado: 'P' }));
+    if (b) itens.push(Object.assign(b, { lado: 'D' }));
+  });
+  const T = norm(linhas.map(l => l.txt).join('\n') + '\n' + (textoBruto || ''));
+  TOTAIS.forEach(([k, re]) => { const m = T.match(re); if (m) tot[k] = num(m[1]); });
+  const comp = T.match(/COMP\s*:?\s*(\d{2})\/(\d{4})/);
+  return { itens, tot, comp: comp ? comp[2] + '-' + comp[1] : '', temTotal: /TOTAL GERAL/.test(T) };
+}
+// soma por lado e completa a linha que não foi lida (ex.: linha riscada do OCR) pela diferença do total
+function fechar(R){
+  const s = l => r2(R.itens.filter(i => i.lado === l && !i.inferido).reduce((a, i) => a + i.valor, 0));
+  R.itens = R.itens.filter(i => !i.inferido);
+  // no Protheus a 2ª linha do total geral (salário-família / I.R.R.F.) sai riscada pela linha tracejada e o OCR não a lê:
+  // quando faltar exatamente essa verba, a diferença do total recebe o nome dela (fica em amarelo para conferir)
+  const tem = (l, re) => R.itens.some(i => i.lado === l && !i.inferido && re.test(norm(i.desc)));
+  [['P', 'prov', tem('P', /SALARIO FAMILIA/) ? 'Provento não lido' : 'SALARIO FAMILIA', '0005'], ['D', 'desc', tem('D', /^I\.? ?R\.? ?R\.? ?F\.?$/) ? 'Desconto não lido' : 'I.R.R.F.', '0009']].forEach(([l, k, d, cod]) => {
+    if (isNaN(R.tot[k])) return; const dif = r2(R.tot[k] - s(l));
+    if (Math.abs(dif) >= 0.01) R.itens.push({ cod: /não lido/.test(d) ? '????' : cod + '?', desc: d + ' (calculado pela diferença do total)', nf: 0, ref: 0, valor: dif, lado: l, inferido: true });
+  });
+  const tudo = l => r2(R.itens.filter(i => i.lado === l).reduce((a, i) => a + i.valor, 0));
+  R.chk = { prov: r2(tudo('P') - (R.tot.prov || 0)), desc: r2(tudo('D') - (R.tot.desc || 0)), liq: r2((R.tot.prov || 0) - (R.tot.desc || 0) - (R.tot.liq || 0)), inferidos: R.itens.filter(i => i.inferido).length };
+  return R;
+}
+async function lerFolhaPdf(f){
+  const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+  let worker = null;
+  try {
+    // procura a página TOTAL GERAL do fim para o começo (até 4 páginas)
+    for (let p = pdf.numPages, n = 0; p >= 1 && n < 4; p--, n++){
+      const page = await pdf.getPage(p);
+      let { pal, larg } = await palavrasTexto(page), bruto = '';
+      const temTexto = pal.length > 30;
+      if (!temTexto){
+        prog('Lendo por OCR a página ' + p + ' de “' + f.name + '”… (uns 15 segundos)');
+        await carregarTesseract();
+        if (!worker){ worker = await Tesseract.createWorker('por', 1, {}); await worker.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' }); }
+        const o = await palavrasOCR(page, worker); pal = o.pal; larg = o.larg; bruto = o.texto;
+      }
+      const R = lerPagina(montarLinhas(pal, larg), bruto);
+      if (R.temTotal && !isNaN(R.tot.liq)) return fechar(Object.assign(R, { ocr: !temTexto, pagina: p }));
+    }
+    throw new Error('não achei a página TOTAL GERAL com o líquido');
+  } finally { if (worker) await worker.terminate(); prog(''); }
+}
+async function importarFolha(files){
+  for (const f of files){
+    try {
+      prog('Lendo “' + f.name + '”…');
+      const R = await lerFolhaPdf(f);
+      if (!R.comp) throw new Error('não achei a competência (“Comp: mm/aaaa”) no relatório');
+      const tipo = /RESC/i.test(f.name) ? 'resc' : 'geral';
+      const md = dados.meses[R.comp] = dados.meses[R.comp] || {};
+      md[tipo] = Object.assign(R, { arquivo: f.name, em: new Date().toISOString() });
+      if (/CAIXA/i.test(f.name)) msg('“' + esc(f.name) + '” parece ser o resumo por <b>caixa</b>; a conciliação usa o resumo <b>Geral</b> da competência — importe o Geral se ele também existir.', 'warn');
+      const fecha = ok(R.chk.prov) && ok(R.chk.desc) && ok(R.chk.liq), inf = R.itens.filter(i => i.inferido).length;
+      msg(`“${esc(f.name)}” (${tipo === 'resc' ? 'rescisões' : 'folha geral'}, ${mesLbl(R.comp)}${R.ocr ? ', lido por OCR' : ''}): ${R.itens.length} verbas · líquido ${fmt(R.tot.liq)}${inf ? ` · ${inf} linha(s) calculada(s) pela diferença do total — confira na etapa 3` : ''}${fecha ? '' : ' · <b>as somas não fecham com os totais</b>, confira na etapa 3'}.`, fecha && !inf ? 'ok' : 'warn');
+      mesAtual = R.comp;
+    } catch(e){ msg('Erro ao ler “' + esc(f.name) + '”: ' + esc(e.message), 'err'); prog(''); }
+  }
+  salvar(); await render();
+}
+function tirarArq(m, tipo){ const md = dados.meses[m]; if (!md || !md[tipo] || !confirm('Remover o resumo ' + (tipo === 'resc' ? 'de rescisões' : 'geral') + ' de ' + mesLbl(m) + '?')) return; delete md[tipo]; salvar(); render(); }
+function setValor(m, tipo, i, v){
+  const R = ((dados.meses[m] || {})[tipo]); if (!R || !R.itens[i]) return;
+  const n = num(v); if (isNaN(n)) { render(); return; }
+  R.itens[i].valor = r2(n); R.itens[i].editado = true; if (R.itens[i].inferido){ R.itens[i].inferido = false; R.itens[i].desc = R.itens[i].desc.replace(/ \(calculado.*\)$/, ' (corrigido)'); }
+  fechar(R); salvar(); render();
+}
+function setDesc(m, tipo, i, v){ const R = ((dados.meses[m] || {})[tipo]); if (!R || !R.itens[i]) return; R.itens[i].desc = String(v).trim(); salvar(); render(); }
+
+// ===================== balancete e razão (Book) =====================
+const CONTAS = {
+  sal: ['2.1.10.1001', 'Salários e pró-labore a pagar'], pens: ['2.1.10.1002', 'Pensão alimentícia a recolher'], fgts: ['2.1.10.1003', 'FGTS a recolher'],
+  inss: ['2.1.10.1004', 'INSS folha a recolher'], irrf: ['2.1.10.1005', 'IRRF folha a recolher'], sind: ['2.1.10.1006', 'Contribuição sindical/assistencial'],
+  resc: ['2.1.10.1010', 'Rescisões a pagar'], adi: ['1.1.02.2002', 'Adiantamento a empregados'], ant: ['1.1.02.2003', 'Antecipação de férias e 13º salário'],
+  pfer: ['2.1.10.2001', 'Provisão de férias'], p13: ['2.1.10.2002', 'Provisão de 13º salário']
+};
+async function carregarMeses(){
+  mesesBal = [];
+  try { if (window.HubDB) mesesBal = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10)).sort(); } catch(e){}
+  const todos = [...new Set(mesesBal.concat(Object.keys(dados.meses)))].sort();
+  const mHub = window.mesDoHub ? mesDoHub() : '';
+  if (mHub && !mesAtual) mesAtual = mHub;
+  if (!mesAtual) mesAtual = todos[todos.length - 1] || new Date().toISOString().slice(0, 7);
+  if (!todos.includes(mesAtual)) todos.push(mesAtual);
+  todos.sort();
+  $('selMes').innerHTML = todos.slice().reverse().map(m => `<option value="${m}" ${m === mesAtual ? 'selected' : ''}>${mesLbl(m)}${mesesBal.includes(m) ? '' : ' (sem balancete)'}${dados.meses[m] && dados.meses[m].geral ? '' : ' (sem folha)'}</option>`).join('');
+}
+async function carregarBase(m){
+  balMes = null; RAZ = {};
+  try { if (window.HubDB) balMes = await HubDB.getMeta('balancete:' + m); } catch(e){}
+  let info = null; try { info = window.HubDB ? await HubDB.getMeta('razao') : null; } catch(e){}
+  if (info && info.agg && info.agg[m]){
+    for (const k of Object.keys(CONTAS)){ const c = CONTAS[k][0]; if (!info.agg[m][c]) continue; try { RAZ[c] = await HubDB.lancamentosConta(c, [m]); } catch(e){} }
+    RAZ.__ok = true;
+  }
+}
+const bc = c => balMes && balMes.contas ? (balMes.contas[c] || { sa: 0, d: 0, c: 0, sf: 0, desc: '' }) : null;
+
+// ===================== conciliação =====================
+const soma = (R, lado, re) => R ? r2(R.itens.filter(i => i.lado === lado && re.test(norm(i.desc))).reduce((a, i) => a + i.valor, 0)) : NaN;
+function calcular(m){
+  const md = dados.meses[m] || {}, G = md.geral, Rs = md.resc, L = [];
+  const t = (R, k) => R && !isNaN(R.tot[k]) ? R.tot[k] : 0;
+  // conta de passivo: valores credores positivos; ativo: devedores positivos
+  const pas = c => { const b = bc(c); return b ? { sa: r2(-b.sa), d: r2(b.d), c: r2(b.c), sf: r2(-b.sf), lanc: r2(b.c) } : null; };
+  const atv = c => { const b = bc(c); return b ? { sa: r2(b.sa), d: r2(b.d), c: r2(b.c), sf: r2(b.sf) } : null; };
+  // sobra do mês anterior que ficou sem pagar (pagamento a mais não reduz)
+  const sobra = b => b ? r2(Math.max(0, b.sa - b.d)) : 0;
+  const linhaPas = (k, folha, como, extra) => {
+    const b = pas(CONTAS[k][0]), esp = isNaN(folha) ? NaN : r2(folha + sobra(b));
+    L.push(Object.assign({ k, folha, lanc: b ? b.lanc : NaN, dLanc: b && !isNaN(folha) ? r2(b.lanc - folha) : NaN, esp, sf: b ? b.sf : NaN, dif: b && !isNaN(esp) ? r2(b.sf - esp) : NaN, como: como + (b && sobra(b) ? ' · inclui ' + fmt(sobra(b)) + ' do mês anterior ainda sem baixa' : '') }, extra || {}));
+  };
+  const liqResc = Rs ? t(Rs, 'liq') : 0;
+  linhaPas('sal', G ? r2(t(G, 'liq') - liqResc) : NaN, G ? 'Líquido da folha ' + fmt(t(G, 'liq')) + (Rs ? ' − líquido das rescisões ' + fmt(liqResc) : ' (sem o resumo de rescisões: importe-o para separar)') : 'Importe o resumo da folha');
+  // rescisões: o lançado no mês tem de ser o líquido das rescisões; o saldo é o que ficou para pagar depois do fim do mês
+  { const b = pas(CONTAS.resc[0]), folha = Rs ? liqResc : NaN;
+    const sal = pas(CONTAS.sal[0]), totLanc = b && sal ? r2(b.lanc + sal.lanc) : NaN;
+    L.push({ k: 'resc', folha, lanc: b ? b.lanc : NaN, dLanc: b && !isNaN(folha) ? r2(b.lanc - folha) : NaN, esp: NaN, sf: b ? b.sf : NaN, dif: NaN, info: true,
+      como: (Rs ? 'Líquido do resumo de rescisões. ' : 'Importe o resumo de rescisões. ') + (G && !isNaN(totLanc) ? 'Salários + rescisões lançados ' + fmt(totLanc) + ' × líquido total da folha ' + fmt(t(G, 'liq')) + ': ' + chk(r2(totLanc - t(G, 'liq'))) + '. ' : '') + 'Saldo = rescisões pagas depois do fim do mês (confira no razão).' }); }
+  linhaPas('pens', soma(G, 'D', /PENS/), 'Descontos de pensão alimentícia da folha');
+  linhaPas('fgts', G ? r2(t(G, 'fgtsSefip') + t(G, 'fgts13Sefip')) : NaN, G ? 'FGTS (SEFIP) ' + fmt(t(G, 'fgtsSefip')) + ' + FGTS 13º (SEFIP) ' + fmt(t(G, 'fgts13Sefip')) + ' · FGTS do mês na folha (com rescisões): ' + fmt(r2(t(G, 'fgtsDep') + t(G, 'fgts13Dep'))) : 'Importe o resumo da folha');
+  // INSS e IRRF: conferidos pelo lançado no mês; o saldo vai para a DCTFWeb
+  { const segurado = soma(G, 'D', /^INSS(?!.*PROXIMO)|INSS 13|INSS NAS FERIAS/), famil = soma(G, 'P', /SALARIO FAMILIA/), mater = soma(G, 'P', /SALARIO MATERNIDADE/);
+    const folha = G ? r2(segurado + t(G, 'inssTotal') - famil - mater) : NaN, b = pas(CONTAS.inss[0]);
+    L.push({ k: 'inss', folha, lanc: b ? b.lanc : NaN, dLanc: b && !isNaN(folha) ? r2(b.lanc - folha) : NaN, esp: 0, sf: b ? b.sf : NaN, dif: b ? r2(b.sf) : NaN,
+      como: G ? `INSS dos empregados ${fmt(segurado)} + empresa/SAT/terceiros ${fmt(t(G, 'inssTotal'))} − salário-família ${fmt(famil)} − salário-maternidade ${fmt(mater)}. Saldo transferido para a DCTFWeb (2.1.15.1011).` : 'Importe o resumo da folha' }); }
+  { const folha = soma(G, 'D', /I\.? ?R\.? ?R\.? ?F|IRRF/), b = pas(CONTAS.irrf[0]), naoLido = G ? G.itens.find(i => i.inferido && i.lado === 'D') : null;
+    L.push({ k: 'irrf', folha, lanc: b ? b.lanc : NaN, dLanc: b && !isNaN(folha) ? r2(b.lanc - folha) : NaN, esp: 0, sf: b ? b.sf : NaN, dif: b ? r2(b.sf) : NaN,
+      como: 'IRRF dos descontos da folha (inclui IRRF de férias). Saldo transferido para a DCTFWeb (2.1.15.1011).' + (naoLido && !folha ? ' <b>O IRRF pode estar na linha que o OCR não leu (' + fmt(naoLido.valor) + ')</b> — corrija na etapa 3.' : '') }); }
+  { const folha = soma(G, 'D', /SINDIC|ASSISTENC|CONFEDER|NEGOCIAL/); if (folha || (bc(CONTAS.sind[0]) || {}).sf) linhaPas('sind', folha, 'Contribuições sindicais/assistenciais descontadas'); }
+  // adiantamento a empregados: pago no mês e descontado na folha do mesmo mês
+  { const b = atv(CONTAS.adi[0]), desc = soma(G, 'D', /^ADIANTAMENTO \(DESCONTO\)|ADIANTAMENTO DESCONTO/);
+    L.push({ k: 'adi', folha: desc, lanc: b ? b.c : NaN, dLanc: b && !isNaN(desc) ? r2(b.c - desc) : NaN, esp: 0, sf: b ? b.sf : NaN, dif: b ? r2(b.sf) : NaN, ativo: true,
+      como: 'Descontado na folha (Adiantamento desconto) × baixado no mês (créditos). ' + (b ? 'Pago no mês ' + fmt(b.d) + ' − descontado ' + fmt(desc) + ' = ' + fmt(r2(b.d - (desc || 0))) + ' sem desconto. ' : '') + 'Esperado zero: o adiantamento do mês é descontado na folha do mesmo mês.' }); }
+  // antecipação de férias e 13º: férias do mês seguinte já pagas
+  { const b = atv(CONTAS.ant[0]), prox = soma(G, 'P', /PROXIMO MES/), dProx = soma(G, 'D', /PROXIMO MES/), recibo = soma(G, 'D', /ADIANTAMENTO CONF\.? ?RECIBO/);
+    const esp = G ? r2(prox - dProx) : NaN;
+    L.push({ k: 'ant', folha: recibo, lanc: b ? b.c : NaN, dLanc: b && !isNaN(recibo) ? r2(b.c - recibo) : NaN, esp, sf: b ? b.sf : NaN, dif: b && !isNaN(esp) ? r2(b.sf - esp) : NaN, ativo: true,
+      como: 'Lançado = baixa das férias pagas no mês anterior (desconto “Adiantamento conf. recibo” ' + fmt(recibo) + '). Esperado = férias do próximo mês já pagas: ' + fmt(prox) + ' − descontos delas ' + fmt(dProx) + '. 13º adiantado nas férias também fica aqui até dezembro.' }); }
+  // provisões: conforme a tela Provisões Trab.
+  { const sup = lsGet('aud-hub-suportes', {});
+    ['pfer', 'p13'].forEach(k => { const c = CONTAS[k][0], b = pas(c), s = sup[c] && sup[c].fonte === 'Provisões Trab.' ? sup[c] : null, esp = s ? r2(-s.saldo) : NaN;
+      L.push({ k, folha: NaN, lanc: b ? b.lanc : NaN, dLanc: NaN, esp, sf: b ? b.sf : NaN, dif: b && !isNaN(esp) ? r2(b.sf - esp) : NaN, prov: true,
+        como: s ? 'Saldo do controle da tela Provisões Trab. (' + esc(s.detalhe || '') + ')' : 'Abra a tela Provisões Trab. deste mês para trazer o saldo do controle.' }); }); }
+  return L;
+}
+
+// ===================== telas =====================
+async function render(){
+  await carregarMeses(); await carregarBase(mesAtual);
+  const L = calcular(mesAtual), md = dados.meses[mesAtual] || {};
+  $('stTopo').textContent = (balMes ? 'Balancete de ' + mesLbl(mesAtual) + ' carregado do Book' : 'Sem balancete de ' + mesLbl(mesAtual) + ' no Book') + ' · ' + (RAZ.__ok ? 'razão do mês carregado' : 'sem razão do mês') + '.';
+  $('titConf').textContent = '· ' + mesLbl(mesAtual) + ' · data-base ' + br(fimMes(mesAtual));
+  renderChips(); renderConf(L, md); renderKpis(L); renderResumo(md); renderRazao(); publicarSuportes(L);
+}
+function renderChips(){
+  const ch = [];
+  Object.keys(dados.meses).sort().reverse().forEach(m => ['geral', 'resc'].forEach(t => { const R = dados.meses[m][t]; if (R) ch.push(`<span class="chip" title="${esc(R.arquivo)}">${mesLbl(m)} · ${t === 'resc' ? 'Rescisões' : 'Geral'}${R.ocr ? ' (OCR)' : ''}<button type="button" onclick="tirarArq('${m}','${t}')" aria-label="Remover">×</button></span>`); }));
+  $('chFol').innerHTML = ch.join('') || '<span class="muted small">Nenhum resumo importado.</span>';
+}
+function renderKpis(L){
+  const conf = L.filter(l => !l.info && !isNaN(l.dif)), nOk = conf.filter(l => ok(l.dif)).length, md = dados.meses[mesAtual] || {}, G = md.geral;
+  const card = (t, v, s, cls) => `<div class="kpi ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
+  $('kpis').innerHTML = card('Líquido da folha', G ? fmt(G.tot.liq) : '—', G ? 'proventos ' + fmt(G.tot.prov) + ' − descontos ' + fmt(G.tot.desc) : 'importe o resumo') +
+    card('Somas do resumo', G ? (ok(G.chk.prov) && ok(G.chk.desc) && ok(G.chk.liq) && !G.itens.some(i => i.inferido) ? '✓ fecham' : 'conferir') : '—', G && G.itens.some(i => i.inferido) ? 'linha calculada pelo total' : '', G ? (G.itens.some(i => i.inferido) ? 'bad' : 'ok') : '') +
+    card('Contas conferidas', conf.length ? nOk + ' de ' + conf.length + ' OK' : '—', conf.length - nOk ? (conf.length - nOk) + ' com diferença' : '', conf.length ? (nOk === conf.length ? 'ok' : 'bad') : '');
+}
+function renderConf(L){
+  const v = x => fmt(x);
+  const grupo = (t) => `<tr class="sub"><td colspan="8">${t}</td></tr>`;
+  const row = l => { const [c, n] = CONTAS[l.k], b = bc(c);
+    return `<tr><td><b>${c}</b><div class="muted small">${esc((b && b.desc) || n)}</div></td><td>${v(l.folha)}</td><td>${v(l.lanc)}</td><td>${l.prov ? '<span class="muted small">—</span>' : chk(l.dLanc, 'sem dados')}</td><td>${l.info ? '<span class="muted small">—</span>' : v(l.esp)}</td><td>${v(l.sf)}</td><td>${l.info ? '<span class="muted small">—</span>' : chk(l.dif, !balMes ? 'sem balancete' : l.prov ? 'sem controle' : 'sem folha')}</td><td class="ex">${l.como || ''}</td></tr>`; };
+  const by = k => L.filter(l => l.k === k);
+  $('confBody').innerHTML = grupo('Obrigações trabalhistas (passivo: saldo credor positivo)') + ['sal', 'resc', 'pens', 'fgts', 'inss', 'irrf', 'sind'].flatMap(by).map(row).join('') +
+    grupo('Adiantamentos (ativo: saldo devedor positivo)') + ['adi', 'ant'].flatMap(by).map(row).join('') +
+    grupo('Provisões da folha (conciliadas na tela Provisões Trab.)') + ['pfer', 'p13'].flatMap(by).map(row).join('');
+  $('confInfo').innerHTML = '“Lançado no mês” = créditos no mês (passivo) ou baixas do mês (adiantamentos), pelo balancete. O saldo esperado de cada conta vai sozinho para o Book de conciliação como suporte (fonte “Fol. Pag.”).';
+}
+function renderResumo(md){
+  $('titRes').textContent = '· ' + mesLbl(mesAtual);
+  const blocos = ['geral', 'resc'].filter(t => md[t]);
+  if (!blocos.length){ $('resBox').innerHTML = `<div class="empty">Sem resumo da folha de ${mesLbl(mesAtual)}. Importe o PDF no topo.</div>`; return; }
+  $('resBox').innerHTML = blocos.map(t => { const R = md[t];
+    const tab = lado => { const I = R.itens.map((it, i) => [it, i]).filter(([it]) => it.lado === lado);
+      return `<div class="tscroll" style="max-height:none"><table class="pc"><thead><tr><th>Cód.</th><th class="left">${lado === 'P' ? 'Proventos' : 'Descontos'}</th><th>N.F.</th><th>Valor</th></tr></thead><tbody>` +
+        I.map(([it, i]) => `<tr class="${it.inferido ? 'inferido' : ''}"><td>${esc(it.cod)}</td><td class="left">${it.inferido ? `<input type="text" value="${esc(it.desc)}" style="width:100%;font-size:.78rem;padding:2px 6px" onchange="setDesc('${mesAtual}','${t}',${i},this.value)">` : esc(it.desc)}</td><td>${it.nf || ''}</td><td><input type="text" class="vv" value="${fmt(it.valor)}" onchange="setValor('${mesAtual}','${t}',${i},this.value)"></td></tr>`).join('') +
+        `</tbody><tfoot><tr><td colspan="3">Soma × total do relatório ${fmt(R.tot[lado === 'P' ? 'prov' : 'desc'])}</td><td>${chk(R.chk[lado === 'P' ? 'prov' : 'desc'])}</td></tr></tfoot></table></div>`; };
+    const tot = [['Proventos', 'prov'], ['Descontos', 'desc'], ['Líquido', 'liq'], ['FGTS Dep.', 'fgtsDep'], ['FGTS 13º Dep.', 'fgts13Dep'], ['FGTS Dep. (SEFIP)', 'fgtsSefip'], ['FGTS 13º Dep. (SEFIP)', 'fgts13Sefip'], ['FGTS Rescisão (SEFIP)', 'fgtsResc'], ['INSS Empresa', 'inssEmp'], ['INSS SAT', 'inssSat'], ['INSS Terceiro', 'inssTerc'], ['INSS Total (Emp+SAT+Terc)', 'inssTotal'], ['Base INSS - GPS', 'baseInss'], ['Base FGTS', 'baseFgts']];
+    return `<h3>${t === 'resc' ? 'Rescisões' : 'Folha geral'} · “${esc(R.arquivo)}”${R.ocr ? ' <span class="pill info">lido por OCR</span>' : ''}</h3>
+      <div class="muted small" style="margin-bottom:8px">Proventos − descontos = líquido: ${chk(R.chk.liq)}${R.itens.some(i => i.inferido) ? ' · <b>linha em amarelo</b>: o OCR não leu a linha, o valor foi calculado pela diferença do total — confira no PDF e digite a descrição/valor certos.' : ''}</div>
+      <div class="cols2">${tab('P')}${tab('D')}</div>
+      <h3>Totais</h3><div class="tscroll" style="max-height:none"><table class="pc"><tbody>${tot.map(([n, k]) => `<tr><td>${n}</td><td>${fmt(R.tot[k])}</td></tr>`).join('')}</tbody></table></div>`;
+  }).join('<hr style="margin:18px 0;border:0;border-top:2px solid var(--aud-gold-soft)">');
+}
+function renderRazao(){
+  $('titRaz').textContent = '· ' + mesLbl(mesAtual);
+  const sel = $('fContaR'), atual = sel.value || CONTAS.sal[0];
+  sel.innerHTML = Object.values(CONTAS).map(([c, n]) => `<option value="${c}" ${c === atual ? 'selected' : ''}>${c} · ${n}${RAZ[c] ? ' (' + RAZ[c].length + ')' : ''}</option>`).join('');
+  const L = RAZ[sel.value] || [];
+  if (!L.length){ $('razBody').innerHTML = `<tr><td colspan="4" class="empty">${RAZ.__ok ? 'Sem lançamentos desta conta no mês.' : 'Sem razão de ' + mesLbl(mesAtual) + ' no Book de conciliação.'}</td></tr>`; $('razFoot').innerHTML = ''; return; }
+  $('razBody').innerHTML = L.slice(0, 2000).map(l => `<tr><td>${br(l.data)}</td><td class="left wrap" style="max-width:560px">${esc(l.hist)}${l.cp ? ' <span class="muted small">· contrap. ' + esc(l.cp) + '</span>' : ''}</td><td>${l.deb ? fmt(l.deb) : ''}</td><td>${l.cred ? fmt(l.cred) : ''}</td></tr>`).join('');
+  const D = r2(L.reduce((a, l) => a + l.deb, 0)), C = r2(L.reduce((a, l) => a + l.cred, 0));
+  $('razFoot').innerHTML = `<tr><td colspan="2">Total (${L.length} lançamentos${L.length > 2000 ? ', mostrando 2.000' : ''})</td><td>${fmt(D)}</td><td>${fmt(C)}</td></tr>`;
+}
+// suporte das contas no Book: saldo esperado (passivo credor = negativo, como no balancete); provisões ficam com a tela Provisões Trab.
+function publicarSuportes(L){
+  const LS_SUP = 'aud-hub-suportes', FONTE = 'Fol. Pag.', fim = fimMes(mesAtual), sup = lsGet(LS_SUP, {});
+  Object.keys(sup).forEach(c => { if (sup[c].fonte === FONTE) delete sup[c]; });
+  if ((dados.meses[mesAtual] || {}).geral) L.forEach(l => { if (l.prov || l.info || isNaN(l.esp)) return; const c = CONTAS[l.k][0];
+    sup[c] = { fonte: FONTE, saldo: l.ativo ? l.esp : r2(-l.esp), data: fim, detalhe: 'Folha de pagamento ' + mesLbl(mesAtual) + ' · ' + CONTAS[l.k][1] }; });
+  lsSet(LS_SUP, sup);
+}
+window.focoConta = function(){ window.abrirEtapa && abrirEtapa('conferencia'); };
+
+(async () => { await carregarNuvem(); await render(); assinBase = await assinaturaBase(); })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => { mesAtual = m; render(); });   // mês trocado no Book
+</script>
+
+<script>
+/* etapas (mesmo comportamento dos outros painéis) */
+(function(){
+  var KEY = location.pathname.split('/').pop() + ':etapa';
+  function abrir(t){
+    document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.setAttribute('aria-selected', b.getAttribute('data-tab') === t ? 'true' : 'false'); });
+    document.querySelectorAll('section.panel').forEach(function(s){ s.classList.toggle('active', s.id === 'tab-' + t); });
+    try { sessionStorage.setItem(KEY, t); } catch(e){}
+    var m = document.getElementById('menuAbas'); if (m) m.classList.remove('open');
+  }
+  window.abrirEtapa = abrir;
+  document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.addEventListener('click', function(){ abrir(b.getAttribute('data-tab')); }); });
+  var tg = document.getElementById('navToggle');
+  if (tg) tg.addEventListener('click', function(){ var m = document.getElementById('menuAbas'); var o = m.classList.toggle('open'); tg.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+  var salvo = null; try { salvo = sessionStorage.getItem(KEY); } catch(e){}
+  abrir(salvo || 'conferencia');
+})();
+</script>
+</body>
+</html>
