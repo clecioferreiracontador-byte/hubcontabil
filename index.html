@@ -2718,6 +2718,7 @@ function concTab(p){
   if(!f){
     f=document.createElement('iframe');f.id='concFrame-'+p;f.className='conc-frame';f.src=CONC_PAINEIS[p]+'?v='+Date.now(); /* sempre a versão publicada mais recente (o GitHub Pages guarda 10 min em cache) */f.title=p;
     box.appendChild(f);
+    if(p==='book')f.addEventListener('load',function(){setTimeout(precarregarPaineis,1500);},{once:true});
   }
   box.querySelectorAll('.conc-frame').forEach(function(x){x.style.display=x===f?'':'none';});
   /* de volta ao Book: ele rola até a linha que estava sendo conciliada */
@@ -2740,6 +2741,18 @@ function precarregarBook(){
   var box=document.getElementById('concFrames');if(!box)return;
   var f=document.createElement('iframe');f.id='concFrame-book';f.className='conc-frame';f.src=CONC_PAINEIS['book']+'?v='+Date.now();f.title='book';f.style.display='none';
   box.appendChild(f);
+  f.addEventListener('load',function(){setTimeout(precarregarPaineis,1500);},{once:true});
+}
+/* Todas as telas de conciliação ficam carregadas em segundo plano: cada uma segue o mês escolhido no Book
+   (mes-hub.js), recalcula e manda o suporte do mês para o Book, sem precisar abrir a tela naquele mês. */
+function precarregarPaineis(){
+  if(!IS_ADMIN)return;var box=document.getElementById('concFrames');if(!box)return;
+  var fila=Object.keys(CONC_PAINEIS).filter(function(p){return p!=='book'&&p!=='faturamento'&&!document.getElementById('concFrame-'+p);});
+  var prox=function(){var p=fila.shift();if(!p||document.getElementById('concFrame-'+p)){if(fila.length)prox();return;}
+    var f=document.createElement('iframe');f.id='concFrame-'+p;f.className='conc-frame';f.src=CONC_PAINEIS[p]+'?v='+Date.now();f.title=p;
+    f.style.display='none';
+    box.appendChild(f);f.addEventListener('load',function(){setTimeout(prox,400);},{once:true});};
+  prox();
 }
 /* Book de conciliação: clicar numa conta abre o painel que concilia aquela conta (e, se o painel souber, já foca a conta) */
 window.abrirConciliacao=function(p,conta){
