@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIS/COFINS Audicon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tema Audicon (mesmo padrão da Conferência de Faturamento): azul #122A4F, dourado #CD9A56, Red Hat Display */
+:root{
+  --aud-primary:#122A4F; --aud-primary-dark:#0C182B; --aud-secondary:#CD9A56; --aud-secondary-hover:#B5833F;
+  --aud-text:#231F20; --aud-white:#FFFFFF; --aud-gray-100:#F1F1F1; --aud-gray-500:#69727D; --aud-gray-700:#33373D;
+  --aud-gold-soft:rgba(205,154,86,.55);
+  --aud-success:#04751A; --aud-warning:#F5AD00; --aud-info:#46CECD; --aud-danger:#FF0016; --aud-danger-text:#B0000F;
+  --aud-radius:.5rem;
+  --font:"Red Hat Display","Segoe UI",Calibri,Arial,sans-serif;
+  /* nomes usados pelo código dos painéis */
+  --page-bg:var(--aud-gray-100); --panel:#fff; --panel-2:#F7F8FA; --border:#e1e4e8;
+  --text:var(--aud-text); --muted:var(--aud-gray-500); --accent:var(--aud-primary); --accent-2:var(--aud-secondary);
+  --good:var(--aud-success); --warn:#8A5A00; --bad:var(--aud-danger-text); --bad-border:#f5b5bb;
+  --btn-bg:#fff; --textarea-bg:#fff; --textarea-border:#c5cbd3;
+  --results-bg:#F7F8FA; --results-border:#e1e4e8; --item-bg:#fff; --item-border:#e1e4e8; --badge-bg:var(--aud-gray-100);
+  --radius:var(--aud-radius);
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--aud-gray-100);color:var(--aud-text);font-family:var(--font);font-weight:400;line-height:1.5}
+h1,h2,h3,h4{font-weight:600;color:var(--aud-primary);margin:0}
+.wrap{width:100%;margin:0 auto;padding:0 16px}
+@media (min-width:576px){.wrap{max-width:540px}}
+@media (min-width:768px){.wrap{max-width:720px}}
+@media (min-width:992px){.wrap{max-width:960px}}
+@media (min-width:1200px){.wrap{max-width:1140px}}
+@media (min-width:1400px){.wrap{max-width:1320px}}
+/* cabeçalho */
+header.top{background:var(--aud-primary);color:var(--aud-white);padding:10px 0 9px;border-bottom:3px solid var(--aud-secondary)}
+header.top .eyebrow{color:var(--aud-secondary);font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
+header.top h1{color:var(--aud-white);font-size:clamp(1.05rem,.95rem + .45vw,1.3rem);line-height:1.25}
+header.top p{margin:2px 0 0;font-size:.78rem;color:#dbe3ef}
+/* menu de etapas (hambúrguer abaixo de 992px) */
+nav.tabs{background:var(--aud-primary-dark);position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(5,11,20,.25)}
+nav.tabs .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between}
+nav.tabs .brand{color:var(--aud-white);font-weight:600;font-size:.875rem;padding:12px 0}
+nav.tabs .toggler{display:inline-flex;border:1px solid var(--aud-gold-soft);background:transparent;color:var(--aud-white);border-radius:var(--aud-radius);padding:6px 10px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer}
+nav.tabs .menu{display:none;width:100%;flex-direction:column;padding-bottom:8px}
+nav.tabs .menu.open{display:flex}
+nav.tabs .menu button{border:0;border-left:3px solid transparent;background:transparent;color:var(--aud-white);padding:10px 12px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;text-align:left;border-radius:0}
+nav.tabs .menu button:hover{color:var(--aud-secondary);filter:none}
+nav.tabs .menu button[aria-selected="true"]{color:var(--aud-secondary);border-left-color:var(--aud-secondary)}
+@media (min-width:992px){
+  nav.tabs .toggler{display:none}
+  nav.tabs .menu{display:flex;flex-direction:row;width:auto;padding-bottom:0;gap:4px}
+  nav.tabs .menu button{border-left:0;border-bottom:3px solid transparent;padding:14px 16px;text-align:center}
+  nav.tabs .menu button[aria-selected="true"]{border-bottom-color:var(--aud-secondary)}
+}
+main{padding-top:24px;padding-bottom:40px}
+@media (min-width:992px){main{padding-top:32px;padding-bottom:56px}}
+section.panel{display:none}
+section.panel.active{display:block}
+/* cartões: blocos da página (.box, .summary) e cartões de cada cota/parcelamento (.card) */
+.box,.summary{background:var(--aud-white);border:0;border-radius:var(--aud-radius);padding:20px;margin-bottom:20px;box-shadow:0 .125rem .5rem rgba(18,42,79,.12);overflow-x:auto}
+.box h2,.summary h2{margin:0 0 12px;font-size:clamp(1.15rem,1rem + .6vw,1.4rem);color:var(--aud-primary);padding-bottom:8px;border-bottom:2px solid var(--aud-gold-soft)}
+.box h3{margin:14px 0 6px;font-size:1rem;color:var(--aud-primary)}
+.summary h2 .tag{font-size:.8rem!important;font-weight:500!important;color:var(--aud-gray-500)!important;margin-left:6px}
+.summary h2 select{font-size:.85rem!important}
+.muted{color:var(--aud-gray-500)}
+.small{font-size:.85rem}
+/* barra de ações */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar label{display:flex;align-items:center;gap:6px;margin:0;font-size:.85rem!important;font-weight:600;color:var(--aud-gray-700)!important}
+.toolbar select{width:auto!important}
+.pdf-msg{font-size:.85rem;margin-left:4px}
+/* botões: principal dourado com texto azul; demais brancos com borda azul */
+button{cursor:pointer;border:1px solid var(--aud-primary);background:var(--aud-white);color:var(--aud-primary);padding:8px 14px;border-radius:var(--aud-radius);font:inherit;font-size:.8125rem;font-weight:600;line-height:1.3}
+button:hover{background:var(--aud-primary);color:var(--aud-white)}
+button.primary{background:var(--aud-secondary);border-color:var(--aud-secondary);color:var(--aud-primary)}
+button.primary:hover{background:var(--aud-secondary-hover);border-color:var(--aud-secondary-hover);color:var(--aud-primary)}
+button.ghost{border-color:#c5cbd3;color:var(--aud-gray-700)}
+button.ghost:hover{background:var(--aud-gray-100);color:var(--aud-primary)}
+button.danger{color:var(--aud-danger-text);border-color:var(--bad-border);background:var(--aud-white)}
+button.danger:hover{background:#FFE3E6;color:var(--aud-danger-text)}
+:focus-visible{outline:3px solid var(--aud-secondary);outline-offset:2px}
+input[type=file]{display:none}
+/* tabelas: cabeçalho azul, total com linha dourada */
+table{border-collapse:collapse;width:100%;font-size:.875rem}
+th,td{padding:7px 9px;text-align:right;border-bottom:1px solid #e1e4e8;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child,td.left,th.left{text-align:left}
+thead th{background:var(--aud-primary);color:var(--aud-white);font-weight:600;font-size:.8rem}
+tfoot td{font-weight:700;background:var(--aud-gray-100);border-top:2px solid var(--aud-secondary)}
+tbody tr:hover td{background:#fbf3e8}
+/* cartão de cada cota / parcelamento */
+.card{background:var(--aud-white);border:0;border-radius:var(--aud-radius);margin-bottom:16px;overflow:hidden;box-shadow:0 .125rem .5rem rgba(18,42,79,.12)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--aud-white);padding:12px 18px;border-left:5px solid var(--aud-secondary);border-bottom:1px solid #e1e4e8;cursor:pointer}
+.card-head .title{font-weight:600;font-size:1rem;color:var(--aud-primary)}
+.card-head .title .tag{font-weight:500;color:var(--aud-gray-500);font-size:.8rem;margin-left:8px}
+.card-body{padding:18px;display:none}
+.card.open .card-body{display:block}
+.card-head .chev{transition:transform .15s;color:var(--aud-secondary)}
+.card.open .card-head .chev{transform:rotate(90deg)}
+.paste-box{margin-bottom:14px}
+.paste-box textarea{width:100%;min-height:90px;font-family:Consolas,monospace;font-size:.75rem;border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:10px;resize:vertical;background:#fff;color:var(--aud-text)}
+.paste-actions{display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap}
+.parse-msg{font-size:.85rem;color:var(--aud-success)}
+.parse-msg.err{color:var(--aud-danger-text)}
+fieldset{border:1px solid #e1e4e8;border-radius:var(--aud-radius);margin:0 0 14px;padding:12px 14px}
+legend{font-size:.8rem;font-weight:600;color:var(--aud-primary);padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 14px}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--aud-gray-700);margin-bottom:3px}
+input[type=text],input[type=date],input[type=number],select{width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);background:var(--aud-white);color:var(--aud-text)}
+select:focus,input:focus{outline:none;border-color:var(--aud-secondary)}
+input[readonly]{background:#F7F8FA}
+/* resultados (indicadores no estilo KPI) */
+.results{background:#F7F8FA;border:1px solid #e1e4e8;border-radius:var(--aud-radius);padding:14px 16px}
+.results h3{font-size:.95rem;margin:0 0 10px;color:var(--aud-primary)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px}
+.rgrid .item{background:var(--aud-white);border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary);border-radius:var(--aud-radius);padding:8px 10px}
+.rgrid .item .lbl{font-size:.75rem;color:var(--aud-gray-500)}
+.rgrid .item .val{font-size:1rem;font-weight:700;margin-top:2px;color:var(--aud-text)}
+.rgrid .item.hi{border-top-color:var(--aud-primary)}
+.rgrid .item.hi .val{color:var(--aud-primary)}
+/* notas e etiquetas */
+.note{font-size:.8rem;margin-top:10px;padding:8px 12px;border-radius:var(--aud-radius);background:#FFF8E6;border-left:4px solid var(--aud-warning);color:var(--aud-text)}
+.note.exact{background:#EAF6EC;border-left-color:var(--aud-success);color:#0b4f1a}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap;background:var(--aud-gray-100);color:var(--aud-primary);margin-left:6px}
+.badge.ok{background:var(--aud-success);color:var(--aud-white)}
+.badge.warn{background:var(--aud-warning);color:var(--aud-text)}
+.dif-ok{color:var(--aud-success);font-weight:700}
+.dif-bad{color:var(--aud-danger-text);font-weight:700}
+.conc-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 14px;margin-bottom:12px}
+/* roteiro (etapa 1) */
+ol.steps{padding-left:22px;margin:6px 0}
+ol.steps li{margin:8px 0}
+ul.cl{padding-left:0;margin:6px 0}
+ul.cl li{list-style:none;margin:6px 0}
+ul.cl label{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;font-weight:400;color:var(--aud-text)}
+.box table td,.box table th{white-space:normal;text-align:left}
+footer{display:none}
+@media (max-width:575px){html{font-size:15px}.box,.summary{padding:14px}}
+@media print{
+  header.top,nav.tabs,.toolbar,.card-head button,.paste-actions,.paste-box{display:none!important}
+  body{background:#fff}.box,.summary,.card{box-shadow:none}
+  section.panel{display:block!important}
+}
+/* modo visualização (usuário com permissão "Book: visualizar"): nada de importar, salvar ou editar */
+body.leitura .upl-grid,body.leitura .so-admin,body.leitura .lupa,body.leitura nav.tabs button[data-tab="lanc"],body.leitura nav.tabs button[data-tab="fontes"],
+body.leitura ul.cl,body.leitura #btnLimparChecklist,body.leitura .so-admin-box{display:none!important}
+body.leitura #bkBody input,body.leitura #bkBody textarea,body.leitura #bkBody select{pointer-events:none;background:transparent;border-color:transparent;resize:none;color:inherit;opacity:1;-webkit-appearance:none;appearance:none}
+.ro-aviso{display:none;margin:0 0 10px;padding:9px 12px;border-radius:8px;background:#EAF2FB;color:#1A3A6B;font-size:.9rem;border:1px solid #BBD3EE}
+body.leitura .ro-aviso{display:block}
+</style>
+<style>
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--aud-success);color:#fff}
+.pill.bad{background:#FFE3E6;color:var(--aud-danger-text);border:1px solid #f5b5bb}
+.pill.warn{background:var(--aud-warning);color:var(--aud-text)}
+.pill.info{background:var(--aud-info);color:var(--aud-primary)}
+.pill.cinza{background:var(--aud-gray-100);color:var(--aud-gray-500)}
+.msg{padding:10px 14px;border-radius:var(--aud-radius);margin:8px 0;font-size:.9rem;background:#fff;border:1px solid #e1e4e8;border-left:5px solid var(--aud-primary)}
+.msg.err{border-left-color:var(--aud-danger);background:#FFF1F2;color:var(--aud-danger-text)}
+.msg.warn{border-left-color:var(--aud-warning);background:#FFF8E6}
+.msg.ok{border-left-color:var(--aud-success);background:#EAF6EC;color:#0b4f1a}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.filters label{display:flex;flex-direction:column;font-size:.78rem;font-weight:600;color:var(--aud-gray-700);gap:3px;margin:0}
+.filters select,.filters input[type=text]{width:auto}
+.filters label.ck{flex-direction:row;align-items:center;gap:6px}
+.tscroll{overflow:auto;max-height:680px;border:1px solid #e1e4e8;border-radius:var(--aud-radius)}
+.tscroll thead th{position:sticky;top:0;z-index:2}
+/* Bens: filtros e cabeçalho da tabela ficam congelados ao descer pelos lançamentos */
+.box.bensMain{overflow:visible}
+.bensTopo{position:sticky;top:var(--navH,0px);z-index:6;background:var(--aud-white);margin:0 -20px;padding:8px 20px 10px}
+.bensMain .tscroll{overflow:visible;max-height:none}
+.bensMain .tscroll thead th{top:calc(var(--navH,0px) + var(--topoH,0px))}
+td.wrap,th.wrap{white-space:normal;text-align:left}
+td input[type=text]{padding:4px 6px;font-size:.82rem;min-width:110px}
+td input.obs{min-width:220px}
+td select{padding:3px 4px;font-size:.8rem;width:auto}
+/* Book compacto: usa a largura toda e cabe sem rolagem lateral */
+.wrap{max-width:none!important;padding:0 8px}
+#tab-conferencia .box{padding:12px 10px}
+table.bk{font-size:.72rem;table-layout:auto}
+table.bk th,table.bk td{padding:4px 4px}
+table.bk thead th{font-size:.68rem;white-space:normal;line-height:1.15;text-align:center}
+table.bk .dsc{width:112px;white-space:normal;line-height:1.2;overflow-wrap:anywhere}
+table.bk td input[type=text]{min-width:0;width:68px;padding:2px 4px;font-size:.72rem}
+table.bk td.obs{width:30%;min-width:175px}
+table.bk td.c-raz{width:22px;text-align:center}
+table.bk textarea.obs{width:100%;min-height:30px;font:inherit;font-size:.76rem;line-height:1.25;padding:3px 6px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);resize:vertical;background:#fff;color:var(--aud-text)}
+table.bk textarea.obs:focus{outline:none;border-color:var(--aud-secondary)}
+table.bk .auto{font-size:.66rem;line-height:1.2}
+table.bk .lupa{font-size:.9rem;padding:0 2px}
+/* status: a própria etiqueta abre as opções */
+select.stsel{appearance:none;-webkit-appearance:none;border:0;cursor:pointer;padding:3px 18px 3px 8px;border-radius:999px;font:inherit;font-size:.68rem;font-weight:600;width:auto;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23122A4F' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
+select.stsel.ok{background-color:var(--aud-success);color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23fff' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
+select.stsel.bad{background-color:#FFE3E6;color:var(--aud-danger-text);box-shadow:inset 0 0 0 1px #f5b5bb}
+select.stsel.warn{background-color:var(--aud-warning);color:var(--aud-text)}
+select.stsel.info{background-color:var(--aud-info);color:var(--aud-primary)}
+select.stsel.cinza{background-color:var(--aud-gray-100);color:var(--aud-gray-500)}
+select.stsel option{background:#fff;color:var(--aud-text);font-weight:400}
+select.stsel.manual{outline:2px dashed var(--aud-secondary);outline-offset:1px}
+tr.grp td{background:#EEF2F8;font-weight:700;color:var(--aud-primary)}
+tr.grp1 td{background:var(--aud-primary);color:#fff;font-weight:700}
+tr.grp0 td{background:#0C182B;color:#fff;font-weight:700;font-size:.95rem}
+tr.grp0 td .dsc{color:#CD9A56}
+.fech{margin-bottom:14px}
+.fech h2{margin-bottom:4px}
+.fech .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:10px}
+.fech .card{border:1px solid #e1e4e8;border-radius:var(--aud-radius);padding:12px 14px;background:#fff}
+.fech .card h3{font-size:.85rem;margin:0 0 8px;color:var(--aud-primary)}
+.fech .card table{width:100%;border-collapse:collapse;font-size:.85rem}
+.fech .card td{padding:3px 0;border-bottom:1px dashed #eceff3}
+.fech .card td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fech .card tr.tot td{font-weight:700;border-bottom:0;padding-top:6px}
+.fech .res{font-size:1.25rem;font-weight:700}
+.fech .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:700}
+.fech .pill.ok{background:#E3F4E7;color:var(--aud-success)}
+.fech .pill.bad{background:#FDE7E9;color:var(--aud-danger-text)}
+.fech .pill.info{background:#EEF2F8;color:var(--aud-primary)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-bottom:14px}
+.kpi{border-radius:var(--aud-radius);padding:12px 14px;background:#fff;border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary)}
+.kpi .t{font-size:.78rem;font-weight:600;color:var(--aud-gray-500)}
+.kpi .v{font-size:1.15rem;font-weight:700;color:var(--aud-primary)}
+.upl{border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:14px;background:#fff}
+.upl h3{margin:0 0 4px;font-size:1rem}
+.empty{padding:24px;text-align:center;color:var(--aud-gray-500)}
+.dbad{color:var(--aud-danger-text);font-weight:600}
+.dok{color:var(--aud-success);font-weight:600}
+.lupa{border:0;background:transparent;cursor:pointer;font-size:1rem;padding:2px 4px}
+.lupa:hover{background:var(--aud-gray-100);color:inherit}
+.auto{font-size:.72rem;color:var(--aud-gray-500)}
+</style>
+<script src="vendor/sheetjs/xlsx.full.min.js"></script>
+<script src="vendor/pdfjs/pdf.min.js"></script>
+<script src="hub-db.js?v=2"></script>
+<script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=1"></script>
+<style>
+.wrap{max-width:none!important;padding:0 8px}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:14px}
+.kpi .s{font-size:.72rem;color:var(--aud-gray-500)}
+.kpi.ok{border-top-color:var(--aud-success)}.kpi.bad{border-top-color:var(--aud-danger)}
+table.pc{font-size:.82rem}
+table.pc th,table.pc td{padding:5px 9px}
+table.pc td:first-child{white-space:normal;text-align:left}
+table.pc tr.sub td{background:#F7F8FA;font-weight:700;color:var(--aud-primary)}
+table.pc tr.res td{background:#FFF8E6;font-weight:700;color:var(--aud-primary);border-top:2px solid var(--aud-secondary)}
+table.pc tr.cmp td{font-weight:700}
+table.pc td.ex{font-size:.72rem;color:var(--aud-gray-500);white-space:normal;text-align:left;max-width:360px}
+table.pc .neg{color:var(--aud-danger-text)}
+.upl-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#EEF2F8;color:var(--aud-primary);border-radius:999px;padding:2px 4px 2px 10px;font-size:.74rem;font-weight:600}
+.chip button{border:0;background:transparent;padding:0 6px;font-size:.9rem;line-height:1;color:var(--aud-gray-500)}
+.chip button:hover{background:#fff;color:var(--aud-danger-text)}
+td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
+.passo{counter-reset:p}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="eyebrow">Audicon Contadores · Controladoria</div>
+  <h1>PIS/COFINS — Apuração × Guias × Contabilidade</h1>
+  <p>NHD Foods · Saldo final que as contas de PIS e COFINS a recolher deveriam ter no fim do mês, a partir da apuração e das guias, conferido com o balancete e o razão do Book de conciliação</p>
+</div></header>
+<nav class="tabs" role="navigation" aria-label="Etapas"><div class="wrap">
+  <span class="brand">PIS/COFINS</span>
+  <button type="button" class="toggler" id="navToggle" aria-expanded="false" aria-controls="menuAbas" aria-label="Alternar menu">☰ Menu</button>
+  <div class="menu" id="menuAbas" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="conferencia">1 · Saldo final</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="apuracao">2 · Apuração</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="guias">3 · Guias</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="razao">4 · Razão do mês</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="processo">5 · Como funciona</button>
+  </div>
+</div></nav>
+<main class="wrap">
+
+<div class="box">
+  <div class="upl" id="recImport" data-recolher="Importação (apuração e guias)">
+    <div class="upl-grid">
+      <div>
+        <h3>📊 Planilha de apuração</h3>
+        <div class="muted small">Planilha “Apuração Pis Cofins” do mês (.xlsx, aba <b>Apuração</b>). O mês vem do “PERÍODO” da planilha.</div>
+        <div class="paste-actions"><button class="primary" type="button" onclick="$('inApur').click()">Importar apuração (.xlsx)</button></div>
+        <div class="chips" id="chApur"></div>
+      </div>
+      <div>
+        <h3>🧾 Guias (DARF)</h3>
+        <div class="muted small">PDF dos DARFs de PIS (6912/8109) e COFINS (5856/2172). Lê período de apuração, valor e vencimento. Aceita vários arquivos.</div>
+        <div class="paste-actions"><button class="primary" type="button" onclick="$('inGuia').click()">Importar guias (PDF)</button></div>
+        <div class="chips" id="chGuia"></div>
+      </div>
+    </div>
+    <input type="file" id="inApur" accept=".xlsx,.xlsm,.xls" multiple onchange="importarApuracao([...this.files]);this.value=''">
+    <input type="file" id="inGuia" accept=".pdf" multiple onchange="importarGuias([...this.files]);this.value=''">
+    <div class="muted small" style="margin-top:10px">O balancete e o razão vêm do <b>Book de conciliação</b> (não precisa importar de novo aqui).</div>
+  </div>
+  <div class="toolbar" style="margin-top:12px">
+    <label>Mês:<select id="selMes" onchange="mesAtual=this.value;render()"></select></label>
+    <span class="muted small" id="stTopo"></span>
+    <span class="muted small" id="stNuvem" style="flex-basis:100%"></span>
+  </div>
+  <div id="msgs"></div>
+</div>
+
+<section class="panel active" id="tab-conferencia">
+  <div class="kpis" id="kpis"></div>
+  <div class="box">
+    <h2>Saldo final a pagar <span class="muted small" id="titConf"></span></h2>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Item</th><th>PIS</th><th>COFINS</th><th class="left">Como chega</th></tr></thead>
+      <tbody id="confBody"></tbody>
+    </table></div>
+    <div class="muted small" id="confInfo" style="margin-top:8px"></div>
+  </div>
+  <div class="box">
+    <h2>Movimento contábil do mês <span class="muted small">contas a recolher, pelo razão</span></h2>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Item</th><th>PIS</th><th>COFINS</th><th class="left">Conferência</th></tr></thead>
+      <tbody id="movBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-apuracao">
+  <div class="box">
+    <h2>Apuração do mês <span class="muted small" id="titApur"></span></h2>
+    <div id="apurBox"></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-guias">
+  <div class="box">
+    <h2>Guias por competência</h2>
+    <div class="muted small" style="margin-bottom:10px">Valor de cada DARF por período de apuração. Dá para digitar o valor quando não houver o PDF (aceita soma, ex.: <i>40.000,00 + 4.082,60</i>).</div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Competência</th><th>Apurado PIS</th><th>Guia PIS</th><th>Apurado COFINS</th><th>Guia COFINS</th><th class="left">Vencimento</th><th class="left">Arquivos</th></tr></thead>
+      <tbody id="guiaBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-razao">
+  <div class="box">
+    <h2>Razão do mês <span class="muted small" id="titRaz"></span></h2>
+    <div class="filters"><label>Conta<select id="fContaR" onchange="renderRazao()"></select></label></div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Data</th><th class="left">Histórico</th><th>Débito</th><th>Crédito</th><th class="left">Classificação</th></tr></thead>
+      <tbody id="razBody"></tbody><tfoot id="razFoot"></tfoot>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-processo">
+  <div class="box"><h2>Objetivo</h2><p>Saber, no fechamento do mês, <b>quanto deveria ficar</b> de saldo nas contas de <b>PIS a recolher</b> e <b>COFINS a recolher</b> e conferir com o balancete. A diferença aponta provisão errada, compensação faltando ou pagamento do mês anterior que não foi baixado.</p></div>
+  <div class="box"><h2>Passo a passo</h2><ol class="steps">
+    <li>No <b>Book de conciliação</b>, importar o balancete e o razão do mês (o mês escolhido lá abre aqui).</li>
+    <li>Aqui, importar a <b>planilha de apuração</b> do mês e os <b>PDFs dos DARFs</b>.</li>
+    <li>Na etapa <b>1 · Saldo final</b>, ver o saldo esperado de cada conta, o saldo do balancete e a diferença.</li>
+    <li>Se houver diferença, a parte <b>Movimento contábil do mês</b> e a etapa <b>4 · Razão do mês</b> mostram o que foi provisionado, compensado e pago.</li>
+  </ol></div>
+  <div class="box"><h2>Regras</h2><table><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
+    <tr><td>R1</td><td>Valor a pagar do mês = débitos − créditos − retenções − saldo credor anterior (linha TOTAL da planilha). Se der saldo credor, não há guia e o valor fica para o mês seguinte.</td></tr>
+    <tr><td>R2</td><td>A guia (DARF) da competência tem de ser igual ao valor a pagar apurado.</td></tr>
+    <tr><td>R3</td><td><b>Saldo final esperado</b> da conta a recolher = guia do mês (ou valor apurado, sem guia) + o que sobrou sem pagar do saldo anterior (saldo anterior − pagamentos lançados no mês).</td></tr>
+    <tr><td>R4</td><td>Razão da conta a recolher: crédito = provisão do débito; débito com contrapartida na conta a recuperar (1.1.03.1006 / 1.1.03.1007) ou histórico de compensação = compensação de créditos; demais débitos = pagamento.</td></tr>
+    <tr><td>R5</td><td>Diferença até R$ 0,01 é arredondamento.</td></tr>
+  </tbody></table></div>
+</section>
+
+</main>
+
+<script>
+// ===================== utilitários =====================
+const $ = id => document.getElementById(id);
+const LS = 'aud-piscofins-v1';
+const r2 = v => Math.round((v + Number.EPSILON) * 100) / 100;
+const fmt = v => (v === null || v === undefined || isNaN(v)) ? '—' : (Math.abs(v) < 0.005 ? 0 : v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+const dig = s => String(s ?? '').replace(/\D/g, '');
+const MES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESF = ['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const mesLbl = m => m ? MES[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4) : '';
+const fimMes = m => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm, 0); return y + '-' + String(mm).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const mesAnt = m => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm - 2, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+const br = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '';
+const ok = d => Math.abs(d) < 0.015;
+function lsGet(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+function msg(t, tipo){ const d = document.createElement('div'); d.className = 'msg ' + (tipo || ''); d.innerHTML = t; $('msgs').appendChild(d); setTimeout(() => d.remove(), tipo === 'err' ? 15000 : 9000); }
+function num(v){
+  if (v === null || v === undefined || v === '') return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim().replace(/\s|R\$/g, ''); if (!s || s === '-') return NaN;
+  const pc = s.endsWith('%'); if (pc) s = s.slice(0, -1);
+  if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(s); return pc ? n / 100 : n;
+}
+const nz = v => { const n = num(v); return isNaN(n) ? 0 : n; };
+const chk = (d, vazio) => isNaN(d) ? `<span class="muted small">${vazio || '—'}</span>` : ok(d) ? '<span class="dok">✓ OK</span>' : `<span class="dbad">dif. ${fmt(d)}</span>`;
+
+// ===================== contas =====================
+const TRIB = {
+  pis: { nome: 'PIS', pag: '2.1.15.1002', rec: '1.1.03.1006', cod: ['6912', '8109', '8301'] },
+  cof: { nome: 'COFINS', pag: '2.1.15.1003', rec: '1.1.03.1007', cod: ['5856', '2172', '2960'] }
+};
+const KS = ['pis', 'cof'];
+
+// ===================== dados (navegador + Firebase) =====================
+// dados.meses['aaaa-mm'] = { apur: { arquivo, em, per, pis:{deb,cred,ret,sc,total}, cof:{...}, linhas:{deb:[],cred:[],ess:[]} },
+//                            guias: { pis:{ valor, venc, numero, arquivos:[] , manual }, cof:{...} } }
+let dados = lsGet(LS, null);
+if (!dados || typeof dados.meses !== 'object') dados = { meses: {} };
+let mesAtual = '', balMes = null, balAnt = null, mesesBal = [];
+const mesD = m => dados.meses[m] = dados.meses[m] || {};
+
+const HUB = (() => { try { return window.parent !== window && window.parent.HubAuth ? window.parent.HubAuth : null; } catch(e){ return null; } })();
+const DOC_NUVEM = 'pis-cofins';
+let tNuvem = null;
+function stNuvem(t, tipo){ const el = $('stNuvem'); if (!el) return; el.textContent = t; el.style.color = tipo === 'err' ? 'var(--aud-danger-text)' : tipo === 'ok' ? 'var(--aud-success)' : ''; }
+function salvar(){ dados.savedAt = new Date().toISOString(); if (!lsSet(LS, dados)) msg('Não foi possível salvar neste navegador (espaço cheio).', 'err'); agendarNuvem(); }
+function agendarNuvem(){
+  if (!HUB || HUB.papel !== 'admin') return;
+  clearTimeout(tNuvem); stNuvem('☁ Salvando no Firebase…');
+  tNuvem = setTimeout(async () => {
+    try { await HUB.gravarDoc(DOC_NUVEM, dados); stNuvem('☁ Base salva no Firebase às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.', 'ok'); }
+    catch(e){ stNuvem('⚠ Não foi possível salvar no Firebase: ' + (e && e.code === 'permission-denied' ? 'o seu acesso não permite salvar' : (e && e.message) || e) + ' (os dados continuam neste navegador).', 'err'); }
+  }, 2500);
+}
+async function carregarNuvem(){
+  if (!HUB){ stNuvem('Base guardada neste navegador (abra pelo Hub para salvar no Firebase).'); return; }
+  try {
+    const d = await HUB.lerDoc(DOC_NUVEM);
+    if (d && d.meses && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){ dados = d; lsSet(LS, dados); stNuvem('☁ Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok'); }
+    else if (dados.savedAt && (!d || (d.savedAt || '') < dados.savedAt)) agendarNuvem();
+    else if (d) stNuvem('☁ Base em dia com o Firebase.', 'ok');
+  } catch(e){ stNuvem('⚠ Não foi possível ler a base no Firebase: ' + ((e && e.message) || e) + ' — usando a deste navegador.', 'err'); }
+}
+let assinBase = '';
+async function assinaturaBase(){
+  if (!window.HubDB) return '';
+  try {
+    const i = await HubDB.getMeta('razao'), ks = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).sort(), partes = [];
+    for (const k of ks){ const b = await HubDB.getMeta(k); const c = (b && b.contas) || {}; partes.push(k + ':' + Object.keys(c).length + ':' + Math.round(Object.values(c).reduce((a, x) => a + Math.abs(x.sf || 0) + Math.abs(x.d || 0), 0))); }
+    return JSON.stringify([((i && i.arquivos) || []).map(a => a.nome + '@' + a.em), partes]);
+  } catch(e){ return ''; }
+}
+async function vigiarBase(){ const a = await assinaturaBase(); if (assinBase && a && a !== assinBase){ assinBase = a; await render(); msg('Razão/balancete novo no Book de conciliação: valores atualizados.', 'ok'); } else if (a) assinBase = a; }
+setInterval(vigiarBase, 15000);
+window.addEventListener('focus', vigiarBase);
+
+// ===================== planilha de apuração =====================
+function lerApuracao(wb){
+  const sn = wb.SheetNames.find(s => norm(s) === 'APURACAO') || wb.SheetNames.find(s => /APURACAO/.test(norm(s)));
+  if (!sn) throw new Error('não encontrei a aba “Apuração”');
+  const R = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: null, blankrows: true });
+  let per = '';
+  for (let i = 0; i < Math.min(10, R.length); i++){ const t = String((R[i] || [])[0] ?? ''); const m = t.match(/(\d{2})\s*\/\s*(\d{4})/); if (/PERIODO/.test(norm(t)) && m){ per = m[2] + '-' + m[1]; break; } }
+  if (!per) throw new Error('não achei o “PERÍODO: mm/aaaa” no topo da aba Apuração');
+  const acha = (re, de) => { for (let i = de || 0; i < R.length; i++) if (re.test(norm((R[i] || [])[0]))) return i; return -1; };
+  const blocos = [['deb', /^COMPOSICAO DO DEBITO$/], ['cred', /^COMPOSICAO DO CREDITO$/], ['ess', /^CONCEITO ESTENDIDO/]];
+  const linhas = {};
+  blocos.forEach(([k, re]) => {
+    const ini = acha(re); linhas[k] = []; if (ini < 0) return;
+    const fim = acha(/^TOTAL COMPOSICAO/, ini + 1);
+    for (let i = ini + 2; i < (fim < 0 ? R.length : fim); i++){
+      const r = R[i] || [], desc = String(r[2] ?? '').trim(), conta = String(r[0] ?? '').trim();
+      const base = nz(r[3]), pis = nz(r[5]), cof = nz(r[7]);
+      if (!base && !pis && !cof) continue;
+      linhas[k].push({ conta: conta === '0' ? '' : conta, desc: desc === '-' || desc === '0' ? '' : desc, base: r2(base), pis: r2(pis), cof: r2(cof) });
+    }
+    if (fim >= 0) linhas[k + 'Tot'] = { pis: r2(nz((R[fim] || [])[5])), cof: r2(nz((R[fim] || [])[7])) };
+  });
+  // quadro-resumo: PIS na coluna C/D e COFINS na coluna F/H (rótulos “SALDO CREDOR…”, “TOTAL RETENÇÕES (+)”, “CRÉDITO (+)”, “DÉBITO (-)”, “TOTAL”)
+  const res = { pis: { sc: 0, ret: 0, cred: NaN, deb: NaN, total: NaN }, cof: { sc: 0, ret: 0, cred: NaN, deb: NaN, total: NaN } };
+  const pega = (lbl, v, o) => {
+    if (/^SALDO CREDOR/.test(lbl)) o.sc = r2(o.sc + nz(v));
+    else if (/^TOTAL RETENC/.test(lbl)) o.ret = r2(nz(v));
+    else if (/^CREDITO \(\+\)/.test(lbl)) o.cred = r2(nz(v));
+    else if (/^DEBITO \(-\)/.test(lbl)) o.deb = r2(nz(v));
+    else if (lbl === 'TOTAL' && isNaN(o.total)) o.total = r2(nz(v));
+  };
+  const iRes = acha(/^TOTAL COMPOSICAO DO CREDITO/, Math.max(0, acha(/^COMPOSICAO DO CREDITO$/)));
+  for (let i = Math.max(0, iRes); i < Math.min(R.length, iRes + 30); i++){
+    const r = R[i] || [];
+    pega(norm(r[2]), r[3], res.pis);
+    pega(norm(r[5]), r[7], res.cof);
+  }
+  KS.forEach(k => { const o = res[k]; if (isNaN(o.cred)) o.cred = (linhas.credTot || {})[k] || 0; if (isNaN(o.deb)) o.deb = (linhas.debTot || {})[k] || 0; if (isNaN(o.total)) o.total = r2(o.sc + o.ret + o.cred - o.deb); });
+  return { per, pis: res.pis, cof: res.cof, linhas };
+}
+async function importarApuracao(files){
+  for (const f of files){
+    try {
+      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+      const a = lerApuracao(wb);
+      mesD(a.per).apur = Object.assign(a, { arquivo: f.name, em: new Date().toISOString() });
+      msg(`“${esc(f.name)}”: apuração de ${mesLbl(a.per)} importada — a pagar PIS ${fmt(Math.max(0, -a.pis.total))} · COFINS ${fmt(Math.max(0, -a.cof.total))}.`, 'ok');
+      mesAtual = a.per;
+    } catch(e){ msg('Erro ao importar “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
+  }
+  salvar(); await render();
+}
+function tirarApuracao(m){ if (!dados.meses[m] || !confirm('Remover a apuração de ' + mesLbl(m) + '?')) return; delete dados.meses[m].apur; salvar(); render(); }
+
+// ===================== guias (DARF em PDF) =====================
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+async function textoPdf(f){
+  const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let t = '';
+  for (let p = 1; p <= pdf.numPages; p++){ const c = await (await pdf.getPage(p)).getTextContent(); t += c.items.map(i => i.str).join(' ') + '\n'; }
+  return t;
+}
+function lerDarf(t, nome){
+  const T = norm(t), out = [];
+  // competência: "PA:08/2026" ou "agosto/2026"
+  let per = ''; let m = T.match(/PA\s*:?\s*(\d{2})\/(\d{4})/);
+  if (m) per = m[2] + '-' + m[1];
+  else { m = T.match(new RegExp('(' + MESF.map(x => x.toUpperCase()).join('|') + ')\\s*/\\s*(\\d{4})')); if (m) per = m[2] + '-' + String(MESF.indexOf(m[1].toLowerCase()) + 1).padStart(2, '0'); }
+  m = T.match(/VENCIMENTO\s*:?\s*(\d{2})\/(\d{2})\/(\d{4})/) || T.match(/PAGAR (?:ESTE DOCUMENTO )?ATE\s*:?\s*(\d{2})\/(\d{2})\/(\d{4})/);
+  const venc = m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+  m = T.match(/(\d{2}\.\d{2}\.\d{5}\.\d{7}-\d)/); const numero = m ? m[1] : '';
+  // composição: "6912 PIS - NAO CUMULATIVO ... 44.082,60 44.082,60" (principal e total)
+  const cods = KS.flatMap(k => TRIB[k].cod.map(c => [c, k]));
+  cods.forEach(([c, k]) => {
+    const re = new RegExp('\\b' + c + '\\b\\s+[A-Z].{2,120}?(?<![\\d.,])((?:\\d{1,3}(?:\\.\\d{3})*|\\d+),\\d{2})(?:\\s+((?:\\d{1,3}(?:\\.\\d{3})*|\\d+),\\d{2}))?(?:\\s+((?:\\d{1,3}(?:\\.\\d{3})*|\\d+),\\d{2}))?(?:\\s+((?:\\d{1,3}(?:\\.\\d{3})*|\\d+),\\d{2}))?', 'g');
+    let x; while ((x = re.exec(T))){ const vs = x.slice(1).filter(Boolean).map(num); out.push({ k, cod: c, valor: r2(Math.max(...vs)) }); break; }
+  });
+  if (!out.length){
+    m = T.match(/VALOR TOTAL DO DOCUMENTO\s*((?:\d{1,3}(?:\.\d{3})*|\d+),\d{2})/) || T.match(/VALOR\s*:\s*((?:\d{1,3}(?:\.\d{3})*|\d+),\d{2})/);
+    const k = /COFINS/.test(T) || /COFINS/i.test(nome) ? 'cof' : (/PIS/.test(T) || /PIS/i.test(nome) ? 'pis' : '');
+    if (m && k) out.push({ k, cod: '', valor: r2(num(m[1])) });
+  }
+  return { per, venc, numero, itens: out };
+}
+async function importarGuias(files){
+  if (!window.pdfjsLib){ msg('Leitor de PDF não carregou.', 'err'); return; }
+  for (const f of files){
+    try {
+      const g = lerDarf(await textoPdf(f), f.name);
+      if (!g.per) throw new Error('não achei o período de apuração no DARF');
+      if (!g.itens.length) throw new Error('não achei código de PIS/COFINS nem valor no DARF');
+      const G = mesD(g.per).guias = mesD(g.per).guias || {};
+      g.itens.forEach(it => {
+        const o = G[it.k] = G[it.k] || { valor: 0, arquivos: [] };
+        if (o.manual){ o.valor = 0; o.arquivos = []; delete o.manual; }
+        o.arquivos = o.arquivos.filter(a => a.nome !== f.name);   // o mesmo arquivo de novo substitui
+        o.arquivos.push({ nome: f.name, valor: it.valor, cod: it.cod, venc: g.venc, numero: g.numero });
+        o.valor = r2(o.arquivos.reduce((a, x) => a + x.valor, 0)); o.venc = g.venc || o.venc || '';
+      });
+      msg(`“${esc(f.name)}”: ${g.itens.map(i => TRIB[i.k].nome + ' ' + fmt(i.valor)).join(' · ')} — competência ${mesLbl(g.per)}${g.venc ? ', vence ' + br(g.venc) : ''}.`, 'ok');
+    } catch(e){ msg('Erro ao ler “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
+  }
+  salvar(); await render();
+}
+function tirarGuia(m, k, nome){
+  const o = ((dados.meses[m] || {}).guias || {})[k]; if (!o) return;
+  o.arquivos = (o.arquivos || []).filter(a => a.nome !== nome); o.valor = r2(o.arquivos.reduce((a, x) => a + x.valor, 0));
+  if (!o.arquivos.length) delete dados.meses[m].guias[k];
+  salvar(); render();
+}
+function setGuia(m, k, txt){
+  const partes = String(txt).split('+').map(num).filter(x => !isNaN(x));
+  const G = mesD(m).guias = mesD(m).guias || {};
+  if (!partes.length){ delete G[k]; } else G[k] = { valor: r2(partes.reduce((a, x) => a + x, 0)), arquivos: [], manual: true, venc: (G[k] || {}).venc || '' };
+  salvar(); render();
+}
+const guiaV = (m, k) => { const o = (((dados.meses[m] || {}).guias) || {})[k]; return o ? o.valor : NaN; };
+const apurV = (m, k) => { const a = (dados.meses[m] || {}).apur; return a ? a[k] : null; };
+
+// ===================== balancete e razão (Book) =====================
+async function carregarMeses(){
+  mesesBal = [];
+  try { if (window.HubDB) mesesBal = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10)).sort(); } catch(e){}
+  const todos = [...new Set(mesesBal.concat(Object.keys(dados.meses)))].sort();
+  const mHub = window.mesDoHub ? mesDoHub() : '';
+  if (mHub && !mesAtual) mesAtual = mHub;
+  if (!mesAtual) mesAtual = todos[todos.length - 1] || new Date().toISOString().slice(0, 7);
+  if (!todos.includes(mesAtual)) todos.push(mesAtual);
+  todos.sort();
+  $('selMes').innerHTML = todos.slice().reverse().map(m => `<option value="${m}" ${m === mesAtual ? 'selected' : ''}>${mesLbl(m)}${mesesBal.includes(m) ? '' : ' (sem balancete)'}</option>`).join('');
+}
+async function getBal(m){ try { return window.HubDB ? await HubDB.getMeta('balancete:' + m) : null; } catch(e){ return null; } }
+let RAZ = {};   // conta -> lançamentos do mês
+async function carregarRazao(m){
+  RAZ = {}; if (!window.HubDB) return;
+  let info = null; try { info = await HubDB.getMeta('razao'); } catch(e){}
+  if (!info || !info.agg || !info.agg[m]) return;
+  for (const k of KS) for (const c of [TRIB[k].pag, TRIB[k].rec]){
+    if (!info.agg[m][c]) continue;
+    try { RAZ[c] = await HubDB.lancamentosConta(c, [m]); } catch(e){}
+  }
+  RAZ.__ok = true;
+}
+// débito na conta a recolher: compensação (contrapartida na conta a recuperar / histórico) ou pagamento
+function classe(l, k){
+  if (l.cred && !l.deb) return 'prov';
+  const cp = dig(l.cp), rec = dig(TRIB[k].rec), h = norm(l.hist);
+  if ((cp && (cp === rec || rec.endsWith(cp) || cp.endsWith(rec))) || /COMPENS|CREDITO|CRED\.? ?(PIS|COFINS)|TRANSF/.test(h)) return 'comp';
+  return 'pg';
+}
+const CLS = { prov: 'Provisão (crédito)', comp: 'Compensação de créditos', pg: 'Pagamento' };
+
+// ===================== cálculo =====================
+function calcular(m){
+  const C = {};
+  const bc = (b, c) => b && b.contas ? b.contas[c] : null;
+  KS.forEach(k => {
+    const t = TRIB[k], a = apurV(m, k), aAnt = apurV(mesAnt(m), k);
+    const aPagar = a ? r2(Math.max(0, -a.total)) : NaN, scFinal = a ? r2(Math.max(0, a.total)) : NaN;
+    const guia = guiaV(m, k), guiaAnt = guiaV(mesAnt(m), k), aPagarAnt = aAnt ? r2(Math.max(0, -aAnt.total)) : NaN;
+    const b = bc(balMes, t.pag), br_ = bc(balMes, t.rec);
+    // saldos do passivo com sinal invertido (credor = positivo)
+    const sa = b ? r2(-b.sa) : NaN, sf = b ? r2(-b.sf) : (balMes ? 0 : NaN);
+    const L = RAZ[t.pag] || [];
+    const mov = { prov: 0, comp: 0, pg: 0, n: L.length };
+    L.forEach(l => { const c = classe(l, k); if (c === 'prov') mov.prov += l.cred - l.deb; else mov[c] += l.deb - l.cred; });
+    Object.keys(mov).forEach(x => mov[x] = r2(mov[x]));
+    const temRaz = !!RAZ.__ok;
+    // o que sobrou do saldo anterior sem pagar: pelo razão (pagamentos lançados) ou, sem razão, pelo total de débitos do balancete
+    const pagos = temRaz ? mov.pg : (b ? r2(b.d) : NaN);
+    // só conta o que ficou SEM pagar (pagamento a mais, ex.: provisão complementar do mês anterior lançada neste mês, não reduz o esperado)
+    const residuo = isNaN(sa) ? 0 : r2(Math.max(0, sa - (isNaN(pagos) ? 0 : pagos)));
+    const base = !isNaN(guia) ? guia : aPagar;
+    const esperado = isNaN(base) ? NaN : r2(base + residuo);
+    C[k] = { a, aPagar, scFinal, guia, guiaAnt, aPagarAnt, sa, sf, mov, temRaz, residuo, esperado, dif: isNaN(esperado) || isNaN(sf) ? NaN : r2(sf - esperado),
+      dGuia: isNaN(guia) || isNaN(aPagar) ? NaN : r2(guia - aPagar),
+      dPgAnt: temRaz && (mov.pg || !isNaN(guiaAnt)) ? r2(mov.pg - (!isNaN(guiaAnt) ? guiaAnt : (isNaN(aPagarAnt) ? sa : aPagarAnt))) : NaN,
+      rec: br_ ? { sa: r2(br_.sa), sf: r2(br_.sf), d: r2(br_.d), c: r2(br_.c) } : null };
+  });
+  return C;
+}
+
+// ===================== telas =====================
+async function render(){
+  await carregarMeses();
+  balMes = await getBal(mesAtual); await carregarRazao(mesAtual);
+  const C = calcular(mesAtual), md = dados.meses[mesAtual] || {};
+  $('stTopo').textContent = (balMes ? 'Balancete de ' + mesLbl(mesAtual) + ' carregado do Book' : 'Sem balancete de ' + mesLbl(mesAtual) + ' no Book') + ' · ' + (RAZ.__ok ? 'razão do mês carregado' : 'sem razão do mês') + '.';
+  $('titConf').textContent = '· ' + mesLbl(mesAtual);
+  renderChips(); renderKpis(C, md); renderConf(C, md); renderMov(C); renderApur(md); renderGuias(); renderRazao();
+}
+function renderChips(){
+  const ms = Object.keys(dados.meses).sort().reverse();
+  $('chApur').innerHTML = ms.filter(m => dados.meses[m].apur).map(m => `<span class="chip" title="${esc(dados.meses[m].apur.arquivo)}">${mesLbl(m)} · ${esc(dados.meses[m].apur.arquivo)}<button type="button" onclick="tirarApuracao('${m}')" aria-label="Remover">×</button></span>`).join('') || '<span class="muted small">Nenhuma apuração importada.</span>';
+  const gs = [];
+  ms.forEach(m => KS.forEach(k => { const o = ((dados.meses[m].guias) || {})[k]; if (o) (o.arquivos || []).forEach(a => gs.push(`<span class="chip" title="${esc(a.nome)}">${mesLbl(m)} · ${TRIB[k].nome} ${fmt(a.valor)}<button type="button" onclick="tirarGuia('${m}','${k}',${esc(JSON.stringify(a.nome))})" aria-label="Remover">×</button></span>`)); }));
+  $('chGuia').innerHTML = gs.join('') || '<span class="muted small">Nenhuma guia importada.</span>';
+}
+function renderKpis(C){
+  const k = x => C[x];
+  const card = (t, v, s, cls) => `<div class="kpi ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
+  $('kpis').innerHTML = KS.map(x => card(TRIB[x].nome + ' · saldo final esperado', fmt(k(x).esperado), 'conta ' + TRIB[x].pag)).join('') +
+    KS.map(x => card(TRIB[x].nome + ' · no balancete', fmt(k(x).sf), isNaN(k(x).dif) ? 'falta apuração/guia ou balancete' : ok(k(x).dif) ? '✓ conciliado' : 'diferença ' + fmt(k(x).dif), isNaN(k(x).dif) ? '' : ok(k(x).dif) ? 'ok' : 'bad')).join('');
+}
+function linha(lbl, vp, vc, ex, cls){ return `<tr class="${cls || ''}"><td>${lbl}</td><td>${vp}</td><td>${vc}</td><td class="ex">${ex || ''}</td></tr>`; }
+function renderConf(C, md){
+  const P = C.pis, F = C.cof, v = x => fmt(x);
+  let h = '';
+  h += linha('<b>Apuração do mês</b>', '', '', md.apur ? 'Planilha “' + esc(md.apur.arquivo) + '”' : '<span class="dbad">Importe a planilha de apuração do mês.</span>', 'sub');
+  h += linha('Débitos apurados', v(P.a ? P.a.deb : NaN), v(F.a ? F.a.deb : NaN), 'Total da composição do débito');
+  h += linha('(−) Créditos do mês', v(P.a ? P.a.cred : NaN), v(F.a ? F.a.cred : NaN), 'Total da composição do crédito');
+  h += linha('(−) Retenções', v(P.a ? P.a.ret : NaN), v(F.a ? F.a.ret : NaN), '');
+  h += linha('(−) Saldo credor anterior', v(P.a ? P.a.sc : NaN), v(F.a ? F.a.sc : NaN), 'Saldo credor trazido de meses anteriores');
+  h += linha('= Valor a pagar apurado', v(P.aPagar), v(F.aPagar), (P.scFinal > 0 || F.scFinal > 0) ? 'Saldo credor para o mês seguinte: PIS ' + v(P.scFinal) + ' · COFINS ' + v(F.scFinal) : 'Linha TOTAL da planilha', 'cmp');
+  h += linha('Guia (DARF) da competência', v(P.guia), v(F.guia), 'PIS ' + chk(P.dGuia, 'sem guia') + ' · COFINS ' + chk(F.dGuia, 'sem guia') + ' (guia × apurado)', 'cmp');
+  h += linha('<b>Saldo da conta a recolher</b>', '', '', 'Balancete do Book · PIS ' + TRIB.pis.pag + ' · COFINS ' + TRIB.cof.pag, 'sub');
+  h += linha('Saldo anterior (competência anterior)', v(P.sa), v(F.sa), 'Deve ser a guia de ' + mesLbl(mesAnt(mesAtual)) + ' (paga neste mês): PIS ' + v(P.guiaAnt) + ' · COFINS ' + v(F.guiaAnt));
+  h += linha('(−) Pagamentos lançados no mês', v(P.temRaz ? P.mov.pg : NaN), v(F.temRaz ? F.mov.pg : NaN), P.temRaz ? 'Débitos do razão que não são compensação' : 'Sem razão do mês: considera os débitos do balancete');
+  h += linha('= Sobra do saldo anterior', v(P.residuo), v(F.residuo), 'O que ficou sem pagar do mês anterior (o normal é zero; pagamento a mais não reduz o esperado)');
+  h += linha('(+) Guia do mês (ou valor apurado)', v(!isNaN(P.guia) ? P.guia : P.aPagar), v(!isNaN(F.guia) ? F.guia : F.aPagar), '');
+  h += linha('= <b>Saldo final esperado</b>', v(P.esperado), v(F.esperado), 'É o que a conta a recolher deveria mostrar no fim de ' + mesLbl(mesAtual), 'res');
+  h += linha('Saldo final no balancete', v(P.sf), v(F.sf), balMes ? '' : '<span class="dbad">Sem balancete do mês no Book.</span>', 'cmp');
+  h += linha('Diferença (balancete − esperado)', chk(P.dif), chk(F.dif), (isNaN(P.dif) && isNaN(F.dif)) ? '' : 'Positivo = balancete com saldo a mais do que deveria', 'cmp');
+  $('confBody').innerHTML = h;
+  const rec = KS.map(k => C[k].rec ? `${TRIB[k].nome} a recuperar (${TRIB[k].rec}): saldo ${fmt(C[k].rec.sf)}${C[k].scFinal > 0 ? ' · esperado ' + fmt(C[k].scFinal) + ' (saldo credor)' : ''}` : '').filter(Boolean);
+  $('confInfo').innerHTML = rec.length ? 'Contas a recuperar no balancete: ' + rec.map(esc).join(' · ') + '.' : '';
+}
+function renderMov(C){
+  const P = C.pis, F = C.cof, v = x => fmt(x);
+  if (!RAZ.__ok){ $('movBody').innerHTML = `<tr><td colspan="4" class="empty">Sem razão de ${mesLbl(mesAtual)} no Book de conciliação.</td></tr>`; return; }
+  // provisão bruta (débito apurado, com compensação na própria conta) ou líquida (só o valor a pagar)
+  const dProv = c => { if (!c.a) return NaN; const d1 = r2(c.mov.prov - c.a.deb), d2 = r2(c.mov.prov - c.aPagar); return ok(d1) || ok(d2) ? 0 : d2; };
+  const dComp = c => (!c.a || !c.mov.comp) ? NaN : r2(c.mov.comp - r2(c.a.cred + c.a.ret + c.a.sc));
+  let h = '';
+  h += linha('Saldo anterior', v(P.sa), v(F.sa), '');
+  h += linha('(+) Provisões (créditos)', v(P.mov.prov), v(F.mov.prov), 'PIS ' + chk(dProv(P), 'sem apuração') + ' · COFINS ' + chk(dProv(F), 'sem apuração') + ' (provisão × valor a pagar do mês; aceita também a provisão bruta = débito apurado)');
+  h += linha('(−) Compensações de créditos', v(P.mov.comp), v(F.mov.comp), 'PIS ' + chk(dComp(P), 'sem compensação nesta conta') + ' · COFINS ' + chk(dComp(F), 'sem compensação nesta conta') + ' (créditos + retenções + saldo credor)');
+  h += linha('(−) Pagamentos', v(P.mov.pg), v(F.mov.pg), 'PIS ' + chk(P.dPgAnt, '—') + ' · COFINS ' + chk(F.dPgAnt, '—') + ' (pagamento × guia de ' + mesLbl(mesAnt(mesAtual)) + ', ou saldo anterior sem a guia)');
+  const fimP = r2(P.sa + P.mov.prov - P.mov.comp - P.mov.pg), fimF = r2(F.sa + F.mov.prov - F.mov.comp - F.mov.pg);
+  h += linha('= Saldo final pelo razão', v(fimP), v(fimF), 'Balancete: PIS ' + chk(r2(fimP - P.sf)) + ' · COFINS ' + chk(r2(fimF - F.sf)), 'res');
+  $('movBody').innerHTML = h;
+}
+function renderApur(md){
+  $('titApur').textContent = '· ' + mesLbl(mesAtual);
+  const a = md.apur;
+  if (!a){ $('apurBox').innerHTML = `<div class="empty">Sem planilha de apuração de ${mesLbl(mesAtual)}. Importe no topo.</div>`; return; }
+  const tab = (tit, L, tot) => `<h3>${tit}</h3><div class="tscroll" style="max-height:none"><table class="pc"><thead><tr><th>Conta</th><th class="left">Descrição</th><th>Base</th><th>PIS</th><th>COFINS</th></tr></thead><tbody>` +
+    L.map(l => `<tr><td>${esc(l.conta)}</td><td class="left">${esc(l.desc)}</td><td>${fmt(l.base)}</td><td class="${l.pis < 0 ? 'neg' : ''}">${fmt(l.pis)}</td><td class="${l.cof < 0 ? 'neg' : ''}">${fmt(l.cof)}</td></tr>`).join('') +
+    (tot ? `</tbody><tfoot><tr><td colspan="3">Total</td><td>${fmt(tot.pis)}</td><td>${fmt(tot.cof)}</td></tr></tfoot>` : '</tbody>') + '</table></div>';
+  const L = a.linhas || {};
+  $('apurBox').innerHTML = `<div class="muted small">Planilha “${esc(a.arquivo)}”, importada em ${new Date(a.em).toLocaleString('pt-BR')}.</div>` +
+    tab('Composição do débito', L.deb || [], L.debTot) + tab('Composição do crédito', L.cred || [], L.credTot) + ((L.ess || []).length ? tab('Conceito estendido de essencialidade (já somado nos créditos)', L.ess, L.essTot) : '');
+}
+function renderGuias(){
+  const ms = [...new Set(Object.keys(dados.meses).concat([mesAtual]))].sort().reverse();
+  $('guiaBody').innerHTML = ms.map(m => {
+    const G = (dados.meses[m] || {}).guias || {}, ap = k => { const a = apurV(m, k); return a ? r2(Math.max(0, -a.total)) : NaN; };
+    const cel = k => { const g = G[k], d = g && !isNaN(ap(k)) ? r2(g.valor - ap(k)) : NaN;
+      return `<td><input type="text" class="gv" value="${g ? fmt(g.valor) : ''}" placeholder="—" onchange="setGuia('${m}','${k}',this.value)" title="${g && g.manual ? 'digitado' : 'do PDF'}"> ${isNaN(d) ? '' : ok(d) ? '<span class="dok">✓</span>' : '<span class="dbad">' + fmt(d) + '</span>'}</td>`; };
+    const arqs = KS.flatMap(k => ((G[k] || {}).arquivos || []).map(a => esc(a.nome))).join('<br>');
+    const venc = KS.map(k => (G[k] || {}).venc).filter(Boolean)[0] || '';
+    return `<tr${m === mesAtual ? ' style="background:#FFF8E6"' : ''}><td>${mesLbl(m)}</td><td>${fmt(ap('pis'))}</td>${cel('pis')}<td>${fmt(ap('cof'))}</td>${cel('cof')}<td class="left">${br(venc)}</td><td class="left small">${arqs}</td></tr>`;
+  }).join('');
+}
+function renderRazao(){
+  $('titRaz').textContent = '· ' + mesLbl(mesAtual);
+  const sel = $('fContaR'), atual = sel.value || TRIB.pis.pag;
+  const ops = KS.flatMap(k => [[TRIB[k].pag, TRIB[k].nome + ' a recolher'], [TRIB[k].rec, TRIB[k].nome + ' a recuperar']]);
+  sel.innerHTML = ops.map(([c, n]) => `<option value="${c}" ${c === atual ? 'selected' : ''}>${c} · ${n}${RAZ[c] ? ' (' + RAZ[c].length + ')' : ''}</option>`).join('');
+  const c = sel.value, k = KS.find(x => TRIB[x].pag === c || TRIB[x].rec === c), L = RAZ[c] || [];
+  if (!L.length){ $('razBody').innerHTML = `<tr><td colspan="5" class="empty">${RAZ.__ok ? 'Sem lançamentos desta conta no mês.' : 'Sem razão de ' + mesLbl(mesAtual) + ' no Book de conciliação.'}</td></tr>`; $('razFoot').innerHTML = ''; return; }
+  $('razBody').innerHTML = L.map(l => `<tr><td>${br(l.data)}</td><td class="left wrap" style="max-width:520px">${esc(l.hist)}${l.cp ? ' <span class="muted small">· contrap. ' + esc(l.cp) + '</span>' : ''}</td><td>${l.deb ? fmt(l.deb) : ''}</td><td>${l.cred ? fmt(l.cred) : ''}</td><td class="left">${c === TRIB[k].pag ? CLS[classe(l, k)] : ''}</td></tr>`).join('');
+  const D = r2(L.reduce((a, l) => a + l.deb, 0)), Cr = r2(L.reduce((a, l) => a + l.cred, 0));
+  $('razFoot').innerHTML = `<tr><td colspan="2">Total (${L.length} lançamentos)</td><td>${fmt(D)}</td><td>${fmt(Cr)}</td><td></td></tr>`;
+}
+
+(async () => { await carregarNuvem(); await render(); assinBase = await assinaturaBase(); })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => { mesAtual = m; render(); });   // mês trocado no Book
+</script>
+
+<script>
+/* etapas (mesmo comportamento dos outros painéis) */
+(function(){
+  var KEY = location.pathname.split('/').pop() + ':etapa';
+  function abrir(t){
+    document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.setAttribute('aria-selected', b.getAttribute('data-tab') === t ? 'true' : 'false'); });
+    document.querySelectorAll('section.panel').forEach(function(s){ s.classList.toggle('active', s.id === 'tab-' + t); });
+    try { sessionStorage.setItem(KEY, t); } catch(e){}
+    var m = document.getElementById('menuAbas'); if (m) m.classList.remove('open');
+  }
+  window.abrirEtapa = abrir;
+  document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.addEventListener('click', function(){ abrir(b.getAttribute('data-tab')); }); });
+  var tg = document.getElementById('navToggle');
+  if (tg) tg.addEventListener('click', function(){ var m = document.getElementById('menuAbas'); var o = m.classList.toggle('open'); tg.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+  var salvo = null; try { salvo = sessionStorage.getItem(KEY); } catch(e){}
+  abrir(salvo || 'conferencia');
+})();
+</script>
+</body>
+</html>
