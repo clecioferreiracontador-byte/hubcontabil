@@ -61,9 +61,13 @@ html,body{height:100%;background:var(--navy);color:var(--white);font-family:Cali
 .conc-tab[data-p="book"]:hover{background:var(--g2);border-color:var(--g2)}
 .conc-tab[data-p="book"]:not(.active){opacity:.82}
 .conc-tab[data-p="book"].active{background:var(--g2);color:var(--navy);box-shadow:0 0 0 2px rgba(232,201,106,.35)}
-.conc-open{margin-left:auto;text-decoration:none;font-size:13px}
+.conc-area{position:relative}
+/* "Abrir em nova aba" no canto superior direito do cabeçalho azul de cada conciliador */
+.conc-open{position:absolute;top:10px;right:26px;z-index:5;text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(205,154,86,.65);color:#fff}
+.conc-open:hover{background:var(--gold);color:var(--navy);border-color:var(--gold)}
 .conc-frame{display:block;width:100%;height:calc(100vh - 200px);min-height:560px;border:1px solid var(--bdr);border-radius:10px;background:#F1F1F1}
-@media(max-width:768px){.conc-frame{height:75vh}.conc-open{margin-left:0}}
+@media(max-width:768px){.conc-frame{height:75vh}.conc-open{top:6px;right:12px;font-size:11px;padding:3px 8px}}
 .phdr{margin-bottom:18px}
 .ptitle{font-family:Calibri,"Segoe UI",Arial,sans-serif;font-weight:800;font-size:26px;color:var(--white);letter-spacing:-.02em}
 .psub{font-size:13.5px;color:var(--gray);margin-top:3px;font-weight:400}
@@ -591,9 +595,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <button class="fs conc-tab" data-p="folha" onclick="concTab('folha')">Fol. Pag.</button>
     <button class="fs conc-tab" data-p="pis-cofins" onclick="concTab('pis-cofins')">PIS/COFINS</button>
     <button class="fs conc-tab" data-p="faturamento" onclick="concTab('faturamento')">Conferência de faturamento</button>
-    <a class="fs conc-open" id="concOpen" href="#" target="_blank" rel="noopener" title="Abrir o painel em uma aba separada do navegador">↗ Abrir em nova aba</a>
   </div>
-  <div id="concFrames"></div>
+  <div class="conc-area">
+    <a class="conc-open" id="concOpen" href="#" target="_blank" rel="noopener" title="Abrir o painel em uma aba separada do navegador">↗ Abrir em nova aba</a>
+    <div id="concFrames"></div>
+  </div>
 </section>
 
 <section id="page-bookv" class="page">
