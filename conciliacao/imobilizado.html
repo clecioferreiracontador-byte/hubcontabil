@@ -234,6 +234,7 @@ tr.grp0 td .dsc{color:#CD9A56}
 <script src="vendor/sheetjs/xlsx.full.min.js"></script>
 <script src="hub-db.js?v=2"></script>
 <script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=1"></script>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -765,7 +766,10 @@ function renderBens(){
   $('bensFoot').innerHTML = `<tr><td colspan="5">TOTAL (${L.length})</td><td>${fmt(sv)}</td><td></td><td></td><td>${fmt(sd)}</td><td>${fmt(sv - sd)}</td><td></td></tr>`;
 }
 window.focoConta = function(){ window.abrirEtapa && abrirEtapa('conferencia'); };
-(async () => { await carregarNuvem(); await criarMesesAuto(); await render(); })();
+// abre no mês escolhido no Book (o mês é criado a partir do anterior se ainda não existir e houver balancete)
+const irMesHub = async m => { await criarMesesAuto(); if (m && dados[m]) mesAtual = m; await render(); };
+(async () => { await carregarNuvem(); await irMesHub(window.mesDoHub ? mesDoHub() : ''); })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => irMesHub(m));   // mês trocado no Book
 </script>
 
 <script>

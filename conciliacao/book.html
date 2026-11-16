@@ -286,6 +286,7 @@ table.bk td.mes-res{font-size:.62rem}
 <script src="vendor/sheetjs/xlsx.full.min.js"></script>
 <script src="hub-db.js?v=3"></script>
 <script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=1"></script>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -691,6 +692,8 @@ async function trazerDoPortal(m){
 }
 async function carregarMes(){
   try { if (await trazerDoPortal(mesAtual)) await atualizarListas(); } catch(e){}
+  // o mês do Book é o mês de fechamento de todos os painéis da Conciliação
+  if (!LEITURA && mesAtual && window.publicarMesHub) publicarMesHub(mesAtual);
   bal = mesAtual ? await HubDB.getMeta('balancete:' + mesAtual) : null;
   raz = await HubDB.getMeta('razao');
   try { await carregarMovs(); } catch(e){ MOVS = {}; MESES_MOV = []; }

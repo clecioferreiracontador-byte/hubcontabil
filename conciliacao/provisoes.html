@@ -247,6 +247,7 @@ table.pv tr.tot td{font-weight:700;border-top:1px solid #c5cbd3}
 table.pv tr.dif td{font-weight:600}
 </style>
 <script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=1"></script>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -478,7 +479,7 @@ async function carregar(){
   const anos = [...new Set(mesesBal.concat(Object.keys(dados.valores)).map(m => m.slice(0, 4)).concat([String(new Date().getFullYear())]))].sort();
   if (!ano || !anos.includes(ano)) ano = (mesesBal[mesesBal.length - 1] || '').slice(0, 4) || anos[anos.length - 1];
   $('selAno').innerHTML = anos.slice().reverse().map(a => `<option ${a === ano ? 'selected' : ''}>${a}</option>`).join('');
-  if (!mesBase) mesBase = mesesBal[mesesBal.length - 1] || meses(ano)[new Date().getMonth()];
+  if (!mesBase) mesBase = (window.mesDoHub && mesDoHub()) || mesesBal[mesesBal.length - 1] || meses(ano)[new Date().getMonth()];
   const ops = [...new Set(mesesBal.concat(Object.keys(dados.valores)).concat([mesBase]))].sort().reverse();
   $('selMes').innerHTML = ops.map(m => `<option value="${m}" ${m === mesBase ? 'selected' : ''}>${br(fimMes(m))}${mesesBal.includes(m) ? '' : ' (sem balancete)'}</option>`).join('');
 }
@@ -528,7 +529,9 @@ async function render(){
 function setConta(g, v){ v = v.trim(); if (!/^\d\.\d\.\d{2}\.\d{4}$/.test(v)){ alert('Conta no formato 2.1.10.2001'); render(); return; } dados.contas[g] = v; salvar(); render(); }
 
 window.focoConta = function(){ window.abrirEtapa && abrirEtapa('conferencia'); };
+if (window.mesDoHub && mesDoHub()){ mesBase = mesDoHub(); ano = mesBase.slice(0, 4); }   // abre no mês escolhido no Book
 (async () => { await carregarNuvem(); await render(); assinBase = await assinaturaBase(); })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => { mesBase = m; ano = m.slice(0, 4); render(); });   // mês trocado no Book
 </script>
 
 <script>

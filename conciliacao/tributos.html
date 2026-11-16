@@ -259,6 +259,7 @@ table.pv tr.tot td{font-weight:700;border-top:1px solid #c5cbd3}
 table.pv tr.dif td{font-weight:600}
 </style>
 <script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=1"></script>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -528,7 +529,9 @@ async function carregarMeses(){
   try { if (window.HubDB) mesesBal = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10)).sort(); } catch(e){}
   const deLanc = [...new Set(dados.contas.flatMap(c => c.itens.map(i => i.data.slice(0, 7))))].filter(m => m >= '2020-01');
   const todos = [...new Set(mesesBal.concat(deLanc))].sort();
-  if (!mesAtual || !todos.includes(mesAtual)) mesAtual = mesesBal[mesesBal.length - 1] || todos[todos.length - 1] || new Date().toISOString().slice(0, 7);
+  const mHub = window.mesDoHub ? mesDoHub() : '';
+  if (mHub && !mesAtual) mesAtual = mHub;   // abre no mês escolhido no Book
+  if (!mesAtual || !(todos.includes(mesAtual) || mesAtual === mHub)) mesAtual = mesesBal[mesesBal.length - 1] || todos[todos.length - 1] || new Date().toISOString().slice(0, 7);
   if (!todos.includes(mesAtual)) todos.push(mesAtual);
   $('selMes').innerHTML = todos.slice().reverse().map(m => `<option value="${m}" ${m === mesAtual ? 'selected' : ''}>${br(fimMes(m))}${mesesBal.includes(m) ? '' : ' (sem balancete)'}</option>`).join('');
 }
@@ -744,6 +747,7 @@ function tirarConta(i){ const c = dados.contas[i]; if (!c) return;
 
 window.focoConta = function(c){ if (c && contaDe(c)) verConta(c); else window.abrirEtapa && abrirEtapa('conferencia'); };
 (async () => { await carregarNuvem(); await render(); assinBase = await assinaturaBase(); })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => { mesAtual = m; render(); });   // mês trocado no Book
 </script>
 
 <script>

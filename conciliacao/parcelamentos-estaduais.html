@@ -148,6 +148,7 @@ footer{display:none}
 <script src="vendor/jspdf/jspdf.umd.min.js"></script>
 <script src="vendor/jspdf/jspdf.plugin.autotable.min.js"></script>
 <script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=1"></script>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -1439,6 +1440,9 @@ if (!load() || cards.length === 0) {
   cards = [blankCard()];
 }
 try { competencia = localStorage.getItem(BASE_KEY) || ''; } catch(e){}
+// abre na data-base do mês escolhido no Book e muda junto quando ele muda
+if (window.mesDoHub && mesDoHub()){ competencia = fimDoMesHub(mesDoHub()); try { localStorage.setItem(BASE_KEY, competencia); } catch(e){} }
+if (window.aoMudarMesHub) aoMudarMesHub(m => setBase(fimDoMesHub(m)));
 render();
 </script>
 <script>

@@ -149,6 +149,7 @@ footer{display:none}
 <script src="vendor/jspdf/jspdf.plugin.autotable.min.js"></script>
 <script src="hub-db.js?v=2"></script>
 <script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=1"></script>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -1129,6 +1130,9 @@ if (!cards.length) cards = [blankCard()];
 (async function(){
   // sem data-base escolhida: usa o mês do último balancete importado no Book
   let salvo = null; try { salvo = localStorage.getItem(BASE_KEY); } catch(e){}
+  // abre na data-base do mês escolhido no Book
+  const mHub = window.mesDoHub ? mesDoHub() : '';
+  if (mHub){ competencia = fimDoMesHub(mHub); salvo = competencia; try { localStorage.setItem(BASE_KEY, competencia); } catch(e){} }
   if (salvo === null && window.HubDB){
     try {
       const meses = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10)).sort();
@@ -1138,6 +1142,7 @@ if (!cards.length) cards = [blankCard()];
   await carregarBalConsorcio();
   render();
 })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => setBase(fimDoMesHub(m)));   // mês trocado no Book
 </script>
 <script>
 /* etapas (mesmo comportamento da Conferência de Faturamento) */
