@@ -675,6 +675,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <div id="relOverlay">
   <div class="rel-bar">
     <span class="rel-tit">📑 Relatório Consolidado</span>
+    <span class="fl">Trimestre:</span><select class="fs" id="relTri" onchange="onRelTri()"></select>
     <span class="fl">De:</span><select class="fs" id="relDe" onchange="onRelPeriodo()"></select>
     <span class="fl">até:</span><select class="fs" id="relAte" onchange="onRelPeriodo()"></select>
     <div class="fdiv"></div>
@@ -1933,7 +1934,23 @@ function relFillSelectors(){
   de.value=(REL.init&&pd!==''&&+pd<numMeses)?pd:0;
   ate.value=(REL.init&&pa!==''&&+pa<numMeses)?pa:numMeses-1;
   REL.init=true;
+  relFillTri();
   relFillBal(true);
+}
+// trimestres com pelo menos um mês já disponível (o trimestre em andamento vai até o último mês carregado)
+function relFillTri(){
+  var t=relEl('relTri'),o='<option value="">Período livre</option>';
+  for(var q=0;q<4;q++)if(q*3<numMeses)o+='<option value="'+q+'">'+(q+1)+'º Tri ('+M[q*3]+(Math.min(q*3+2,numMeses-1)>q*3?'–'+M[Math.min(q*3+2,numMeses-1)]:'')+')</option>';
+  t.innerHTML=o;relSyncTri();
+}
+function relSyncTri(){
+  var de=+relEl('relDe').value,ate=+relEl('relAte').value,q=de/3;
+  relEl('relTri').value=(de%3===0&&ate===Math.min(de+2,numMeses-1))?String(q):'';
+}
+function onRelTri(){
+  var q=relEl('relTri').value;if(q==='')return;
+  relEl('relDe').value=+q*3;relEl('relAte').value=Math.min(+q*3+2,numMeses-1);
+  relFillBal(true);buildRelatorio();
 }
 function relFillBal(auto){
   var bEl=relEl('relBal'),ate=+relEl('relAte').value,cur=bEl.value;
@@ -1950,7 +1967,7 @@ function openRelatorio(){
   buildRelatorio();
 }
 function closeRelatorio(){relEl('relOverlay').style.display='none';document.body.classList.remove('rel-open');}
-function onRelPeriodo(){relFillBal(true);buildRelatorio();}
+function onRelPeriodo(){relSyncTri();relFillBal(true);buildRelatorio();}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('rel-open'))closeRelatorio();});
 
 /* ---------- gráficos (renderizados como imagem p/ impressão fiel) ---------- */
@@ -1988,10 +2005,12 @@ function relCtx(){
   var bk='rl';
   var bm=parseInt(relEl('relBal').value);if(isNaN(bm))bm=ate;
   var ld=new Date(2026,bm+1,0).getDate();
-  return {emp:relEmp(),ci:ci,bk:bk,
+  // período que é um trimestre: o título do relatório diz "1º trimestre", "2º trimestre"...
+  var tri=(de%3===0&&ate===Math.min(de+2,numMeses-1))?de/3+1:0,triP=tri&&ate<de+2?' (parcial)':'';
+  return {emp:relEmp(),ci:ci,bk:bk,tri:tri,
     baseLbl:bk==='rl'?'Receita Líquida':'Receita Bruta',bs:bk==='rl'?'s/ Rec. Líquida':'s/ Rec. Bruta',
-    per:(ci.length===1?M[ci[0]]:M[ci[0]]+'–'+M[ci[ci.length-1]])+' 2026',
-    perLong:(ci.length===1?MF[ci[0]]:MF[ci[0]]+' a '+MF[ci[ci.length-1]])+' de 2026',
+    per:tri?tri+'º Tri 2026'+triP:(ci.length===1?M[ci[0]]:M[ci[0]]+'–'+M[ci[ci.length-1]])+' 2026',
+    perLong:tri?tri+'º trimestre de 2026'+triP+' — '+(ci.length===1?MF[ci[0]]:MF[ci[0]]+' a '+MF[ci[ci.length-1]]):(ci.length===1?MF[ci[0]]:MF[ci[0]]+' a '+MF[ci[ci.length-1]])+' de 2026',
     bm:bm,bmData:ld+'/'+String(bm+1).padStart(2,'0')+'/2026',
     emis:new Date().toLocaleString('pt-BR'),unitLbl:REL.unit==='mil'?'R$ mil':'R$',
     s:function(k){return ci.reduce(function(a,i){return a+relNum(D[k][i]);},0);}};
