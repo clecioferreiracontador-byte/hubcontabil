@@ -309,7 +309,7 @@ table.pv tr.dif td{font-weight:600}
     <li>Os saldos do controle vão sozinhos para o <b>Book de conciliação</b> como suporte das contas.</li>
   </ol></div>
   <div class="box"><h2>Regras</h2><table><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
-    <tr><td>R1</td><td>Mapeamento igual ao Book NHD: cada bloco da aba “Trib Pagar” é uma conta (DCTFWeb 2.1.15.1011, PIS 2.1.15.1002, COFINS 2.1.15.1003, CSLL 2.1.15.1008, IRPJ 2.1.15.1009, ICMS 2.1.15.2001 e ISS 2.1.15.3001). Outras contas podem ser incluídas na etapa 4.</td></tr>
+    <tr><td>R1</td><td>Mapeamento igual ao Book NHD: cada bloco da aba “Trib Pagar” é uma conta (DCTFWeb 2.1.15.1011, CSLL 2.1.15.1008, IRPJ 2.1.15.1009, ICMS 2.1.15.2001 e ISS 2.1.15.3001). PIS e COFINS ficam no painel <b>PIS/COFINS</b>. Outras contas podem ser incluídas na etapa 5.</td></tr>
     <tr><td>R2</td><td>Saldo do controle = soma dos lançamentos com data até a data-base (provisão negativa, pagamento positivo), igual à fórmula “Saldo findo dia” da planilha.</td></tr>
     <tr><td>R3</td><td>Diferença até R$ 0,01 é tratada como arredondamento.</td></tr>
     <tr><td>R4</td><td>Razão: em conta de passivo, <b>crédito = provisão</b> (entra negativo) e <b>débito = pagamento/compensação</b> (positivo). Os meses que vierem no razão substituem os lançamentos da planilha/razão daquele mês; o status e o check passam para o lançamento do razão de mesmo valor.</td></tr>
@@ -413,11 +413,15 @@ const difTd = d => isNaN(d) ? '<td>—</td>' : `<td class="${ok(d) ? 'dok' : 'db
 
 // ===================== dados =====================
 // contas = [{ conta, nome, itens:[{ id, data, desc, valor, status, origem }] }]
-const PADRAO = [['2.1.15.1011', 'Tributos federais unificados (DCTFWeb)'], ['2.1.15.1002', 'PIS a recolher'], ['2.1.15.1003', 'COFINS a recolher'],
+// PIS (2.1.15.1002) e COFINS (2.1.15.1003) são conciliados no painel PIS/COFINS (apuração × guias × contabilidade)
+const FORA_PIS_COFINS = ['2.1.15.1002', '2.1.15.1003'];
+const PADRAO = [['2.1.15.1011', 'Tributos federais unificados (DCTFWeb)'],
   ['2.1.15.1008', 'CSLL a recolher'], ['2.1.15.1009', 'IRPJ a recolher'], ['2.1.15.2001', 'ICMS a recolher'], ['2.1.15.3001', 'ISS retido a recolher']];
 let dados = lsGet(LS, null);
 if (!dados || !Array.isArray(dados.contas)) dados = { contas: PADRAO.map(([conta, nome]) => ({ conta, nome, itens: [] })) };
 let mesAtual = '', balMes = null, mesesBal = [];
+function semPisCofins(){ if (dados && Array.isArray(dados.contas)) dados.contas = dados.contas.filter(c => !FORA_PIS_COFINS.includes(c.conta)); }
+semPisCofins();
 const contaDe = c => dados.contas.find(x => x.conta === c);
 
 // ===================== base no Firebase + atualização automática =====================
@@ -446,7 +450,7 @@ async function carregarNuvem(){
   try {
     const d = await HUB.lerDoc(DOC_NUVEM);
     if (d && Array.isArray(d.contas) && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){
-      dados = d;  lsSet(LS, dados);
+      dados = d; semPisCofins(); lsSet(LS, dados);
       stNuvem('☁ Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok');
     } else if (dados.savedAt && (!d || (d.savedAt || '') < dados.savedAt)) agendarNuvem();   // este navegador tem alterações mais novas
     else if (d) stNuvem('☁ Base em dia com o Firebase.', 'ok');
@@ -493,7 +497,7 @@ async function importarBook(f){
   if (!f) return;
   try {
     const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true });
-    const blocos = lerTribPagar(wb);
+    const blocos = lerTribPagar(wb).filter(b => !FORA_PIS_COFINS.includes(b.conta));
     if (!blocos.length) throw new Error('nenhum bloco de conta encontrado na aba “Trib Pagar”');
     const manuais = blocos.reduce((a, b) => a + ((contaDe(b.conta) || { itens: [] }).itens.filter(i => i.origem === 'manual').length), 0);
     if (manuais && !confirm('Há ' + manuais + ' lançamento(s) feitos aqui nessas contas. Substituir pelos lançamentos da planilha?')) return;
@@ -519,7 +523,7 @@ function exportJSON(){
 async function importJSON(f){
   if (!f) return;
   try { const d = JSON.parse(await f.text()); if (!d || !Array.isArray(d.contas)) throw new Error('arquivo não é do controle de tributos');
-    if (!confirm('Substituir os dados de tributos deste navegador pelos do arquivo?')) return; dados = d; salvar(); await render(); msg('Dados importados.', 'ok');
+    if (!confirm('Substituir os dados de tributos deste navegador pelos do arquivo?')) return; dados = d; semPisCofins(); salvar(); await render(); msg('Dados importados.', 'ok');
   } catch(e){ msg('Erro ao importar o JSON: ' + esc(e.message), 'err'); }
 }
 
@@ -632,7 +636,7 @@ async function render(){
       <td>${fmt(prov)}</td><td>${b ? fmt(b.c) : '—'}</td><td>${fmt(pg)}</td><td>${b ? fmt(b.d) : '—'}</td><td class="small aberto">${aberto}</td></tr>`;
   }).join('');
   $('confFoot').innerHTML = `<tr><td colspan="2">TOTAL</td><td>${fmt(r2(T.ctl))}</td><td>${balMes ? fmt(r2(T.cont)) : '—'}</td>${balMes ? difTd(r2(T.cont - T.ctl)) : '<td>—</td>'}<td colspan="8"></td></tr>`;
-  const mapeadas = new Set(dados.contas.map(c => c.conta)), outras = balMes && balMes.contas ? Object.keys(balMes.contas).filter(c => /^2\.1\.15\.\d{4}$/.test(c) && !mapeadas.has(c) && Math.abs(balMes.contas[c].sf) >= 0.005) : [];
+  const mapeadas = new Set(dados.contas.map(c => c.conta)), outras = balMes && balMes.contas ? Object.keys(balMes.contas).filter(c => /^2\.1\.15\.\d{4}$/.test(c) && !mapeadas.has(c) && !FORA_PIS_COFINS.includes(c) && Math.abs(balMes.contas[c].sf) >= 0.005) : [];
   $('outrasContas').innerHTML = outras.length ? `<div class="msg" style="margin-top:10px"><b>Outras contas de tributos com saldo</b> (conciliadas em outros painéis ou ainda sem controle aqui — inclua na etapa 4 se for o caso): ${outras.map(c => esc(c) + ' ' + esc(balMes.contas[c].desc) + ' (' + fmt(balMes.contas[c].sf) + ')').join(' · ')}</div>` : '';
   $('tituloConf').textContent = '· data-base ' + br(fim) + (balMes ? '' : ' · sem balancete deste mês no Book de conciliação');
   $('stTopo').textContent = dados.contas.reduce((a, c) => a + c.itens.length, 0) + ' lançamentos em ' + dados.contas.length + ' contas';

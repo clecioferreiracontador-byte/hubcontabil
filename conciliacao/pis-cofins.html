@@ -322,6 +322,19 @@ td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
       <tbody id="movBody"></tbody>
     </table></div>
   </div>
+  <div class="box">
+    <h2>Lançamentos a fazer <span class="muted small" id="titLanc"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">O que falta na contabilidade para as contas fecharem com a apuração. A diferença não fica na conta a recuperar: vai para o resultado. A conta de resultado de cada linha pode ser trocada (vale para os próximos meses).</div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Tributo</th><th class="left">O que é</th><th class="left">Débito</th><th class="left">Crédito</th><th>Valor</th><th class="left">Histórico</th></tr></thead>
+      <tbody id="lancBody"></tbody><tfoot id="lancFoot"></tfoot>
+    </table></div>
+    <div class="toolbar" style="margin-top:10px">
+      <button type="button" class="primary" onclick="baixarCsv()">Baixar CSV de importação</button>
+      <button type="button" onclick="baixarXlsx()">Baixar Excel</button>
+      <span class="muted small">CSV no layout do importador Audicon (separador “;”, ANSI, contas sem pontos).</span>
+    </div>
+  </div>
 </section>
 
 <section class="panel" id="tab-apuracao">
@@ -404,8 +417,8 @@ const chk = (d, vazio) => isNaN(d) ? `<span class="muted small">${vazio || '—'
 
 // ===================== contas =====================
 const TRIB = {
-  pis: { nome: 'PIS', pag: '2.1.15.1002', rec: '1.1.03.1006', cod: ['6912', '8109', '8301'] },
-  cof: { nome: 'COFINS', pag: '2.1.15.1003', rec: '1.1.03.1007', cod: ['5856', '2172', '2960'] }
+  pis: { nome: 'PIS', pag: '2.1.15.1002', rec: '1.1.03.1006', ded: '3.1.01.2003', fin: '3.3.02.1007', cod: ['6912', '8109', '8301'] },
+  cof: { nome: 'COFINS', pag: '2.1.15.1003', rec: '1.1.03.1007', ded: '3.1.01.2004', fin: '3.3.02.1008', cod: ['5856', '2172', '2960'] }
 };
 const KS = ['pis', 'cof'];
 
@@ -466,11 +479,13 @@ function lerApuracao(wb){
   blocos.forEach(([k, re]) => {
     const ini = acha(re); linhas[k] = []; if (ini < 0) return;
     const fim = acha(/^TOTAL COMPOSICAO/, ini + 1);
+    let grupo = null;
     for (let i = ini + 2; i < (fim < 0 ? R.length : fim); i++){
       const r = R[i] || [], desc = String(r[2] ?? '').trim(), conta = String(r[0] ?? '').trim();
+      if (!/^\(-\)/.test(desc) && desc && desc !== '-' && desc !== '0') grupo = { conta: conta === '0' ? '' : conta, desc };
       const base = nz(r[3]), pis = nz(r[5]), cof = nz(r[7]);
       if (!base && !pis && !cof) continue;
-      linhas[k].push({ conta: conta === '0' ? '' : conta, desc: desc === '-' || desc === '0' ? '' : desc, base: r2(base), pis: r2(pis), cof: r2(cof) });
+      linhas[k].push({ conta: conta === '0' ? '' : conta, desc: desc === '-' || desc === '0' ? '' : desc, base: r2(base), pis: r2(pis), cof: r2(cof), gConta: grupo ? grupo.conta : '', gDesc: grupo ? grupo.desc : desc });
     }
     if (fim >= 0) linhas[k + 'Tot'] = { pis: r2(nz((R[fim] || [])[5])), cof: r2(nz((R[fim] || [])[7])) };
   });
@@ -633,14 +648,138 @@ function calcular(m){
   return C;
 }
 
+// ===================== lançamentos que faltam =====================
+// Vendas, devoluções e compras entram pela integração (SPED) na conta a recuperar; o resto da apuração
+// (receitas financeiras, outras receitas, créditos sobre despesas, imobilizado, locações, essencialidade) é lançado aqui.
+// No fim, a conta a recuperar fica só com o saldo credor da apuração (normalmente zero): o valor a pagar vai para a
+// conta a recolher e o que sobrar (diferenças da integração e do saldo inicial) é ajustado no resultado.
+const SPED_DEB = /VENDAS DE MERCADORIAS|DEVOLUC\w* DE COMPRAS/, SPED_CRED = /COMPRAS REVENDA|INSUMOS|DEVOLUC\w* DE VENDAS/, ESS_RESUMO = /ESSENCIALIDADE/;
+const descConta = c => { const b = balMes && balMes.contas && balMes.contas[c]; return b ? b.desc : ''; };
+function grupos(L, k){
+  const g = {};
+  (L || []).forEach(l => { const key = (l.gConta || '') + '|' + (l.gDesc || l.desc); const o = g[key] = g[key] || { conta: l.gConta || '', desc: l.gDesc || l.desc, v: 0 }; o.v += l[k]; });
+  return Object.values(g).map(o => (o.v = r2(o.v), o)).filter(o => Math.abs(o.v) >= 0.005);
+}
+function contaResultado(gr, k, tipo){
+  const key = k + '|' + tipo + '|' + norm(gr.conta + ' ' + gr.desc), man = (dados.contaLinha || {})[key];
+  if (man) return { conta: man, key, origem: 'manual' };
+  const C = (balMes && balMes.contas) || {};
+  if (tipo === 'deb') return { conta: /^3\.3\.02/.test(gr.conta) ? TRIB[k].fin : TRIB[k].ded, key, origem: 'auto' };
+  if (gr.conta && C[gr.conta]) return { conta: gr.conta, key, origem: 'auto' };
+  // sem conta no plano atual: procura conta de resultado com o mesmo nome (ex.: Fretes e Carretos → FRETES TERCEIRIZADOS)
+  const pal = norm(gr.desc).split(/[^A-Z]+/).filter(w => w.length >= 4 && !/^(SOBRE|PARA|COMPRAS?|CREDITOS?|DIRETA|ACORDO)$/.test(w)).map(w => w.replace(/S$/, ''));
+  let best = '', bs = 0;
+  Object.keys(C).filter(c => /^3\./.test(c)).forEach(c => {
+    const d = norm(C[c].desc), sc = pal.filter(w => d.includes(w)).length;
+    if (sc > bs || (sc && sc === bs && Math.abs(C[c].d) > Math.abs(C[best].d))){ bs = sc; best = c; }
+  });
+  if (bs) return { conta: best, key, origem: 'nome' };
+  return { conta: TRIB[k].ded, key, origem: 'padrao' };
+}
+function setContaLinha(key, v){
+  v = String(v || '').trim(); dados.contaLinha = dados.contaLinha || {};
+  if (!v) delete dados.contaLinha[key]; else if (/^\d(\.\d+)+$/.test(v)) dados.contaLinha[key] = v; else { msg('Conta inválida: ' + esc(v), 'err'); render(); return; }
+  salvar(); render();
+}
+function gerarLanc(C){
+  const out = [], md = dados.meses[mesAtual] || {}, A = md.apur, mm = mesLbl(mesAtual).toUpperCase();
+  if (!A || !A.linhas) return out;
+  const push = o => { if (Math.abs(o.valor) < 0.01) return; if (o.valor < 0){ const t = o.deb; o.deb = o.cred; o.cred = t; o.valor = -o.valor; o.edit = o.edit === 'deb' ? 'cred' : (o.edit === 'cred' ? 'deb' : o.edit); } o.valor = r2(o.valor); out.push(o); };
+  KS.forEach(k => {
+    const t = TRIB[k], c = C[k], L = A.linhas, R = RAZ[t.rec] || [];
+    // já lançado = movimento da conta a recuperar contra a mesma conta de resultado (não vale para a conta de PIS/COFINS
+    // sobre vendas, que também recebe a integração das notas)
+    const jaLanc = (cp, tipo) => { const d = dig(cp); if (cp === t.ded) return 0; return r2(R.filter(l => dig(l.cp) === d).reduce((s, l) => s + (tipo === 'cred' ? l.deb - l.cred : l.cred - l.deb), 0)); };
+    let efRec = 0;
+    grupos(L.deb, k).filter(g => !SPED_DEB.test(norm(g.desc))).forEach(g => {
+      const cr = contaResultado(g, k, 'deb'), v = r2(g.v - jaLanc(cr.conta, 'deb'));
+      if (Math.abs(v) < 0.01) return;
+      push({ k, tipo: 'Débito não lançado · ' + g.desc, deb: cr.conta, cred: t.rec, valor: v, hist: t.nome + ' S/ ' + g.desc + ' ' + mm, edit: 'deb', key: cr.key, origem: cr.origem });
+      efRec -= v;
+    });
+    const credL = (L.cred || []).filter(l => !ESS_RESUMO.test(norm(l.gDesc))).concat(L.ess || []);
+    grupos(credL, k).filter(g => !SPED_CRED.test(norm(g.desc))).forEach(g => {
+      const cr = contaResultado(g, k, 'cred'), v = r2(g.v - jaLanc(cr.conta, 'cred'));
+      if (Math.abs(v) < 0.01) return;
+      push({ k, tipo: 'Crédito não lançado · ' + g.desc, deb: t.rec, cred: cr.conta, valor: v, hist: 'CRED ' + t.nome + ' S/ ' + g.desc + ' ' + mm, edit: 'cred', key: cr.key, origem: cr.origem });
+      efRec += v;
+    });
+    // valor a pagar: da conta a recuperar para a conta a recolher (o que falta para chegar ao saldo esperado)
+    const transf = isNaN(c.esperado) || isNaN(c.sf) ? 0 : r2(c.esperado - c.sf);
+    push({ k, tipo: 'Transferência do valor a pagar', deb: t.rec, cred: t.pag, valor: transf, hist: t.nome + ' A RECOLHER APURACAO ' + mm });
+    efRec += transf;
+    // o que sobrar na conta a recuperar vai para o resultado
+    const sfRec = c.rec ? c.rec.sf : 0, alvo = isNaN(c.scFinal) ? 0 : c.scFinal;
+    const resid = c.rec ? r2(alvo - (sfRec + efRec)) : 0;
+    const keyR = k + '|resid', contaR = (dados.contaLinha || {})[keyR] || t.ded;
+    push({ k, tipo: 'Ajuste no resultado · diferença da integração/saldo inicial', deb: t.rec, cred: contaR, valor: resid, hist: 'AJUSTE ' + t.nome + ' A RECUPERAR X APURACAO ' + mm, edit: 'cred', key: keyR, origem: (dados.contaLinha || {})[keyR] ? 'manual' : 'auto' });
+    c.recApos = r2(sfRec + efRec + resid); c.pagApos = isNaN(c.sf) ? NaN : r2(c.sf + transf); c.transf = transf; c.resid = resid;
+    // decomposição da sobra: saldo inicial × saldo credor da planilha e integração (SPED) × apuração
+    const spedD = r2(grupos(L.deb, k).filter(g => SPED_DEB.test(norm(g.desc))).reduce((s, g) => s + g.v, 0));
+    const spedC = r2(grupos(L.cred, k).filter(g => SPED_CRED.test(norm(g.desc))).reduce((s, g) => s + g.v, 0));
+    const lancD = r2(R.reduce((s, l) => s + l.cred, 0)), lancC = r2(R.reduce((s, l) => s + l.deb, 0));
+    c.decomp = { saIni: c.rec ? r2(c.rec.sa) : NaN, sc: c.a ? c.a.sc : NaN, spedD, spedC, lancD, lancC };
+  });
+  return out;
+}
+let LANC = [];
+function contaTd(conta, o, lado){
+  const d = descConta(conta);
+  if (o.edit === lado && o.key){
+    const av = o.origem === 'nome' || o.origem === 'padrao' ? ' <span class="pill warn" title="Conta sugerida pelo nome da linha — confira">conferir</span>' : '';
+    return `<td class="left"><input type="text" value="${esc(conta)}" style="width:110px;padding:3px 6px;font-size:.8rem" onchange="setContaLinha(${esc(JSON.stringify(o.key))},this.value)" title="Conta de resultado (vale para os próximos meses)">${av}<div class="muted small">${esc(d)}</div></td>`;
+  }
+  return `<td class="left">${esc(conta)}<div class="muted small">${esc(d)}</div></td>`;
+}
+function renderLanc(){
+  $('titLanc').textContent = '· ' + mesLbl(mesAtual) + ' · data ' + br(fimMes(mesAtual));
+  if (!LANC.length){
+    $('lancBody').innerHTML = `<tr><td colspan="6" class="empty">${(dados.meses[mesAtual] || {}).apur ? 'Nada a lançar: a contabilidade já está igual à apuração.' : 'Importe a planilha de apuração do mês.'}</td></tr>`;
+    $('lancFoot').innerHTML = ''; return;
+  }
+  $('lancBody').innerHTML = LANC.map(o => `<tr><td>${TRIB[o.k].nome}</td><td class="left wrap" style="max-width:280px">${esc(o.tipo)}</td>${contaTd(o.deb, o, 'deb')}${contaTd(o.cred, o, 'cred')}<td>${fmt(o.valor)}</td><td class="left wrap small" style="max-width:300px">${esc(o.hist.toUpperCase())}</td></tr>`).join('');
+  const tot = k => r2(LANC.filter(o => o.k === k).reduce((s, o) => s + o.valor, 0));
+  $('lancFoot').innerHTML = `<tr><td colspan="4">${LANC.length} lançamentos · PIS ${fmt(tot('pis'))} · COFINS ${fmt(tot('cof'))}</td><td></td><td></td></tr>`;
+}
+const nfBR = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function baixar(blob, nome){ const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 500); }
+function baixarCsv(){
+  if (!LANC.length){ msg('Não há lançamentos a fazer.', 'warn'); return; }
+  const dt = br(fimMes(mesAtual)), L = ['Data;Conta Crédito;Conta Débito;Valor;Histórico;C Custo Deb;C Custo Cred;Item Deb;Item Cred'];
+  LANC.forEach(o => L.push([dt, dig(o.cred), dig(o.deb), nfBR.format(o.valor), o.hist.replace(/[;\r\n]+/g, ' ').replace(/[–—]/g, '-').toUpperCase().trim(), '', '', '', ''].join(';')));
+  const t = (L.join('\r\n') + '\r\n').normalize('NFC'), a = new Uint8Array(t.length);
+  for (let i = 0; i < t.length; i++){ const c = t.charCodeAt(i); a[i] = c < 256 ? c : 63; }
+  baixar(new Blob([a], { type: 'text/csv;charset=windows-1252' }), 'lancamentos-pis-cofins-' + mesAtual + '.csv');
+}
+function baixarXlsx(){
+  if (!LANC.length){ msg('Não há lançamentos a fazer.', 'warn'); return; }
+  const dt = br(fimMes(mesAtual)), rows = [['Tributo', 'O que é', 'Data', 'Conta débito', 'Descrição débito', 'Conta crédito', 'Descrição crédito', 'Valor', 'Histórico']];
+  LANC.forEach(o => rows.push([TRIB[o.k].nome, o.tipo, dt, o.deb, descConta(o.deb), o.cred, descConta(o.cred), o.valor, o.hist.toUpperCase()]));
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = [{ wch: 8 }, { wch: 46 }, { wch: 11 }, { wch: 14 }, { wch: 30 }, { wch: 14 }, { wch: 30 }, { wch: 14 }, { wch: 50 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos'); XLSX.writeFile(wb, 'lancamentos-pis-cofins-' + mesAtual + '.xlsx');
+}
+// suporte das contas no Book de conciliação: saldo esperado (passivo credor = negativo, como no balancete)
+function publicarSuportes(C){
+  const LS_SUP = 'aud-hub-suportes', FONTE = 'PIS/COFINS', fim = fimMes(mesAtual), sup = lsGet(LS_SUP, {});
+  Object.keys(sup).forEach(c => { if (sup[c].fonte === FONTE) delete sup[c]; });
+  KS.forEach(k => {
+    const c = C[k], t = TRIB[k]; if (isNaN(c.esperado)) return;
+    sup[t.pag] = { fonte: FONTE, saldo: r2(-c.esperado), data: fim, detalhe: 'Conciliação PIS/COFINS · ' + t.nome + ' a recolher esperado (guia de ' + mesLbl(mesAtual) + ')' };
+    sup[t.rec] = { fonte: FONTE, saldo: isNaN(c.scFinal) ? 0 : c.scFinal, data: fim, detalhe: 'Conciliação PIS/COFINS · ' + t.nome + ' a recuperar esperado (saldo credor da apuração)' };
+  });
+  lsSet(LS_SUP, sup);
+}
+window.focoConta = function(){ window.abrirEtapa && abrirEtapa('conferencia'); };
+
 // ===================== telas =====================
 async function render(){
   await carregarMeses();
   balMes = await getBal(mesAtual); await carregarRazao(mesAtual);
   const C = calcular(mesAtual), md = dados.meses[mesAtual] || {};
+  LANC = gerarLanc(C); publicarSuportes(C);
   $('stTopo').textContent = (balMes ? 'Balancete de ' + mesLbl(mesAtual) + ' carregado do Book' : 'Sem balancete de ' + mesLbl(mesAtual) + ' no Book') + ' · ' + (RAZ.__ok ? 'razão do mês carregado' : 'sem razão do mês') + '.';
   $('titConf').textContent = '· ' + mesLbl(mesAtual);
-  renderChips(); renderKpis(C, md); renderConf(C, md); renderMov(C); renderApur(md); renderGuias(); renderRazao();
+  renderChips(); renderKpis(C, md); renderConf(C, md); renderMov(C); renderLanc(); renderApur(md); renderGuias(); renderRazao();
 }
 function renderChips(){
   const ms = Object.keys(dados.meses).sort().reverse();
@@ -674,9 +813,17 @@ function renderConf(C, md){
   h += linha('= <b>Saldo final esperado</b>', v(P.esperado), v(F.esperado), 'É o que a conta a recolher deveria mostrar no fim de ' + mesLbl(mesAtual), 'res');
   h += linha('Saldo final no balancete', v(P.sf), v(F.sf), balMes ? '' : '<span class="dbad">Sem balancete do mês no Book.</span>', 'cmp');
   h += linha('Diferença (balancete − esperado)', chk(P.dif), chk(F.dif), (isNaN(P.dif) && isNaN(F.dif)) ? '' : 'Positivo = balancete com saldo a mais do que deveria', 'cmp');
+  if (md.apur){
+    h += linha('(+) Lançamentos a fazer nesta conta', v(P.transf), v(F.transf), 'Transferência do valor a pagar (quadro “Lançamentos a fazer”)');
+    h += linha('= Saldo depois dos lançamentos', v(P.pagApos), v(F.pagApos), 'PIS ' + chk(r2(P.pagApos - P.esperado)) + ' · COFINS ' + chk(r2(F.pagApos - F.esperado)), 'res');
+    h += linha('<b>Conta a recuperar</b>', '', '', 'PIS ' + TRIB.pis.rec + ' · COFINS ' + TRIB.cof.rec + ' (saldo devedor = positivo)', 'sub');
+    h += linha('Saldo no balancete', v(P.rec ? P.rec.sf : NaN), v(F.rec ? F.rec.sf : NaN), 'Integração das notas (vendas, compras e devoluções) e saldo trazido');
+    const sobra = c => c.decomp ? `saldo inicial ${fmt(c.decomp.saIni)} × saldo credor da planilha ${fmt(c.decomp.sc)}; débitos da integração ${fmt(c.decomp.lancD)} × apurado ${fmt(c.decomp.spedD)}; créditos da integração ${fmt(c.decomp.lancC)} × apurado ${fmt(c.decomp.spedC)}` : '';
+    h += linha('Ajuste no resultado (sobra)', v(P.resid), v(F.resid), 'PIS: ' + sobra(P) + '<br>COFINS: ' + sobra(F));
+    h += linha('= Saldo depois dos lançamentos', v(P.recApos), v(F.recApos), 'Esperado: saldo credor da apuração (PIS ' + v(P.scFinal) + ' · COFINS ' + v(F.scFinal) + ') — PIS ' + chk(r2(P.recApos - P.scFinal)) + ' · COFINS ' + chk(r2(F.recApos - F.scFinal)), 'res');
+  }
   $('confBody').innerHTML = h;
-  const rec = KS.map(k => C[k].rec ? `${TRIB[k].nome} a recuperar (${TRIB[k].rec}): saldo ${fmt(C[k].rec.sf)}${C[k].scFinal > 0 ? ' · esperado ' + fmt(C[k].scFinal) + ' (saldo credor)' : ''}` : '').filter(Boolean);
-  $('confInfo').innerHTML = rec.length ? 'Contas a recuperar no balancete: ' + rec.map(esc).join(' · ') + '.' : '';
+  $('confInfo').innerHTML = 'O saldo esperado das contas vai sozinho para o Book de conciliação como suporte (fonte “PIS/COFINS”).';
 }
 function renderMov(C){
   const P = C.pis, F = C.cof, v = x => fmt(x);
