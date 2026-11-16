@@ -2,6 +2,20 @@
    O Book grava o mês (aaaa-mm) neste navegador; os outros painéis da Conciliação abrem nele e, se já estiverem
    abertos, mudam junto quando o mês do Book muda (evento "storage", que chega aos outros painéis do Hub). */
 (function(){
+  /* Dados do painel salvos em outra cópia aberta dele (o Hub mantém as telas abertas em segundo plano; também pode
+     haver uma "nova aba"): esta cópia recarrega e passa a usar o que foi salvo, em vez de gravar por cima, na próxima
+     atualização, os dados antigos que tinha na memória (ex.: um extrato novo de parcelamento sumia). */
+  var scr = document.currentScript, chaves = scr && scr.getAttribute('data-dados') ? scr.getAttribute('data-dados').split(',') : [];
+  if (chaves.length) window.addEventListener('storage', function(e){
+    if (e.storageArea === localStorage && chaves.indexOf(e.key) >= 0 && e.newValue !== null && e.newValue !== e.oldValue){
+      // trava de segurança: no máximo 3 recargas em 20 s por painel (evita ciclo entre duas cópias)
+      var kr = 'recarga:' + location.pathname, agora = Date.now(), r = [];
+      try { r = JSON.parse(sessionStorage.getItem(kr) || '[]').filter(function(t){ return agora - t < 20000; }); } catch(x){}
+      if (r.length >= 3) return;
+      r.push(agora); try { sessionStorage.setItem(kr, JSON.stringify(r)); } catch(x){}
+      clearTimeout(window.__recarga); window.__recarga = setTimeout(function(){ location.reload(); }, 300);
+    }
+  });
   var K = 'aud-hub-mes', ok = function(m){ return /^\d{4}-\d{2}$/.test(m || ''); };
   window.mesDoHub = function(){ try { var m = localStorage.getItem(K); return ok(m) ? m : ''; } catch(e){ return ''; } };
   window.publicarMesHub = function(m){ try { if (ok(m) && localStorage.getItem(K) !== m) localStorage.setItem(K, m); } catch(e){} };
