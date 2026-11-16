@@ -565,14 +565,22 @@ function suportes(){ return lsGet(LS_SUP, {}); }
 // suporte de um painel para a data-base do mês: o publicado agora ou o do histórico por mês (mes-hub.js), assim a
 // conta não volta a "pendente" só porque o painel foi aberto por último em outro mês
 function suporteDoMes(conta, m){ const d = fimMes(m); if (window.suporteHub) return suporteHub(conta, d); const s = suportes()[conta]; return s && s.data === d ? s : null; }
+// suporte que vale no mês: o painel só muda o status do fechamento para conciliar a conta. Se o mês já tem um
+// suporte salvo que concilia e o painel agora mostra outro valor (aberto sem os dados do mês, outro arquivo...),
+// fica o salvo e a linha avisa o que o painel está mostrando.
+function suporteValido(conta, m, sf){
+  const fim = fimMes(m), vivo = suporteDoMes(conta, m), salvo = bal && bal.suportes && bal.suportes[conta] && bal.suportes[conta].data === fim ? bal.suportes[conta] : null;
+  const fecha = x => x && !isNaN(x.saldo) && Math.abs(r2(sf - x.saldo)) < 0.015;
+  if (vivo && salvo && !fecha(vivo) && fecha(salvo)) return { sup: salvo, aviso: vivo };
+  return { sup: vivo || salvo, aviso: null };
+}
 function linhaConta(conta){
   const c = bal.contas[conta];
   const k = mesAtual + '|' + conta, r = rev[k] || {}, b = (bal.book || {})[conta] || {};
-  const sup = suporteDoMes(conta, mesAtual);
+  const sv = suporteValido(conta, mesAtual, c.sf), sup = sv.sup;
   let suporte = NaN, fonte = '';
   if (r.sup !== undefined && r.sup !== '') { suporte = num(r.sup); if (/^2/.test(conta) && suporte > 0 && !/^\s*\+/.test(r.sup)) suporte = -suporte; fonte = 'manual'; }
   else if (sup && sup.data === fimMes(mesAtual) && !isNaN(sup.saldo)) { suporte = sup.saldo; fonte = sup.fonte; }
-  else if (bal.suportes && bal.suportes[conta] && bal.suportes[conta].data === fimMes(mesAtual)) { suporte = bal.suportes[conta].saldo; fonte = bal.suportes[conta].fonte; }
   const dif = isNaN(suporte) ? (b.dif !== null && b.dif !== undefined ? b.dif : NaN) : r2(c.sf - suporte);
   const difDoBook = isNaN(suporte) && b.dif !== null && b.dif !== undefined;
   const agg = raz && raz.agg[mesAtual] ? raz.agg[mesAtual][conta] : null;
@@ -584,7 +592,8 @@ function linhaConta(conta){
   else if (difDoBook) stAuto = Math.abs(dif) < 0.015 ? 'ok' : 'div';
   else stAuto = 'pend';
   const st = r.st || stAuto;
-  return { conta, c, r, b, suporte, fonte, dif, difDoBook, razOk, agg, st, stAuto, obs: r.obs !== undefined ? r.obs : (b.obs || (b.status && b.status !== '0' ? b.status : '')) };
+  const aviso = fonte !== 'manual' && sv.aviso ? sv.aviso : null;
+  return { conta, c, r, b, suporte, fonte, aviso, dif, difDoBook, razOk, agg, st, stAuto, obs: r.obs !== undefined ? r.obs : (b.obs || (b.status && b.status !== '0' ? b.status : '')) };
 }
 const ST = { ok: ['ok', 'Conciliada'], div: ['bad', 'Divergente'], pend: ['warn', 'Pendente'], just: ['info', 'Justificada'], zero: ['cinza', 'Sem saldo'] };
 
@@ -912,7 +921,7 @@ function renderBook(){
     const stSel = `<select class="stsel ${st[0]}${manual ? ' manual' : ''}" title="${manual ? 'Definido manualmente — clique para mudar' : 'Automático — clique para mudar'}" onchange="setRev('${k}','st',this.value)">${opcoes.map((o, i) => `<option value="${o[0]}" ${i === 0 ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`;
     h += `<tr>${celConta(l.conta)}<td class="desc"><div class="dsc">${descConta(l)}</div></td><td><b>${fmt(l.c.sa)}</b></td><td>${fmt(l.c.d)}</td><td>${fmt(l.c.c)}</td><td><b>${fmt(l.c.sf)}</b></td>
       <td class="c-raz" title="${l.razOk === null ? 'Razão do mês não importado' : 'Razão: D ' + fmt(l.agg ? l.agg.d : 0) + ' / C ' + fmt(l.agg ? l.agg.c : 0)}">${l.razOk === null ? '' : (l.razOk ? '<span class="dok">✔</span>' : '<span class="dbad">✗</span>')}</td>
-      <td><input type="text" value="${esc(supTxt)}" placeholder="${l.fonte && l.fonte !== 'manual' ? fmt(l.suporte) : '0,00'}" onchange="setRev('${k}','sup',this.value)">${l.fonte && l.fonte !== 'manual' ? `<div class="auto">automático: ${esc(l.fonte)}</div>` : ''}</td>
+      <td><input type="text" value="${esc(supTxt)}" placeholder="${l.fonte && l.fonte !== 'manual' ? fmt(l.suporte) : '0,00'}" onchange="setRev('${k}','sup',this.value)">${l.fonte && l.fonte !== 'manual' ? `<div class="auto">automático: ${esc(l.fonte)}</div>` : ''}${l.aviso ? `<div class="auto" style="color:#8a5a00" title="O status do fechamento continua pelo suporte salvo no mês. Se o valor do painel for o certo, digite-o no suporte ou ajuste o painel.">⚠ ${esc(l.aviso.fonte)} mostra agora ${fmt(l.aviso.saldo)}</div>` : ''}</td>
       <td class="${isNaN(l.dif) ? '' : (Math.abs(l.dif) < 0.015 ? 'c-ok' : 'dbad')}">${isNaN(l.dif) ? '—' : (Math.abs(l.dif) < 0.015 ? '<span class="okc" title="Sem diferença' + (Math.abs(l.dif) >= 0.005 ? ' (arredondamento de ' + fmt(l.dif) + ')' : '') + '">✓</span>' : fmt(l.dif))}${l.difDoBook ? '<div class="auto">do Book</div>' : ''}</td>
       <td>${stSel}</td>
       <td class="obs"><textarea class="obs" rows="${Math.min(4, Math.max(1, Math.ceil(String(l.obs || '').length / 48)))}" onchange="setRev('${k}','obs',this.value)" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${esc(l.obs)}</textarea></td>
@@ -1010,7 +1019,9 @@ function pacoteMes(m){
   const revMes = {}; Object.keys(rev).filter(k => k.indexOf(m + '|') === 0).forEach(k => { revMes[k] = rev[k]; });
   // suportes automáticos (bancos, consórcios) da data-base do mês vão junto com o mês
   const sup = window.suportesHubData ? suportesHubData(fimMes(m)) : suportes(), supMes = Object.assign({}, bal.suportes || {});
-  Object.keys(sup).forEach(k => { if (sup[k].data === fimMes(m)) supMes[k] = sup[k]; });
+  // o que o painel publicou só substitui o salvo quando não desfaz uma conta já conciliada (mesma regra do Book)
+  Object.keys(sup).forEach(k => { if (sup[k].data !== fimMes(m)) return; const c = bal.contas[k];
+    if (c && supMes[k] && supMes[k].data === fimMes(m) && suporteValido(k, m, c.sf).aviso) return; supMes[k] = sup[k]; });
   return { v: 1, mes: m, salvoEm: new Date().toISOString(), bal: Object.assign({}, bal, { suportes: supMes }), rev: revMes };
 }
 async function salvarMesPortal(auto){
