@@ -324,7 +324,7 @@ td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
   </div>
   <div class="box">
     <h2>Lançamentos a fazer <span class="muted small" id="titLanc"></span></h2>
-    <div class="muted small" style="margin-bottom:10px">O que falta na contabilidade para as contas fecharem com a apuração. A diferença não fica na conta a recuperar: vai para o resultado. A conta de resultado de cada linha pode ser trocada (vale para os próximos meses).</div>
+    <div class="muted small" style="margin-bottom:10px">O que falta na contabilidade para as contas fecharem com a apuração. Débitos e créditos vão direto na conta a recolher (passivo) contra o resultado; o saldo da conta a recuperar é transferido para a conta a recolher e a diferença que sobrar é ajuste no resultado. A conta de resultado de cada linha pode ser trocada (vale para os próximos meses).</div>
     <div class="tscroll"><table class="pc">
       <thead><tr><th>Tributo</th><th class="left">O que é</th><th class="left">Débito</th><th class="left">Crédito</th><th>Valor</th><th class="left">Histórico</th></tr></thead>
       <tbody id="lancBody"></tbody><tfoot id="lancFoot"></tfoot>
@@ -689,31 +689,36 @@ function gerarLanc(C){
     const t = TRIB[k], c = C[k], L = A.linhas, R = RAZ[t.rec] || [];
     // já lançado = movimento da conta a recuperar contra a mesma conta de resultado (não vale para a conta de PIS/COFINS
     // sobre vendas, que também recebe a integração das notas)
-    const jaLanc = (cp, tipo) => { const d = dig(cp); if (cp === t.ded) return 0; return r2(R.filter(l => dig(l.cp) === d).reduce((s, l) => s + (tipo === 'cred' ? l.deb - l.cred : l.cred - l.deb), 0)); };
-    let efRec = 0;
+    // já lançado: movimento das contas a recuperar ou a recolher contra a mesma conta de resultado
+    const RR = R.concat(RAZ[t.pag] || []);
+    const jaLanc = (cp, tipo) => { const d = dig(cp); if (cp === t.ded) return 0; return r2(RR.filter(l => dig(l.cp) === d).reduce((s, l) => s + (tipo === 'cred' ? l.deb - l.cred : l.cred - l.deb), 0)); };
+    // os débitos e créditos que faltam vão direto na conta a recolher (passivo) contra o resultado, sem passar pela conta a recuperar
+    let debF = 0, credF = 0;
     grupos(L.deb, k).filter(g => !SPED_DEB.test(norm(g.desc))).forEach(g => {
       const cr = contaResultado(g, k, 'deb'), v = r2(g.v - jaLanc(cr.conta, 'deb'));
       if (Math.abs(v) < 0.01) return;
-      push({ k, tipo: 'Débito não lançado · ' + g.desc, deb: cr.conta, cred: t.rec, valor: v, hist: t.nome + ' S/ ' + g.desc + ' ' + mm, edit: 'deb', key: cr.key, origem: cr.origem });
-      efRec -= v;
+      push({ k, tipo: 'Débito não lançado · ' + g.desc, deb: cr.conta, cred: t.pag, valor: v, hist: t.nome + ' S/ ' + g.desc + ' ' + mm, edit: 'deb', key: cr.key, origem: cr.origem });
+      debF += v;
     });
     const credL = (L.cred || []).filter(l => !ESS_RESUMO.test(norm(l.gDesc))).concat(L.ess || []);
     grupos(credL, k).filter(g => !SPED_CRED.test(norm(g.desc))).forEach(g => {
       const cr = contaResultado(g, k, 'cred'), v = r2(g.v - jaLanc(cr.conta, 'cred'));
       if (Math.abs(v) < 0.01) return;
-      push({ k, tipo: 'Crédito não lançado · ' + g.desc, deb: t.rec, cred: cr.conta, valor: v, hist: 'CRED ' + t.nome + ' S/ ' + g.desc + ' ' + mm, edit: 'cred', key: cr.key, origem: cr.origem });
-      efRec += v;
+      push({ k, tipo: 'Crédito não lançado · ' + g.desc, deb: t.pag, cred: cr.conta, valor: v, hist: 'CRED ' + t.nome + ' S/ ' + g.desc + ' ' + mm, edit: 'cred', key: cr.key, origem: cr.origem });
+      credF += v;
     });
-    // valor a pagar: da conta a recuperar para a conta a recolher (o que falta para chegar ao saldo esperado)
-    const transf = isNaN(c.esperado) || isNaN(c.sf) ? 0 : r2(c.esperado - c.sf);
-    push({ k, tipo: 'Transferência do valor a pagar', deb: t.rec, cred: t.pag, valor: transf, hist: t.nome + ' A RECOLHER APURACAO ' + mm });
-    efRec += transf;
-    // o que sobrar na conta a recuperar vai para o resultado
+    debF = r2(debF); credF = r2(credF);
+    // o saldo da conta a recuperar (integração das notas) é transferido para a conta a recolher; fica só o saldo credor da apuração
     const sfRec = c.rec ? c.rec.sf : 0, alvo = isNaN(c.scFinal) ? 0 : c.scFinal;
-    const resid = c.rec ? r2(alvo - (sfRec + efRec)) : 0;
+    const transf = c.rec ? r2(alvo - sfRec) : 0;   // positivo = débito na conta a recuperar e crédito na conta a recolher
+    push({ k, tipo: 'Transferência do saldo a recuperar para a conta a recolher', deb: t.rec, cred: t.pag, valor: transf, hist: 'TRANSF SALDO ' + t.nome + ' A RECUPERAR P/ A RECOLHER ' + mm });
+    // o que faltar para a conta a recolher chegar à guia é ajuste no resultado (diferenças da integração e do saldo inicial)
+    const pagAntes = isNaN(c.sf) ? NaN : r2(c.sf + debF - credF + transf);
+    const resid = isNaN(c.esperado) || isNaN(pagAntes) ? 0 : r2(c.esperado - pagAntes);
     const keyR = k + '|resid', contaR = (dados.contaLinha || {})[keyR] || t.ded;
-    push({ k, tipo: 'Ajuste no resultado · diferença da integração/saldo inicial', deb: t.rec, cred: contaR, valor: resid, hist: 'AJUSTE ' + t.nome + ' A RECUPERAR X APURACAO ' + mm, edit: 'cred', key: keyR, origem: (dados.contaLinha || {})[keyR] ? 'manual' : 'auto' });
-    c.recApos = r2(sfRec + efRec + resid); c.pagApos = isNaN(c.sf) ? NaN : r2(c.sf + transf); c.transf = transf; c.resid = resid;
+    push({ k, tipo: 'Ajuste no resultado · diferença da integração/saldo inicial', deb: contaR, cred: t.pag, valor: resid, hist: 'AJUSTE ' + t.nome + ' A RECOLHER X APURACAO ' + mm, edit: 'deb', key: keyR, origem: (dados.contaLinha || {})[keyR] ? 'manual' : 'auto' });
+    c.recApos = r2(sfRec + transf); c.pagApos = isNaN(pagAntes) ? NaN : r2(pagAntes + resid);
+    Object.assign(c, { debF, credF, transf, resid });
     // decomposição da sobra: saldo inicial × saldo credor da planilha e integração (SPED) × apuração
     const spedD = r2(grupos(L.deb, k).filter(g => SPED_DEB.test(norm(g.desc))).reduce((s, g) => s + g.v, 0));
     const spedC = r2(grupos(L.cred, k).filter(g => SPED_CRED.test(norm(g.desc))).reduce((s, g) => s + g.v, 0));
@@ -814,13 +819,13 @@ function renderConf(C, md){
   h += linha('Saldo final no balancete', v(P.sf), v(F.sf), balMes ? '' : '<span class="dbad">Sem balancete do mês no Book.</span>', 'cmp');
   h += linha('Diferença (balancete − esperado)', chk(P.dif), chk(F.dif), (isNaN(P.dif) && isNaN(F.dif)) ? '' : 'Positivo = balancete com saldo a mais do que deveria', 'cmp');
   if (md.apur){
-    h += linha('(+) Lançamentos a fazer nesta conta', v(P.transf), v(F.transf), 'Transferência do valor a pagar (quadro “Lançamentos a fazer”)');
-    h += linha('= Saldo depois dos lançamentos', v(P.pagApos), v(F.pagApos), 'PIS ' + chk(r2(P.pagApos - P.esperado)) + ' · COFINS ' + chk(r2(F.pagApos - F.esperado)), 'res');
-    h += linha('<b>Conta a recuperar</b>', '', '', 'PIS ' + TRIB.pis.rec + ' · COFINS ' + TRIB.cof.rec + ' (saldo devedor = positivo)', 'sub');
-    h += linha('Saldo no balancete', v(P.rec ? P.rec.sf : NaN), v(F.rec ? F.rec.sf : NaN), 'Integração das notas (vendas, compras e devoluções) e saldo trazido');
-    const sobra = c => c.decomp ? `saldo inicial ${fmt(c.decomp.saIni)} × saldo credor da planilha ${fmt(c.decomp.sc)}; débitos da integração ${fmt(c.decomp.lancD)} × apurado ${fmt(c.decomp.spedD)}; créditos da integração ${fmt(c.decomp.lancC)} × apurado ${fmt(c.decomp.spedC)}` : '';
-    h += linha('Ajuste no resultado (sobra)', v(P.resid), v(F.resid), 'PIS: ' + sobra(P) + '<br>COFINS: ' + sobra(F));
-    h += linha('= Saldo depois dos lançamentos', v(P.recApos), v(F.recApos), 'Esperado: saldo credor da apuração (PIS ' + v(P.scFinal) + ' · COFINS ' + v(F.scFinal) + ') — PIS ' + chk(r2(P.recApos - P.scFinal)) + ' · COFINS ' + chk(r2(F.recApos - F.scFinal)), 'res');
+    const sobra = c => c.decomp ? `saldo inicial do a recuperar ${fmt(c.decomp.saIni)} × saldo credor da planilha ${fmt(c.decomp.sc)}; débitos da integração ${fmt(c.decomp.lancD)} × apurado ${fmt(c.decomp.spedD)}; créditos da integração ${fmt(c.decomp.lancC)} × apurado ${fmt(c.decomp.spedC)}` : '';
+    h += linha('<b>Lançamentos a fazer na conta a recolher</b>', '', '', 'Quadro “Lançamentos a fazer” (direto no passivo, contra o resultado)', 'sub');
+    h += linha('(+) Débitos não lançados', v(P.debF), v(F.debF), 'Receitas financeiras e outras receitas (contra o resultado)');
+    h += linha('(−) Créditos não lançados', v(P.credF), v(F.credF), 'Créditos sobre despesas, fretes, imobilizado, locações e essencialidade (contra o resultado)');
+    h += linha('(+) Transferência do saldo a recuperar', v(P.transf), v(F.transf), 'Saldo da integração das notas: PIS ' + TRIB.pis.rec + ' ' + v(P.rec ? P.rec.sf : NaN) + ' · COFINS ' + TRIB.cof.rec + ' ' + v(F.rec ? F.rec.sf : NaN) + ' (fica só o saldo credor da apuração)');
+    h += linha('(±) Ajuste no resultado', v(P.resid), v(F.resid), 'Positivo = despesa a mais. PIS: ' + sobra(P) + '<br>COFINS: ' + sobra(F));
+    h += linha('= Saldo depois dos lançamentos', v(P.pagApos), v(F.pagApos), 'Igual à guia: PIS ' + chk(r2(P.pagApos - P.esperado)) + ' · COFINS ' + chk(r2(F.pagApos - F.esperado)) + ' · a recuperar depois: PIS ' + v(P.recApos) + ' · COFINS ' + v(F.recApos), 'res');
   }
   $('confBody').innerHTML = h;
   $('confInfo').innerHTML = 'O saldo esperado das contas vai sozinho para o Book de conciliação como suporte (fonte “PIS/COFINS”).';
