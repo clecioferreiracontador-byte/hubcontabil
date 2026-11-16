@@ -768,6 +768,8 @@ const cols=m=>m==='all'?Array.from({length:numMeses},(_,i)=>i):[parseInt(m)];
 var FULLVALS=false;try{FULLVALS=localStorage.getItem('nhdFullVals')==='1';}catch(e){}
 const fmt=v=>{v=(typeof v==='number'&&isFinite(v))?v:0;const a=Math.abs(v),n=v<0;if(FULLVALS){const t='R$ '+a.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});return n?'-'+t:t;}let s=a>=1e6?'R$ '+(a/1e6).toFixed(2)+'M':a>=1e3?'R$ '+(a/1e3).toFixed(0)+'K':'R$ '+Math.round(a).toLocaleString('pt-BR');return n?'-'+s:s;};
 const fmtx=v=>(isFinite(v)?v:0).toFixed(2).replace('.',',');
+/* eixos dos gráficos: valor inteiro, sem centavos (ex.: R$ 60.000.000) */
+const fmtEixo=v=>{if(!FULLVALS)return fmt(v);v=(typeof v==='number'&&isFinite(v))?v:0;const t='R$ '+Math.round(Math.abs(v)).toLocaleString('pt-BR');return v<0?'-'+t:t;};
 const pf=(v,b)=>b?((v/b)*100).toFixed(1)+'%':'—';
 const sumAll=arr=>arr.slice(0,numMeses).reduce((a,v)=>a+v,0);
 Chart.defaults.font.family='Calibri';Chart.defaults.font.size=11;Chart.defaults.color=tc;
@@ -775,7 +777,7 @@ const tip={backgroundColor:'#0F2035',borderColor:'rgba(201,168,76,.25)',borderWi
 function bopt(yF,stk){
   var o={responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
     plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:function(ctx){return ' '+(ctx.dataset.label||'')+(yF==='pct'?': '+ctx.raw.toFixed(1)+'%':': '+fmt(ctx.raw));}}}},
-    scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:11,family:'Calibri',weight:'500'},autoSkip:false,maxRotation:0}},y:{grid:{color:gc,lineWidth:1},ticks:{color:tc,font:{size:11,family:'Calibri'},callback:function(v){return yF==='pct'?v+'%':fmt(v);}}}}};
+    scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:11,family:'Calibri',weight:'500'},autoSkip:false,maxRotation:0}},y:{grid:{color:gc,lineWidth:1},ticks:{color:tc,font:{size:11,family:'Calibri'},callback:function(v){return yF==='pct'?v+'%':fmtEixo(v);}}}}};
   if(stk){o.scales.x.stacked=true;o.scales.y.stacked=true;}
   return o;
 }
