@@ -268,11 +268,11 @@ td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
   <span class="brand">PIS/COFINS</span>
   <button type="button" class="toggler" id="navToggle" aria-expanded="false" aria-controls="menuAbas" aria-label="Alternar menu">☰ Menu</button>
   <div class="menu" id="menuAbas" role="tablist">
-    <button type="button" role="tab" aria-selected="true" data-tab="conferencia">1 · Saldo final</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="apuracao">2 · Apuração</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="guias">3 · Guias</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="razao">4 · Razão do mês</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="processo">5 · Como funciona</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="processo">1 · Processo mensal</button>
+    <button type="button" role="tab" aria-selected="true" data-tab="conferencia">2 · Saldo final</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="apuracao">3 · Apuração</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="guias">4 · Guias</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="razao">5 · Razão do mês</button>
   </div>
 </div></nav>
 <main class="wrap">
@@ -371,15 +371,16 @@ td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
   <div class="box"><h2>Passo a passo</h2><ol class="steps">
     <li>No <b>Book de conciliação</b>, importar o balancete e o razão do mês (o mês escolhido lá abre aqui).</li>
     <li>Aqui, importar a <b>planilha de apuração</b> do mês e os <b>PDFs dos DARFs</b>.</li>
-    <li>Na etapa <b>1 · Saldo final</b>, ver o saldo esperado de cada conta, o saldo do balancete e a diferença.</li>
-    <li>Se houver diferença, a parte <b>Movimento contábil do mês</b> e a etapa <b>4 · Razão do mês</b> mostram o que foi provisionado, compensado e pago.</li>
+    <li>Na etapa <b>2 · Saldo final</b>, ver o saldo esperado de cada conta, o saldo do balancete, a diferença e os <b>lançamentos a fazer</b> (baixar o CSV para importar).</li>
+    <li>Se houver diferença, a parte <b>Movimento contábil do mês</b> e a etapa <b>5 · Razão do mês</b> mostram o que foi provisionado, compensado e pago.</li>
   </ol></div>
   <div class="box"><h2>Regras</h2><table><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
     <tr><td>R1</td><td>Valor a pagar do mês = débitos − créditos − retenções − saldo credor anterior (linha TOTAL da planilha). Se der saldo credor, não há guia e o valor fica para o mês seguinte.</td></tr>
     <tr><td>R2</td><td>A guia (DARF) da competência tem de ser igual ao valor a pagar apurado.</td></tr>
     <tr><td>R3</td><td><b>Saldo final esperado</b> da conta a recolher = guia do mês (ou valor apurado, sem guia) + o que sobrou sem pagar do saldo anterior (saldo anterior − pagamentos lançados no mês).</td></tr>
     <tr><td>R4</td><td>Razão da conta a recolher: crédito = provisão do débito; débito com contrapartida na conta a recuperar (1.1.03.1006 / 1.1.03.1007) ou histórico de compensação = compensação de créditos; demais débitos = pagamento.</td></tr>
-    <tr><td>R5</td><td>Diferença até R$ 0,01 é arredondamento.</td></tr>
+    <tr><td>R5</td><td>Lançamentos a fazer: vendas, compras e devoluções vêm da integração das notas na conta a recuperar. O que falta da apuração (receitas financeiras, outras receitas, créditos sobre despesas, imobilizado, locações, essencialidade) vai <b>direto na conta a recolher contra o resultado</b>; o saldo da conta a recuperar é transferido para a conta a recolher e a diferença que sobrar é ajuste no resultado (PIS/COFINS sobre vendas).</td></tr>
+    <tr><td>R6</td><td>Diferença até R$ 0,01 é arredondamento.</td></tr>
   </tbody></table></div>
 </section>
 
