@@ -616,22 +616,27 @@ function calcular(m){
   const esperado = R ? salDctf(R) : NaN, dif = R ? r2(tot.sf - esperado) : NaN;
   const decAnt = RA ? salDctf(RA) : NaN;
   // reclassificações: zera as contas de origem contra a 2.1.15.1011
-  const LANC = [], H = ' ' + MES[+m.slice(5, 7) - 1].toUpperCase() + '/' + m.slice(0, 4);
+  // Um lançamento por conta de origem, pelo saldo final: o que já foi transferido
+  // (inclusive DARF lançado na origem e compensado pela transferência) não gera ajuste.
+  const LANC = [], AVISO = [], H = ' ' + MES[+m.slice(5, 7) - 1].toUpperCase() + '/' + m.slice(0, 4);
   FONTES.forEach(c => {
     const x = X[c]; if (!x.tem) return;
-    const nome = NOME_C[c] || c, P = x.pag;
-    if (P > 0.005) LANC.push({ tipo: 'pag', nome: `Pagamento (DARF) lançado na ${c} — ${nome}: reclassificar para a conta da DCTFWeb`, deb: C_DCTF, cred: c, valor: P,
-      hist: 'VR REF RECLASS PAGTO DCTFWEB LANCADO EM ' + norm(nome) + H, det: x.lPag.map(l => br(l.data) + ' ' + l.hist + ' ' + fmt(l.deb)).join(' · ') });
-    const Rr = r2(x.sf + (P > 0.005 ? P : 0));
-    if (Rr > 0.005) LANC.push({ tipo: 'transf', nome: `Provisão de ${grupoDaConta(c) === 'cp' ? 'contribuição previdenciária' : GR[grupoDaConta(c)].nome} está na ${c} — ${nome}: transferir para a conta da DCTFWeb`, deb: c, cred: C_DCTF, valor: Rr,
-      hist: 'VR TRANSF SALDO ' + norm(nome) + ' P/ DCTFWEB' + H });
-    else if (Rr < -0.005){
-      const exc = x.transf < -0.005;   // transferiu para a DCTFWeb mais do que tinha de provisão
-      LANC.push({ tipo: 'dev', nome: exc ? `Transferência para a DCTFWeb maior que a provisão na ${c} — ${nome} (transferido ${fmt(-x.transf)}, provisão do mês ${fmt(x.mov)}): estornar o excesso`
-          : `Saldo devedor na ${c} — ${nome} (débitos sem provisão): reclassificar para a conta da DCTFWeb`, deb: C_DCTF, cred: c, valor: -Rr,
-        hist: (exc ? 'VR ESTORNO TRANSF A MAIOR ' : 'VR REF RECLASS SALDO DEVEDOR ') + norm(nome) + ' P/ DCTFWEB' + H }); }
+    const nome = NOME_C[c] || c, P = x.pag, sf = r2(x.sf);
+    const det = P > 0.005 ? 'DARF lançado na própria conta: ' + x.lPag.map(l => br(l.data) + ' ' + l.hist + ' ' + fmt(l.deb)).join(' · ') : '';
+    if (ok(sf)){
+      if (P > 0.005) AVISO.push({ conta: c, nome, valor: P, det });
+      return;
+    }
+    if (sf > 0) LANC.push({ tipo: 'transf', nome: `Provisão de ${grupoDaConta(c) === 'cp' ? 'contribuição previdenciária' : GR[grupoDaConta(c)].nome} está na ${c} — ${nome}: transferir para a conta da DCTFWeb`, deb: c, cred: C_DCTF, valor: sf,
+      hist: 'VR TRANSF SALDO ' + norm(nome) + ' P/ DCTFWEB' + H, det });
+    else {
+      const exc = x.transf < -0.005 && P <= 0.005;   // transferiu para a DCTFWeb mais do que tinha de provisão
+      LANC.push({ tipo: 'dev', nome: P > 0.005 ? `DARF lançado na ${c} — ${nome} maior que a provisão transferida: reclassificar o saldo devedor para a conta da DCTFWeb`
+          : exc ? `Transferência para a DCTFWeb maior que a provisão na ${c} — ${nome} (transferido ${fmt(-x.transf)}, provisão do mês ${fmt(x.mov)}): estornar o excesso`
+          : `Saldo devedor na ${c} — ${nome} (débitos sem provisão): reclassificar para a conta da DCTFWeb`, deb: C_DCTF, cred: c, valor: -sf,
+        hist: (P > 0.005 ? 'VR REF RECLASS PAGTO DCTFWEB LANCADO EM ' : exc ? 'VR ESTORNO TRANSF A MAIOR ' : 'VR REF RECLASS SALDO DEVEDOR ') + norm(nome) + ' P/ DCTFWEB' + H, det }); }
   });
-  return { R, RA, X, G, tot, outros1011, resid, esperado, dif, decAnt, LANC };
+  return { R, RA, X, G, tot, outros1011, resid, esperado, dif, decAnt, LANC, AVISO };
 }
 let CALC = null;
 const descConta = c => { const b = bc(c); return b && b.desc ? b.desc : (NOME_C[c] || ''); };
@@ -718,8 +723,10 @@ function renderDiv(){
   const desat = GRUPO.concat(Object.values(INFO)).filter(c => RAZ.__ok && C.X[c].tem && !C.X[c].razOk);
   if (desat.length) out.push(item('warn', 'Razão do Book diferente do balancete em ' + desat.join(', '), 'Os débitos/créditos do razão importado não batem com o balancete (o balancete é mais recente?). Importe o razão atualizado no Book para a análise ficar exata.'));
   // contas de origem com saldo
-  C.LANC.forEach(l => out.push(item('err', l.tipo === 'pag' ? 'Pagamento fora da conta da DCTFWeb' : l.tipo === 'transf' ? 'Provisão fora da conta da DCTFWeb' : 'Saldo devedor em conta de origem (' + l.cred + ')',
+  C.LANC.forEach(l => out.push(item('err', l.tipo === 'transf' ? 'Provisão fora da conta da DCTFWeb' : 'Saldo devedor em conta de origem (' + l.cred + ')',
     esc(l.nome) + ' — <b>' + fmt(l.valor) + '</b> (D ' + l.deb + ' / C ' + l.cred + ').' + (l.det ? '<br><span class="muted">' + esc(l.det) + '</span>' : ''))));
+  (C.AVISO || []).forEach(a => out.push(item('', 'DARF lançado na ' + a.conta + ' — ' + esc(a.nome) + ' (' + fmt(a.valor) + '), já compensado',
+    'A transferência de fim de mês levou o pagamento para a 2.1.15.1011 e a conta fechou zerada: não precisa de reclassificação. O ideal é lançar o DARF direto na 2.1.15.1011.<br><span class="muted">' + esc(a.det) + '</span>')));
   if (R && RAZ.__ok){
     KG.forEach(g => { const o = C.G[g]; if (ok(o.dif)) return;
       let dica = '';
