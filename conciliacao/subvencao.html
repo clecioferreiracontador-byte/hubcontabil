@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subvenção ICMS Audicon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tema Audicon (mesmo padrão da Conferência de Faturamento): azul #122A4F, dourado #CD9A56, Red Hat Display */
+:root{
+  --aud-primary:#122A4F; --aud-primary-dark:#0C182B; --aud-secondary:#CD9A56; --aud-secondary-hover:#B5833F;
+  --aud-text:#231F20; --aud-white:#FFFFFF; --aud-gray-100:#F1F1F1; --aud-gray-500:#69727D; --aud-gray-700:#33373D;
+  --aud-gold-soft:rgba(205,154,86,.55);
+  --aud-success:#04751A; --aud-warning:#F5AD00; --aud-info:#46CECD; --aud-danger:#FF0016; --aud-danger-text:#B0000F;
+  --aud-radius:.5rem;
+  --font:"Red Hat Display","Segoe UI",Calibri,Arial,sans-serif;
+  /* nomes usados pelo código dos painéis */
+  --page-bg:var(--aud-gray-100); --panel:#fff; --panel-2:#F7F8FA; --border:#e1e4e8;
+  --text:var(--aud-text); --muted:var(--aud-gray-500); --accent:var(--aud-primary); --accent-2:var(--aud-secondary);
+  --good:var(--aud-success); --warn:#8A5A00; --bad:var(--aud-danger-text); --bad-border:#f5b5bb;
+  --btn-bg:#fff; --textarea-bg:#fff; --textarea-border:#c5cbd3;
+  --results-bg:#F7F8FA; --results-border:#e1e4e8; --item-bg:#fff; --item-border:#e1e4e8; --badge-bg:var(--aud-gray-100);
+  --radius:var(--aud-radius);
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--aud-gray-100);color:var(--aud-text);font-family:var(--font);font-weight:400;line-height:1.5}
+h1,h2,h3,h4{font-weight:600;color:var(--aud-primary);margin:0}
+.wrap{width:100%;margin:0 auto;padding:0 16px}
+@media (min-width:576px){.wrap{max-width:540px}}
+@media (min-width:768px){.wrap{max-width:720px}}
+@media (min-width:992px){.wrap{max-width:960px}}
+@media (min-width:1200px){.wrap{max-width:1140px}}
+@media (min-width:1400px){.wrap{max-width:1320px}}
+/* cabeçalho */
+header.top{background:var(--aud-primary);color:var(--aud-white);padding:10px 0 9px;border-bottom:3px solid var(--aud-secondary)}
+header.top .eyebrow{color:var(--aud-secondary);font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
+header.top h1{color:var(--aud-white);font-size:clamp(1.05rem,.95rem + .45vw,1.3rem);line-height:1.25}
+header.top p{margin:2px 0 0;font-size:.78rem;color:#dbe3ef}
+/* menu de etapas (hambúrguer abaixo de 992px) */
+nav.tabs{background:var(--aud-primary-dark);position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(5,11,20,.25)}
+nav.tabs .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between}
+nav.tabs .brand{color:var(--aud-white);font-weight:600;font-size:.875rem;padding:12px 0}
+nav.tabs .toggler{display:inline-flex;border:1px solid var(--aud-gold-soft);background:transparent;color:var(--aud-white);border-radius:var(--aud-radius);padding:6px 10px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer}
+nav.tabs .menu{display:none;width:100%;flex-direction:column;padding-bottom:8px}
+nav.tabs .menu.open{display:flex}
+nav.tabs .menu button{border:0;border-left:3px solid transparent;background:transparent;color:var(--aud-white);padding:10px 12px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;text-align:left;border-radius:0}
+nav.tabs .menu button:hover{color:var(--aud-secondary);filter:none}
+nav.tabs .menu button[aria-selected="true"]{color:var(--aud-secondary);border-left-color:var(--aud-secondary)}
+@media (min-width:992px){
+  nav.tabs .toggler{display:none}
+  nav.tabs .menu{display:flex;flex-direction:row;width:auto;padding-bottom:0;gap:4px}
+  nav.tabs .menu button{border-left:0;border-bottom:3px solid transparent;padding:14px 16px;text-align:center}
+  nav.tabs .menu button[aria-selected="true"]{border-bottom-color:var(--aud-secondary)}
+}
+main{padding-top:24px;padding-bottom:40px}
+@media (min-width:992px){main{padding-top:32px;padding-bottom:56px}}
+section.panel{display:none}
+section.panel.active{display:block}
+/* cartões: blocos da página (.box, .summary) e cartões de cada cota/parcelamento (.card) */
+.box,.summary{background:var(--aud-white);border:0;border-radius:var(--aud-radius);padding:20px;margin-bottom:20px;box-shadow:0 .125rem .5rem rgba(18,42,79,.12);overflow-x:auto}
+.box h2,.summary h2{margin:0 0 12px;font-size:clamp(1.15rem,1rem + .6vw,1.4rem);color:var(--aud-primary);padding-bottom:8px;border-bottom:2px solid var(--aud-gold-soft)}
+.box h3{margin:14px 0 6px;font-size:1rem;color:var(--aud-primary)}
+.summary h2 .tag{font-size:.8rem!important;font-weight:500!important;color:var(--aud-gray-500)!important;margin-left:6px}
+.summary h2 select{font-size:.85rem!important}
+.muted{color:var(--aud-gray-500)}
+.small{font-size:.85rem}
+/* barra de ações */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar label{display:flex;align-items:center;gap:6px;margin:0;font-size:.85rem!important;font-weight:600;color:var(--aud-gray-700)!important}
+.toolbar select{width:auto!important}
+.pdf-msg{font-size:.85rem;margin-left:4px}
+/* botões: principal dourado com texto azul; demais brancos com borda azul */
+button{cursor:pointer;border:1px solid var(--aud-primary);background:var(--aud-white);color:var(--aud-primary);padding:8px 14px;border-radius:var(--aud-radius);font:inherit;font-size:.8125rem;font-weight:600;line-height:1.3}
+button:hover{background:var(--aud-primary);color:var(--aud-white)}
+button.primary{background:var(--aud-secondary);border-color:var(--aud-secondary);color:var(--aud-primary)}
+button.primary:hover{background:var(--aud-secondary-hover);border-color:var(--aud-secondary-hover);color:var(--aud-primary)}
+button.ghost{border-color:#c5cbd3;color:var(--aud-gray-700)}
+button.ghost:hover{background:var(--aud-gray-100);color:var(--aud-primary)}
+button.danger{color:var(--aud-danger-text);border-color:var(--bad-border);background:var(--aud-white)}
+button.danger:hover{background:#FFE3E6;color:var(--aud-danger-text)}
+:focus-visible{outline:3px solid var(--aud-secondary);outline-offset:2px}
+input[type=file]{display:none}
+/* tabelas: cabeçalho azul, total com linha dourada */
+table{border-collapse:collapse;width:100%;font-size:.875rem}
+th,td{padding:7px 9px;text-align:right;border-bottom:1px solid #e1e4e8;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child,td.left,th.left{text-align:left}
+thead th{background:var(--aud-primary);color:var(--aud-white);font-weight:600;font-size:.8rem}
+tfoot td{font-weight:700;background:var(--aud-gray-100);border-top:2px solid var(--aud-secondary)}
+tbody tr:hover td{background:#fbf3e8}
+/* cartão de cada cota / parcelamento */
+.card{background:var(--aud-white);border:0;border-radius:var(--aud-radius);margin-bottom:16px;overflow:hidden;box-shadow:0 .125rem .5rem rgba(18,42,79,.12)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--aud-white);padding:12px 18px;border-left:5px solid var(--aud-secondary);border-bottom:1px solid #e1e4e8;cursor:pointer}
+.card-head .title{font-weight:600;font-size:1rem;color:var(--aud-primary)}
+.card-head .title .tag{font-weight:500;color:var(--aud-gray-500);font-size:.8rem;margin-left:8px}
+.card-body{padding:18px;display:none}
+.card.open .card-body{display:block}
+.card-head .chev{transition:transform .15s;color:var(--aud-secondary)}
+.card.open .card-head .chev{transform:rotate(90deg)}
+.paste-box{margin-bottom:14px}
+.paste-box textarea{width:100%;min-height:90px;font-family:Consolas,monospace;font-size:.75rem;border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:10px;resize:vertical;background:#fff;color:var(--aud-text)}
+.paste-actions{display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap}
+.parse-msg{font-size:.85rem;color:var(--aud-success)}
+.parse-msg.err{color:var(--aud-danger-text)}
+fieldset{border:1px solid #e1e4e8;border-radius:var(--aud-radius);margin:0 0 14px;padding:12px 14px}
+legend{font-size:.8rem;font-weight:600;color:var(--aud-primary);padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 14px}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--aud-gray-700);margin-bottom:3px}
+input[type=text],input[type=date],input[type=number],select{width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);background:var(--aud-white);color:var(--aud-text)}
+select:focus,input:focus{outline:none;border-color:var(--aud-secondary)}
+input[readonly]{background:#F7F8FA}
+/* resultados (indicadores no estilo KPI) */
+.results{background:#F7F8FA;border:1px solid #e1e4e8;border-radius:var(--aud-radius);padding:14px 16px}
+.results h3{font-size:.95rem;margin:0 0 10px;color:var(--aud-primary)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px}
+.rgrid .item{background:var(--aud-white);border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary);border-radius:var(--aud-radius);padding:8px 10px}
+.rgrid .item .lbl{font-size:.75rem;color:var(--aud-gray-500)}
+.rgrid .item .val{font-size:1rem;font-weight:700;margin-top:2px;color:var(--aud-text)}
+.rgrid .item.hi{border-top-color:var(--aud-primary)}
+.rgrid .item.hi .val{color:var(--aud-primary)}
+/* notas e etiquetas */
+.note{font-size:.8rem;margin-top:10px;padding:8px 12px;border-radius:var(--aud-radius);background:#FFF8E6;border-left:4px solid var(--aud-warning);color:var(--aud-text)}
+.note.exact{background:#EAF6EC;border-left-color:var(--aud-success);color:#0b4f1a}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap;background:var(--aud-gray-100);color:var(--aud-primary);margin-left:6px}
+.badge.ok{background:var(--aud-success);color:var(--aud-white)}
+.badge.warn{background:var(--aud-warning);color:var(--aud-text)}
+.dif-ok{color:var(--aud-success);font-weight:700}
+.dif-bad{color:var(--aud-danger-text);font-weight:700}
+.conc-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 14px;margin-bottom:12px}
+/* roteiro (etapa 1) */
+ol.steps{padding-left:22px;margin:6px 0}
+ol.steps li{margin:8px 0}
+ul.cl{padding-left:0;margin:6px 0}
+ul.cl li{list-style:none;margin:6px 0}
+ul.cl label{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;font-weight:400;color:var(--aud-text)}
+.box table td,.box table th{white-space:normal;text-align:left}
+footer{display:none}
+@media (max-width:575px){html{font-size:15px}.box,.summary{padding:14px}}
+@media print{
+  header.top,nav.tabs,.toolbar,.card-head button,.paste-actions,.paste-box{display:none!important}
+  body{background:#fff}.box,.summary,.card{box-shadow:none}
+  section.panel{display:block!important}
+}
+/* modo visualização (usuário com permissão "Book: visualizar"): nada de importar, salvar ou editar */
+body.leitura .upl-grid,body.leitura .so-admin,body.leitura .lupa,body.leitura nav.tabs button[data-tab="lanc"],body.leitura nav.tabs button[data-tab="fontes"],
+body.leitura ul.cl,body.leitura #btnLimparChecklist,body.leitura .so-admin-box{display:none!important}
+body.leitura #bkBody input,body.leitura #bkBody textarea,body.leitura #bkBody select{pointer-events:none;background:transparent;border-color:transparent;resize:none;color:inherit;opacity:1;-webkit-appearance:none;appearance:none}
+.ro-aviso{display:none;margin:0 0 10px;padding:9px 12px;border-radius:8px;background:#EAF2FB;color:#1A3A6B;font-size:.9rem;border:1px solid #BBD3EE}
+body.leitura .ro-aviso{display:block}
+</style>
+<style>
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--aud-success);color:#fff}
+.pill.bad{background:#FFE3E6;color:var(--aud-danger-text);border:1px solid #f5b5bb}
+.pill.warn{background:var(--aud-warning);color:var(--aud-text)}
+.pill.info{background:var(--aud-info);color:var(--aud-primary)}
+.pill.cinza{background:var(--aud-gray-100);color:var(--aud-gray-500)}
+.msg{padding:10px 14px;border-radius:var(--aud-radius);margin:8px 0;font-size:.9rem;background:#fff;border:1px solid #e1e4e8;border-left:5px solid var(--aud-primary)}
+.msg.err{border-left-color:var(--aud-danger);background:#FFF1F2;color:var(--aud-danger-text)}
+.msg.warn{border-left-color:var(--aud-warning);background:#FFF8E6}
+.msg.ok{border-left-color:var(--aud-success);background:#EAF6EC;color:#0b4f1a}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.filters label{display:flex;flex-direction:column;font-size:.78rem;font-weight:600;color:var(--aud-gray-700);gap:3px;margin:0}
+.filters select,.filters input[type=text]{width:auto}
+.filters label.ck{flex-direction:row;align-items:center;gap:6px}
+.tscroll{overflow:auto;max-height:680px;border:1px solid #e1e4e8;border-radius:var(--aud-radius)}
+.tscroll thead th{position:sticky;top:0;z-index:2}
+/* Bens: filtros e cabeçalho da tabela ficam congelados ao descer pelos lançamentos */
+.box.bensMain{overflow:visible}
+.bensTopo{position:sticky;top:var(--navH,0px);z-index:6;background:var(--aud-white);margin:0 -20px;padding:8px 20px 10px}
+.bensMain .tscroll{overflow:visible;max-height:none}
+.bensMain .tscroll thead th{top:calc(var(--navH,0px) + var(--topoH,0px))}
+td.wrap,th.wrap{white-space:normal;text-align:left}
+td input[type=text]{padding:4px 6px;font-size:.82rem;min-width:110px}
+td input.obs{min-width:220px}
+td select{padding:3px 4px;font-size:.8rem;width:auto}
+/* Book compacto: usa a largura toda e cabe sem rolagem lateral */
+.wrap{max-width:none!important;padding:0 8px}
+#tab-conferencia .box{padding:12px 10px}
+table.bk{font-size:.72rem;table-layout:auto}
+table.bk th,table.bk td{padding:4px 4px}
+table.bk thead th{font-size:.68rem;white-space:normal;line-height:1.15;text-align:center}
+table.bk .dsc{width:112px;white-space:normal;line-height:1.2;overflow-wrap:anywhere}
+table.bk td input[type=text]{min-width:0;width:68px;padding:2px 4px;font-size:.72rem}
+table.bk td.obs{width:30%;min-width:175px}
+table.bk td.c-raz{width:22px;text-align:center}
+table.bk textarea.obs{width:100%;min-height:30px;font:inherit;font-size:.76rem;line-height:1.25;padding:3px 6px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);resize:vertical;background:#fff;color:var(--aud-text)}
+table.bk textarea.obs:focus{outline:none;border-color:var(--aud-secondary)}
+table.bk .auto{font-size:.66rem;line-height:1.2}
+table.bk .lupa{font-size:.9rem;padding:0 2px}
+/* status: a própria etiqueta abre as opções */
+select.stsel{appearance:none;-webkit-appearance:none;border:0;cursor:pointer;padding:3px 18px 3px 8px;border-radius:999px;font:inherit;font-size:.68rem;font-weight:600;width:auto;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23122A4F' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
+select.stsel.ok{background-color:var(--aud-success);color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23fff' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
+select.stsel.bad{background-color:#FFE3E6;color:var(--aud-danger-text);box-shadow:inset 0 0 0 1px #f5b5bb}
+select.stsel.warn{background-color:var(--aud-warning);color:var(--aud-text)}
+select.stsel.info{background-color:var(--aud-info);color:var(--aud-primary)}
+select.stsel.cinza{background-color:var(--aud-gray-100);color:var(--aud-gray-500)}
+select.stsel option{background:#fff;color:var(--aud-text);font-weight:400}
+select.stsel.manual{outline:2px dashed var(--aud-secondary);outline-offset:1px}
+tr.grp td{background:#EEF2F8;font-weight:700;color:var(--aud-primary)}
+tr.grp1 td{background:var(--aud-primary);color:#fff;font-weight:700}
+tr.grp0 td{background:#0C182B;color:#fff;font-weight:700;font-size:.95rem}
+tr.grp0 td .dsc{color:#CD9A56}
+.fech{margin-bottom:14px}
+.fech h2{margin-bottom:4px}
+.fech .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:10px}
+.fech .card{border:1px solid #e1e4e8;border-radius:var(--aud-radius);padding:12px 14px;background:#fff}
+.fech .card h3{font-size:.85rem;margin:0 0 8px;color:var(--aud-primary)}
+.fech .card table{width:100%;border-collapse:collapse;font-size:.85rem}
+.fech .card td{padding:3px 0;border-bottom:1px dashed #eceff3}
+.fech .card td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fech .card tr.tot td{font-weight:700;border-bottom:0;padding-top:6px}
+.fech .res{font-size:1.25rem;font-weight:700}
+.fech .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:700}
+.fech .pill.ok{background:#E3F4E7;color:var(--aud-success)}
+.fech .pill.bad{background:#FDE7E9;color:var(--aud-danger-text)}
+.fech .pill.info{background:#EEF2F8;color:var(--aud-primary)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-bottom:14px}
+.kpi{border-radius:var(--aud-radius);padding:12px 14px;background:#fff;border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary)}
+.kpi .t{font-size:.78rem;font-weight:600;color:var(--aud-gray-500)}
+.kpi .v{font-size:1.15rem;font-weight:700;color:var(--aud-primary)}
+.upl{border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:14px;background:#fff}
+.upl h3{margin:0 0 4px;font-size:1rem}
+.empty{padding:24px;text-align:center;color:var(--aud-gray-500)}
+.dbad{color:var(--aud-danger-text);font-weight:600}
+.dok{color:var(--aud-success);font-weight:600}
+.lupa{border:0;background:transparent;cursor:pointer;font-size:1rem;padding:2px 4px}
+.lupa:hover{background:var(--aud-gray-100);color:inherit}
+.auto{font-size:.72rem;color:var(--aud-gray-500)}
+</style>
+<script src="vendor/sheetjs/xlsx.full.min.js"></script>
+<script src="vendor/pdfjs/pdf.min.js"></script>
+<script src="hub-db.js?v=2"></script>
+<script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=3" data-dados="aud-subvencao-v1"></script>
+<style>
+.wrap{max-width:none!important;padding:0 8px}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:14px}
+.kpi .s{font-size:.72rem;color:var(--aud-gray-500)}
+.kpi.ok{border-top-color:var(--aud-success)}.kpi.bad{border-top-color:var(--aud-danger)}
+table.pc{font-size:.82rem}
+table.pc th,table.pc td{padding:5px 9px}
+table.pc td:first-child{white-space:normal;text-align:left}
+table.pc tr.sub td{background:#F7F8FA;font-weight:700;color:var(--aud-primary)}
+table.pc tr.res td{background:#FFF8E6;font-weight:700;color:var(--aud-primary);border-top:2px solid var(--aud-secondary)}
+table.pc tr.cmp td{font-weight:700}
+table.pc td.ex{font-size:.72rem;color:var(--aud-gray-500);white-space:normal;text-align:left;max-width:360px}
+table.pc .neg{color:var(--aud-danger-text)}
+.upl-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#EEF2F8;color:var(--aud-primary);border-radius:999px;padding:2px 4px 2px 10px;font-size:.74rem;font-weight:600}
+.chip button{border:0;background:transparent;padding:0 6px;font-size:.9rem;line-height:1;color:var(--aud-gray-500)}
+.chip button:hover{background:#fff;color:var(--aud-danger-text)}
+td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
+.passo{counter-reset:p}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="eyebrow">Audicon Contadores · Controladoria</div>
+  <h1>Subvenção de ICMS — Regime Especial (TTD) × Contabilidade</h1>
+  <p>NHD Foods · Filial 03 · Confere a planilha de avaliação da subvenção, a apuração do regime especial e a guia do recolhimento efetivo com os lançamentos do razão do Book de conciliação e aponta o que falta lançar</p>
+</div></header>
+<nav class="tabs" role="navigation" aria-label="Etapas"><div class="wrap">
+  <span class="brand">Subvenção</span>
+  <button type="button" class="toggler" id="navToggle" aria-expanded="false" aria-controls="menuAbas" aria-label="Alternar menu">☰ Menu</button>
+  <div class="menu" id="menuAbas" role="tablist">
+    <button type="button" role="tab" aria-selected="false" data-tab="processo">1 · Processo mensal</button>
+    <button type="button" role="tab" aria-selected="true" data-tab="conferencia">2 · Conferência</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="apuracao">3 · Apuração</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="planilha">4 · Planilha e guias</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="razao">5 · Razão do mês</button>
+  </div>
+</div></nav>
+<main class="wrap">
+
+<div class="box">
+  <div class="upl" id="recImport" data-recolher="Importação (planilha, apuração e guias)">
+    <div class="upl-grid">
+      <div>
+        <h3>📊 Planilha de subvenção e apurações</h3>
+        <div class="muted small">“AVALIAÇÃO SUBVENÇÃO” (todos os meses do ano) e/ou a “Apuração ICMS Regime Especial” da filial 03 (.xlsx). O tipo é reconhecido sozinho; o mês da apuração vem da data da própria planilha.</div>
+        <div class="paste-actions"><button class="primary" type="button" onclick="$('inXlsx').click()">Importar planilhas (.xlsx)</button></div>
+        <div class="chips" id="chXlsx"></div>
+      </div>
+      <div>
+        <h3>🧾 Guias DAE (TTD)</h3>
+        <div class="muted small">PDF do DAE do recolhimento efetivo (receita 219-6 ICMS indústria TD). Lê mês de referência, valor e vencimento. Aceita vários arquivos.</div>
+        <div class="paste-actions"><button class="primary" type="button" onclick="$('inGuia').click()">Importar guias (PDF)</button></div>
+        <div class="chips" id="chGuia"></div>
+      </div>
+    </div>
+    <input type="file" id="inXlsx" accept=".xlsx,.xlsm,.xls" multiple onchange="importarXlsx([...this.files]);this.value=''">
+    <input type="file" id="inGuia" accept=".pdf" multiple onchange="importarGuias([...this.files]);this.value=''">
+    <div class="muted small" style="margin-top:10px">O balancete e o razão vêm do <b>Book de conciliação</b> (não precisa importar de novo aqui).</div>
+  </div>
+  <div class="toolbar" style="margin-top:12px">
+    <label>Mês:<select id="selMes" onchange="mesAtual=this.value;render()"></select></label>
+    <span class="muted small" id="stTopo"></span>
+    <span class="muted small" id="stNuvem" style="flex-basis:100%"></span>
+  </div>
+  <div id="msgs"></div>
+</div>
+
+<section class="panel active" id="tab-conferencia">
+  <div class="kpis" id="kpis"></div>
+  <div class="box">
+    <h2>Conferência do mês <span class="muted small" id="titConf"></span></h2>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Item</th><th>Esperado</th><th>Contabilizado</th><th>Diferença</th><th class="left">De onde vem</th></tr></thead>
+      <tbody id="confBody"></tbody>
+    </table></div>
+    <div class="muted small" style="margin-top:8px">Os valores esperados podem ser digitados quando a apuração do mês ainda não foi importada (aceita soma, ex.: <i>1.000,00 + 250,00</i>). Apague o campo para voltar ao valor da planilha/apuração.</div>
+  </div>
+  <div class="box">
+    <h2>Lançamentos a fazer <span class="muted small" id="titLanc"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Diferença entre o esperado e o que já está no razão. Valor negativo vira o lançamento invertido (estorno do excesso). Conta de resultado leva o centro de resultado 11011002.</div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th class="left">O que é</th><th class="left">Débito</th><th class="left">Crédito</th><th>Valor</th><th class="left">Histórico</th></tr></thead>
+      <tbody id="lancBody"></tbody><tfoot id="lancFoot"></tfoot>
+    </table></div>
+    <div class="toolbar" style="margin-top:10px">
+      <button type="button" class="primary" onclick="baixarCsv()">Baixar CSV de importação</button>
+      <button type="button" onclick="baixarXlsx()">Baixar Excel</button>
+      <span class="muted small">CSV no layout do importador Audicon (separador “;”, ANSI, contas sem pontos).</span>
+    </div>
+  </div>
+  <div class="box">
+    <h2>Acumulado do ano <span class="muted small">subvenção × conta 3.3.01.1004 (exclusão no LALUR)</span></h2>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Mês</th><th>Subvenção (planilha)</th><th>Lançado na 3.3.01.1004</th><th>Diferença</th><th>Recolhimento efetivo</th><th>Guia TTD</th><th class="left">Situação</th></tr></thead>
+      <tbody id="acumBody"></tbody><tfoot id="acumFoot"></tfoot>
+    </table></div>
+    <div class="muted small" id="acumInfo" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-apuracao">
+  <div class="box">
+    <h2>Apuração do regime especial <span class="muted small" id="titApur"></span></h2>
+    <div id="apurBox"></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-planilha">
+  <div class="box">
+    <h2>Planilha de avaliação da subvenção</h2>
+    <div class="muted small" style="margin-bottom:10px" id="infoPlan"></div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Mês</th><th>Destaque débito</th><th>Destaque crédito</th><th>ICMS normal sem RE</th><th>Recolhimento efetivo (RE)</th><th>Subvenção</th><th class="left">Conferência da planilha</th><th>Guia TTD</th><th class="left">Vencimento / arquivo</th></tr></thead>
+      <tbody id="planBody"></tbody><tfoot id="planFoot"></tfoot>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-razao">
+  <div class="box">
+    <h2>Razão do mês <span class="muted small" id="titRaz"></span></h2>
+    <div class="filters"><label>Conta<select id="fContaR" onchange="renderRazao()"></select></label>
+      <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="fSoSub" checked onchange="renderRazao()"> Só lançamentos de subvenção/TTD na 2.1.15.2001</label></div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Data</th><th class="left">Histórico</th><th>Débito</th><th>Crédito</th><th class="left">Classificação</th></tr></thead>
+      <tbody id="razBody"></tbody><tfoot id="razFoot"></tfoot>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-processo">
+  <div class="box"><h2>Objetivo</h2><p>Conferir, todo mês, se a contabilidade registrou a <b>subvenção de ICMS</b> da filial 03 (regime especial / TTD) pelos valores da apuração e da planilha de avaliação: estornos de débito e de crédito, o <b>recolhimento efetivo</b> (guia TTD) e o <b>crédito da subvenção</b> em outras receitas (3.3.01.1004), que é excluído na apuração do IRPJ/CSLL (LALUR).</p></div>
+  <div class="box"><h2>Passo a passo</h2><ol class="steps">
+    <li>No <b>Book de conciliação</b>, importar o balancete e o razão do mês (o mês escolhido lá abre aqui).</li>
+    <li>Aqui, importar a <b>planilha “AVALIAÇÃO SUBVENÇÃO”</b> (uma vez por atualização; traz todos os meses), a <b>apuração do regime especial</b> do mês e o <b>PDF do DAE TTD</b>.</li>
+    <li>Na etapa <b>2 · Conferência</b>, ver esperado × contabilizado de cada lançamento e os <b>lançamentos a fazer</b> (baixar o CSV para importar).</li>
+    <li>No quadro <b>Acumulado do ano</b>, conferir a subvenção de cada mês com a conta 3.3.01.1004 — é a base da exclusão no LALUR.</li>
+  </ol></div>
+  <div class="box"><h2>Regras</h2><table><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
+    <tr><td>R1</td><td>Planilha: ICMS normal sem RE = destaque de débito − destaque de crédito; subvenção = ICMS normal − recolhimento efetivo (RE).</td></tr>
+    <tr><td>R2</td><td>Guia DAE TTD (receita 219-6) da competência = recolhimento efetivo da planilha; ela é paga no mês seguinte (débito na 2.1.15.2001).</td></tr>
+    <tr><td>R3</td><td>Estorno de débito: D 2.1.15.2001 / C 3.1.01.2007 = “Estorno débito ICMS (campo 90 DAPI)” da apuração.</td></tr>
+    <tr><td>R4</td><td>Estorno de crédito: D 3.1.01.2007 / C 2.1.15.2001 = estornos de crédito do campo 95 da DAPI (devoluções, devoluções TTD e estorno proporcional ao benefício).</td></tr>
+    <tr><td>R5</td><td>Recolhimento efetivo: D 3.1.01.2002 / C 2.1.15.2001 = RE (valor da guia TTD).</td></tr>
+    <tr><td>R6</td><td>Crédito da subvenção: D 3.1.01.2010 / C 3.3.01.1004 = subvenção do mês (planilha).</td></tr>
+    <tr><td>R7</td><td>Contabilizado = lançamentos do razão do mês nessas contas com histórico de subvenção/estorno/TTD (os lançamentos de notas “-SPED” não entram). Diferença até R$ 0,01 é arredondamento.</td></tr>
+  </tbody></table></div>
+</section>
+
+</main>
+
+<script>
+// ===================== utilitários =====================
+const $ = id => document.getElementById(id);
+const LS = 'aud-subvencao-v1';
+const r2 = v => Math.round((v + Number.EPSILON) * 100) / 100;
+const fmt = v => (v === null || v === undefined || isNaN(v)) ? '—' : (Math.abs(v) < 0.005 ? 0 : v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+const dig = s => String(s ?? '').replace(/\D/g, '');
+const MES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const mesLbl = m => m ? MES[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4) : '';
+const fimMes = m => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm, 0); return y + '-' + String(mm).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const mesAnt = m => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm - 2, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+const br = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '';
+const ok = d => Math.abs(d) < 0.015;
+function lsGet(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+function msg(t, tipo){ const d = document.createElement('div'); d.className = 'msg ' + (tipo || ''); d.innerHTML = t; $('msgs').appendChild(d); setTimeout(() => d.remove(), tipo === 'err' ? 15000 : 9000); }
+function num(v){
+  if (v === null || v === undefined || v === '') return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim().replace(/\s|R\$/g, ''); if (!s || s === '-') return NaN;
+  if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+  return parseFloat(s);
+}
+const chk = (d, vazio) => isNaN(d) ? `<span class="muted small">${vazio || '—'}</span>` : ok(d) ? '<span class="dok">✓ OK</span>' : `<span class="dbad">dif. ${fmt(d)}</span>`;
+const isoDe = v => { if (v instanceof Date) return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0');
+  if (typeof v === 'number' && v > 20000 && v < 80000){ const d = new Date(Math.round((v - 25569) * 864e5)); return d.toISOString().slice(0, 10); }
+  const s = String(v ?? ''); let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return m[0]; m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/); return m ? m[3] + '-' + m[2] + '-' + m[1] : ''; };
+
+// ===================== contas =====================
+const C_REC = '2.1.15.2001', C_EST = '3.1.01.2007', C_ICMS = '3.1.01.2002', C_SUBD = '3.1.01.2010', C_SUBC = '3.3.01.1004', CC_RES = '11011002';
+const CONTAS_RAZ = [[C_SUBC, 'Subvenção de ICMS (outras receitas)'], [C_SUBD, 'Subvenção — contrapartida (dedução)'], [C_EST, 'Estornos de ICMS (subvenção)'], [C_REC, 'ICMS a recolher']];
+// lançamentos da subvenção: chave → [nome, débito, crédito, histórico]
+const LCTO = {
+  estDeb: ['Estorno de débito (campo 90 DAPI)', C_REC, C_EST, 'VR REF COMP ESTORNO DE DEB SUBVENCAO MES'],
+  estCred: ['Estorno de crédito (campo 95 DAPI)', C_EST, C_REC, 'VR REF COMP ESTORNO DE CRED SUBVENCAO MES'],
+  re: ['Recolhimento efetivo (guia TTD)', C_ICMS, C_REC, 'VR REF REC ICMS TTD SUBVENCAO MES'],
+  subv: ['Crédito da subvenção (outras receitas)', C_SUBD, C_SUBC, 'VR REF CRED SUBVENCAO MES']
+};
+const KL = ['estDeb', 'estCred', 're', 'subv'];
+
+// ===================== dados (navegador + Firebase) =====================
+// dados.plan = { arquivo, em, meses: { 'aaaa-mm': {deb, cred, normal, re, subv} }, bc, irpj }
+// dados.meses['aaaa-mm'] = { apur: {...}, guia: { valor, venc, numero, arquivos:[] }, man: { estDeb, estCred, re, subv } }
+let dados = lsGet(LS, null);
+if (!dados || typeof dados.meses !== 'object') dados = { meses: {}, plan: null };
+let mesAtual = '', balMes = null, mesesBal = [];
+const mesD = m => dados.meses[m] = dados.meses[m] || {};
+
+const HUB = (() => { try { return window.parent !== window && window.parent.HubAuth ? window.parent.HubAuth : null; } catch(e){ return null; } })();
+const DOC_NUVEM = 'subvencao';
+let tNuvem = null;
+function stNuvem(t, tipo){ const el = $('stNuvem'); if (!el) return; el.textContent = t; el.style.color = tipo === 'err' ? 'var(--aud-danger-text)' : tipo === 'ok' ? 'var(--aud-success)' : ''; }
+function salvar(){ dados.savedAt = new Date().toISOString(); if (!lsSet(LS, dados)) msg('Não foi possível salvar neste navegador (espaço cheio).', 'err'); agendarNuvem(); }
+function agendarNuvem(){
+  if (!HUB || HUB.papel !== 'admin') return;
+  clearTimeout(tNuvem); stNuvem('☁ Salvando no Firebase…');
+  tNuvem = setTimeout(async () => {
+    try { await HUB.gravarDoc(DOC_NUVEM, dados); stNuvem('☁ Base salva no Firebase às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.', 'ok'); }
+    catch(e){ stNuvem('⚠ Não foi possível salvar no Firebase: ' + (e && e.code === 'permission-denied' ? 'o seu acesso não permite salvar' : (e && e.message) || e) + ' (os dados continuam neste navegador).', 'err'); }
+  }, 2500);
+}
+async function carregarNuvem(){
+  if (!HUB){ stNuvem('Base guardada neste navegador (abra pelo Hub para salvar no Firebase).'); return; }
+  try {
+    const d = await HUB.lerDoc(DOC_NUVEM);
+    if (d && d.meses && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){ dados = d; lsSet(LS, dados); stNuvem('☁ Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok'); }
+    else if (dados.savedAt && (!d || (d.savedAt || '') < dados.savedAt)) agendarNuvem();
+    else if (d) stNuvem('☁ Base em dia com o Firebase.', 'ok');
+  } catch(e){ stNuvem('⚠ Não foi possível ler a base no Firebase: ' + ((e && e.message) || e) + ' — usando a deste navegador.', 'err'); }
+}
+let assinBase = '';
+async function assinaturaBase(){
+  if (!window.HubDB) return '';
+  try {
+    const i = await HubDB.getMeta('razao'), ks = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).sort();
+    return JSON.stringify([((i && i.arquivos) || []).map(a => a.nome + '@' + a.em), ks]);
+  } catch(e){ return ''; }
+}
+async function vigiarBase(){ const a = await assinaturaBase(); if (assinBase && a && a !== assinBase){ assinBase = a; await render(); msg('Razão/balancete novo no Book de conciliação: valores atualizados.', 'ok'); } else if (a) assinBase = a; }
+setInterval(vigiarBase, 15000);
+window.addEventListener('focus', vigiarBase);
+
+// ===================== planilhas (.xlsx) =====================
+const linhasDe = ws => XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
+// "AVALIAÇÃO SUBVENÇÃO": por mês, uma linha de títulos (data na coluna B, "Destaque de Débito ICMS" na C) e os valores na linha de baixo
+function lerPlanilha(wb){
+  const out = { meses: {}, bc: NaN, irpj: NaN };
+  wb.SheetNames.forEach(n => {
+    const L = linhasDe(wb.Sheets[n]);
+    L.forEach((r, i) => {
+      if (!r) return;
+      if (/^DESTAQUE DE D/.test(norm(r[2]))){
+        const per = isoDe(r[1]).slice(0, 7), v = L[i + 1] || [];
+        if (per) out.meses[per] = { deb: r2(num(v[2]) || 0), cred: r2(num(v[3]) || 0), normal: r2(num(v[4]) || 0), re: r2(num(v[5]) || 0), subv: r2(num(v[6]) || 0) };
+      }
+      r.forEach((c, j) => { const t = norm(c); if (/^BC ESTIMADA/.test(t)) out.bc = num(r[j + 1]); if (/^IRPJ\/CSLL SOBRE SUBVEN/.test(t)) out.irpj = num(r[j + 1]); });
+    });
+  });
+  if (!Object.keys(out.meses).length) throw new Error('não achei os blocos mensais (“Destaque de Débito ICMS”)');
+  return out;
+}
+// "Apuração ICMS Regime Especial" (aba Apuração): rótulos na coluna B (valor ao lado) ou rótulos soltos (valor à esquerda)
+function lerApuracao(wb){
+  const n = wb.SheetNames.find(x => /^APURA/.test(norm(x))) || wb.SheetNames[0], L = linhasDe(wb.Sheets[n]);
+  const a = { per: '' };
+  // mês: a data no topo da planilha; senão o nome da aba "Vendas MM.AAAA"
+  for (let i = 0; i < Math.min(L.length, 8) && !a.per; i++) (L[i] || []).forEach(c => { if (!a.per && (c instanceof Date || (typeof c === 'number' && c > 40000 && c < 60000))) a.per = isoDe(c).slice(0, 7); });
+  if (!a.per){ const s = wb.SheetNames.map(x => x.match(/(\d{2})\.(\d{4})/)).find(Boolean); if (s) a.per = s[2] + '-' + s[1]; }
+  if (!a.per) throw new Error('não achei o mês da apuração');
+  const nums = r => r.map(num);
+  const val = (r, j, lado) => { for (let k = j + lado; k >= 0 && k < r.length && Math.abs(k - j) <= 3; k += lado){ const x = num(r[k]); if (!isNaN(x) && typeof r[k] !== 'string' || (typeof r[k] === 'string' && /^-?[\d.,]+$/.test(r[k].trim()))) return x; } return NaN; };
+  L.forEach(r => {
+    if (!r) return;
+    r.forEach((c, j) => {
+      if (typeof c !== 'string') return;
+      const t = norm(c);
+      if (t === 'TOTAL SAIDAS NO MES'){ const v = nums(r); a.saidas = { vc: v[j + 1], bc: v[j + 2], icms: v[j + 3] }; }
+      else if (/^OPERACOES ALCANCADAS/.test(t)){ const v = nums(r); a.alc = { vc: v[j + 1], bc: v[j + 2], icms: v[j + 3] }; a.foraIcms = v[j + 4]; }
+      else if (t === 'TOTAL RECOLHIMENTO EFETIVO'){ const v = r.map(num).filter(x => !isNaN(x)); a.credPresTot = v[0]; a.reTot = v[1]; }
+      else if (/^ESTORNO DEBITO ICMS/.test(t)) a.estDeb = val(r, j, 1);
+      else if (/^ESTORNO CREDITO DEVOLUCAO DE VENDA TTD/.test(t)) a.estCredTTD = val(r, j, 1);
+      else if (/^ESTORNO CREDITO DEVOLUCAO DE VENDA/.test(t)) a.estCredDev = val(r, j, 1);
+      else if (/^CREDITO PRESUMIDO S\/ SAIDAS/.test(t)) a.credPres = val(r, j, 1);
+      else if (t === 'RECOLHIMENTO EFETIVO' && j <= 2) a.re = val(r, j, 1);
+      else if (t === 'ICMS NORMAL - A RECOLHER') a.icmsNormal = val(r, j, 1);
+      else if (/^ESTORNO PROPORCIONAL AO BENEFICIO/.test(t)) a.estProp = val(r, j, -1);
+      else if (/^PERCENTUAL ESTORNO ICMS PROPORCIONAL/.test(t)) a.pctProp = val(r, j, -1);
+      else if (t === 'ICMS ENTRADA') a.icmsEntrada = val(r, j, -1);
+      else if (/^TOTAL ANTES DO ESTORNO PROPORCIONAL/.test(t)) a.totAntesProp = val(r, j, -1);
+    });
+  });
+  if (isNaN(a.estDeb) && isNaN(a.re)) throw new Error('não achei o estorno de débito nem o recolhimento efetivo na aba de apuração');
+  a.estCred = r2((a.estCredDev || 0) + (a.estCredTTD || 0) + (a.estProp || 0));
+  ['estDeb', 're', 'estCredDev', 'estCredTTD', 'estProp', 'credPres', 'icmsNormal'].forEach(k => { if (!isNaN(a[k])) a[k] = r2(a[k]); });
+  return a;
+}
+async function importarXlsx(files){
+  for (const f of files){
+    try {
+      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true });
+      let tipo = '';
+      try { const p = lerPlanilha(wb); dados.plan = Object.assign(p, { arquivo: f.name, em: new Date().toISOString() }); tipo = 'plan';
+        msg(`“${esc(f.name)}”: planilha de subvenção com ${Object.keys(p.meses).length} meses (${Object.keys(p.meses).filter(m => p.meses[m].subv).map(mesLbl).join(', ') || 'sem valores'}).`, 'ok'); } catch(e){}
+      if (!tipo){
+        const a = lerApuracao(wb);
+        mesD(a.per).apur = Object.assign(a, { arquivo: f.name, em: new Date().toISOString() });
+        const mNome = (f.name.match(/(\d{2})\.(\d{4})/) || []);
+        const aviso = mNome[1] && mNome[2] + '-' + mNome[1] !== a.per ? ` <b>Atenção:</b> o nome do arquivo diz ${mNome[1]}/${mNome[2]}, mas o conteúdo é de ${mesLbl(a.per)} — guardada em ${mesLbl(a.per)}.` : '';
+        msg(`“${esc(f.name)}”: apuração do regime especial de ${mesLbl(a.per)} — estorno de débito ${fmt(a.estDeb)}, recolhimento efetivo ${fmt(a.re)}.${aviso}`, aviso ? 'warn' : 'ok');
+        mesAtual = a.per;
+      }
+    } catch(e){ msg('Erro ao importar “' + esc(f.name) + '”: ' + esc(e.message) + '. Use a planilha “AVALIAÇÃO SUBVENÇÃO” ou a “Apuração ICMS Regime Especial”.', 'err'); }
+  }
+  salvar(); await render();
+}
+function tirarPlanilha(){ if (!dados.plan || !confirm('Remover a planilha de subvenção?')) return; dados.plan = null; salvar(); render(); }
+function tirarApuracao(m){ if (!dados.meses[m] || !confirm('Remover a apuração de ' + mesLbl(m) + '?')) return; delete dados.meses[m].apur; salvar(); render(); }
+
+// ===================== guias (DAE em PDF) =====================
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+async function textoPdf(f){
+  const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let t = '';
+  for (let p = 1; p <= pdf.numPages; p++){ const c = await (await pdf.getPage(p)).getTextContent(); t += c.items.map(i => i.str).join(' ') + '\n'; }
+  return t;
+}
+function lerDae(t){
+  const T = norm(t);
+  let per = '', m = T.match(/\b(\d{2})\s+\/\s+(\d{4})\b/) || T.match(/(\d{2})\s*A\s*\d{2}\/(\d{2})\/(\d{4})/);
+  if (m) per = m.length === 4 ? m[3] + '-' + m[2] : m[2] + '-' + m[1];
+  const ttd = /\b0?219-6\b|INDUSTRIA TD|\bTTD\b/.test(T), rec = (T.match(/RECEITA:?\s*(\d{3,4}-\d)/) || [])[1] || '';
+  const vals = (T.match(/\d{1,3}(?:\.\d{3})*,\d{2}/g) || []).map(num).filter(x => x > 0);
+  const valor = vals.length ? r2(Math.max(...vals)) : NaN;
+  const datas = []; const re = /(EMITIDO EM:?\s*)?(\d{2})\/(\d{2})\/(\d{4})/g; let x;
+  while ((x = re.exec(T))) if (!x[1]) datas.push(x[4] + '-' + x[3] + '-' + x[2]);
+  const venc = datas.filter(d => !per || d.slice(0, 7) > per).sort()[0] || '';
+  m = T.match(/(\d{2}\.?\d{9}-\d{2})/); const numero = m ? m[1] : '';
+  return { per, ttd, rec, valor, venc, numero };
+}
+async function importarGuias(files){
+  if (!window.pdfjsLib){ msg('Leitor de PDF não carregou.', 'err'); return; }
+  for (const f of files){
+    try {
+      const g = lerDae(await textoPdf(f));
+      if (!g.per) throw new Error('não achei o mês de referência no DAE');
+      if (isNaN(g.valor)) throw new Error('não achei o valor no DAE');
+      if (!g.ttd) msg(`“${esc(f.name)}”: a receita ${esc(g.rec || '?')} não é a do ICMS TTD (219-6); a guia foi guardada mesmo assim — confira.`, 'warn');
+      const G = mesD(g.per).guia = mesD(g.per).guia || { valor: 0, arquivos: [] };
+      if (G.manual){ G.arquivos = []; delete G.manual; }
+      G.arquivos = (G.arquivos || []).filter(a => a.nome !== f.name);
+      G.arquivos.push({ nome: f.name, valor: g.valor, venc: g.venc, numero: g.numero, rec: g.rec });
+      G.valor = r2(G.arquivos.reduce((a, y) => a + y.valor, 0)); G.venc = g.venc || G.venc || '';
+      msg(`“${esc(f.name)}”: DAE ${esc(g.rec || '')} de ${mesLbl(g.per)} — ${fmt(g.valor)}${g.venc ? ', vence ' + br(g.venc) : ''}.`, 'ok');
+    } catch(e){ msg('Erro ao ler “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
+  }
+  salvar(); await render();
+}
+function tirarGuia(m, nome){
+  const G = (dados.meses[m] || {}).guia; if (!G) return;
+  G.arquivos = (G.arquivos || []).filter(a => a.nome !== nome); G.valor = r2(G.arquivos.reduce((a, x) => a + x.valor, 0));
+  if (!G.arquivos.length) delete dados.meses[m].guia;
+  salvar(); render();
+}
+function setGuia(m, txt){
+  const partes = String(txt).split('+').map(num).filter(x => !isNaN(x));
+  if (!partes.length) delete mesD(m).guia; else mesD(m).guia = { valor: r2(partes.reduce((a, x) => a + x, 0)), arquivos: [], manual: true, venc: ((dados.meses[m] || {}).guia || {}).venc || '' };
+  salvar(); render();
+}
+function setMan(k, txt){
+  const partes = String(txt).split('+').map(num).filter(x => !isNaN(x)), md = mesD(mesAtual);
+  md.man = md.man || {};
+  if (!partes.length) delete md.man[k]; else md.man[k] = r2(partes.reduce((a, x) => a + x, 0));
+  salvar(); render();
+}
+
+// ===================== balancete e razão (Book) =====================
+async function carregarMeses(){
+  mesesBal = [];
+  try { if (window.HubDB) mesesBal = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10)).sort(); } catch(e){}
+  const comPlan = dados.plan ? Object.keys(dados.plan.meses).filter(m => dados.plan.meses[m].subv) : [];
+  const todos = [...new Set(mesesBal.concat(Object.keys(dados.meses), comPlan))].sort();
+  const mHub = window.mesDoHub ? mesDoHub() : '';
+  if (mHub && !mesAtual) mesAtual = mHub;
+  if (!mesAtual) mesAtual = todos[todos.length - 1] || new Date().toISOString().slice(0, 7);
+  if (!todos.includes(mesAtual)) todos.push(mesAtual);
+  todos.sort();
+  $('selMes').innerHTML = todos.slice().reverse().map(m => `<option value="${m}" ${m === mesAtual ? 'selected' : ''}>${mesLbl(m)}${mesesBal.includes(m) ? '' : ' (sem balancete)'}</option>`).join('');
+}
+async function getBal(m){ try { return window.HubDB ? await HubDB.getMeta('balancete:' + m) : null; } catch(e){ return null; } }
+let RAZ = {}, RAZINFO = null;   // conta -> lançamentos do mês
+async function carregarRazao(m){
+  RAZ = {}; RAZINFO = null; if (!window.HubDB) return;
+  try { RAZINFO = await HubDB.getMeta('razao'); } catch(e){}
+  if (!RAZINFO || !RAZINFO.agg || !RAZINFO.agg[m]) return;
+  for (const [c] of CONTAS_RAZ){ if (!RAZINFO.agg[m][c]) continue; try { RAZ[c] = await HubDB.lancamentosConta(c, [m]); } catch(e){} }
+  RAZ.__ok = true;
+}
+const ehSped = l => /^[A-Z]{2}-SPED/.test(norm(l.hist));
+// classificação dos lançamentos do razão nas contas da subvenção
+function classe(l, c){
+  const h = norm(l.hist), cp = dig(l.cp);
+  if (ehSped(l)) return '';
+  if (c === C_SUBC) return /SUBVEN/.test(h) || cp === dig(C_SUBD) ? 'subv' : '';
+  if (c === C_EST){ if (/ESTORNO DE CRED/.test(h)) return 'estCred'; if (/ESTORNO DE DEB/.test(h)) return 'estDeb'; return l.cred ? 'estDeb' : 'estCred'; }
+  if (c === C_REC){
+    if (/ESTORNO DE DEB|ESTORNO DE CRED/.test(h) || cp === dig(C_EST)) return /ESTORNO DE CRED/.test(h) || l.cred ? 'estCred' : 'estDeb';
+    if (/TTD|RECOLHIMENTO EFETIVO/.test(h) && (l.cred || cp === dig(C_ICMS))) return 're';
+  }
+  return '';
+}
+const NOME_CLS = { estDeb: 'Estorno de débito', estCred: 'Estorno de crédito', re: 'Recolhimento efetivo (TTD)', subv: 'Crédito da subvenção' };
+
+// ===================== cálculo =====================
+function contabilizado(){
+  // estornos e RE pela conta de ICMS a recolher; subvenção pela 3.3.01.1004 (crédito − débito)
+  const t = { estDeb: 0, estCred: 0, re: 0, subv: 0 };
+  (RAZ[C_REC] || []).forEach(l => { const k = classe(l, C_REC); if (k === 'estDeb') t.estDeb += l.deb - l.cred; else if (k === 'estCred') t.estCred += l.cred - l.deb; else if (k === 're') t.re += l.cred - l.deb; });
+  (RAZ[C_SUBC] || []).forEach(l => { if (classe(l, C_SUBC) === 'subv') t.subv += l.cred - l.deb; });
+  // sem os lançamentos na 2.1.15.2001 no razão: usa a conta de estornos
+  if (!RAZ[C_REC] && RAZ[C_EST]) (RAZ[C_EST] || []).forEach(l => { const k = classe(l, C_EST); if (k === 'estDeb') t.estDeb += l.cred - l.deb; else if (k === 'estCred') t.estCred += l.deb - l.cred; });
+  KL.forEach(k => t[k] = r2(t[k]));
+  return t;
+}
+function esperado(m){
+  const md = dados.meses[m] || {}, a = md.apur, p = dados.plan && dados.plan.meses[m], man = md.man || {}, g = md.guia;
+  const E = {}, O = {};
+  const pega = (k, v, origem) => { if (E[k] === undefined && !isNaN(v) && v !== null && v !== undefined){ E[k] = r2(v); O[k] = origem; } };
+  KL.forEach(k => { if (man[k] !== undefined) pega(k, man[k], 'digitado'); });
+  if (a){ pega('estDeb', a.estDeb, 'apuração (campo 90 DAPI)'); pega('estCred', a.estCred, 'apuração (campo 95 DAPI)'); }
+  if (p && (p.re || p.subv)){ pega('re', p.re, 'planilha de subvenção'); pega('subv', p.subv, 'planilha de subvenção'); }
+  if (a) pega('re', a.re, 'apuração');
+  if (g) pega('re', g.valor, 'guia TTD');
+  return { E, O, a, p, g, md };
+}
+function calcular(m){
+  const X = esperado(m), T = RAZ.__ok ? contabilizado() : null, R = {};
+  KL.forEach(k => { const e = X.E[k], c = T ? T[k] : NaN; R[k] = { esp: e === undefined ? NaN : e, cont: c, dif: e === undefined || !T ? NaN : r2(e - c), origem: X.O[k] || '' }; });
+  const p = X.p;
+  R.plan = p ? { dNormal: r2(p.normal - (p.deb - p.cred)), dSubv: r2(p.subv - (p.normal - p.re)) } : null;
+  R.guia = X.g ? X.g.valor : NaN;
+  R.dGuia = X.g && !isNaN(R.re.esp) ? r2(X.g.valor - (p && p.re ? p.re : R.re.esp)) : NaN;
+  // pagamento da guia TTD do mês anterior (débito na 2.1.15.2001 neste mês)
+  const pAnt = dados.plan && dados.plan.meses[mesAnt(m)], gAnt = (dados.meses[mesAnt(m)] || {}).guia, reAnt = gAnt ? gAnt.valor : (pAnt ? pAnt.re : NaN);
+  R.reAnt = reAnt; R.pgAnt = null;
+  if (RAZ[C_REC] && !isNaN(reAnt) && reAnt) R.pgAnt = (RAZ[C_REC] || []).find(l => l.deb && !l.cred && Math.abs(l.deb - reAnt) < 0.015) || false;
+  return Object.assign(R, { X });
+}
+function gerarLanc(R){
+  const L = [], H = ' ' + MES[+mesAtual.slice(5, 7) - 1].toUpperCase() + '/' + mesAtual.slice(0, 4) + ' - FILIAL 3';
+  KL.forEach(k => {
+    const d = R[k].dif; if (isNaN(d) || ok(d)) return;
+    let [nome, deb, cred, hist] = LCTO[k];
+    if (d < 0){ [deb, cred] = [cred, deb]; nome += ' — estorno do excesso'; hist = 'ESTORNO ' + hist; }
+    L.push({ k, nome, deb, cred, valor: Math.abs(d), hist: hist + H });
+  });
+  return L;
+}
+let LANC = [], CALC = null;
+const descConta = c => { const b = balMes && balMes.contas && balMes.contas[c]; return b ? b.desc : ''; };
+const ccDe = c => /^[3-9]/.test(c) ? CC_RES : '';
+function renderLanc(){
+  $('titLanc').textContent = '· ' + mesLbl(mesAtual) + ' · data ' + br(fimMes(mesAtual));
+  if (!LANC.length){
+    const falta = !RAZ.__ok ? 'Sem razão de ' + mesLbl(mesAtual) + ' no Book de conciliação.' : KL.every(k => isNaN(CALC[k].esp)) ? 'Importe a planilha de subvenção e a apuração do mês.' : 'Nada a lançar: o razão já está igual ao esperado.';
+    $('lancBody').innerHTML = `<tr><td colspan="5" class="empty">${falta}</td></tr>`; $('lancFoot').innerHTML = ''; return;
+  }
+  const td = c => `<td class="left">${esc(c)}<div class="muted small">${esc(descConta(c))}</div></td>`;
+  $('lancBody').innerHTML = LANC.map(o => `<tr><td class="left wrap" style="max-width:280px">${esc(o.nome)}</td>${td(o.deb)}${td(o.cred)}<td>${fmt(o.valor)}</td><td class="left wrap small" style="max-width:320px">${esc(o.hist)}</td></tr>`).join('');
+  $('lancFoot').innerHTML = `<tr><td colspan="3">${LANC.length} lançamento(s)</td><td>${fmt(r2(LANC.reduce((s, o) => s + o.valor, 0)))}</td><td></td></tr>`;
+}
+const nfBR = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function baixar(blob, nome){ const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 500); }
+function baixarCsv(){
+  if (!LANC.length){ msg('Não há lançamentos a fazer.', 'warn'); return; }
+  const dt = br(fimMes(mesAtual)), L = ['Data;Conta Crédito;Conta Débito;Valor;Histórico;C Custo Deb;C Custo Cred;Item Deb;Item Cred'];
+  LANC.forEach(o => L.push([dt, dig(o.cred), dig(o.deb), nfBR.format(o.valor), o.hist.replace(/[;\r\n]+/g, ' ').replace(/[–—]/g, '-').toUpperCase().trim(), ccDe(o.deb), ccDe(o.cred), '', ''].join(';')));
+  const t = (L.join('\r\n') + '\r\n').normalize('NFC'), a = new Uint8Array(t.length);
+  for (let i = 0; i < t.length; i++){ const c = t.charCodeAt(i); a[i] = c < 256 ? c : 63; }
+  baixar(new Blob([a], { type: 'text/csv;charset=windows-1252' }), 'lancamentos-subvencao-' + mesAtual + '.csv');
+}
+function baixarXlsx(){
+  const dt = br(fimMes(mesAtual)), rows = [['Subvenção de ICMS — ' + mesLbl(mesAtual)], [], ['Item', 'Esperado', 'Contabilizado', 'Diferença', 'Origem']];
+  KL.forEach(k => rows.push([LCTO[k][0], CALC[k].esp, CALC[k].cont, CALC[k].dif, CALC[k].origem]));
+  rows.push([], ['Lançamentos a fazer'], ['O que é', 'Data', 'Conta débito', 'Descrição débito', 'Conta crédito', 'Descrição crédito', 'Valor', 'Histórico', 'C Custo Deb', 'C Custo Cred']);
+  LANC.forEach(o => rows.push([o.nome, dt, o.deb, descConta(o.deb), o.cred, descConta(o.cred), o.valor, o.hist, ccDe(o.deb), ccDe(o.cred)]));
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = [{ wch: 44 }, { wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 14 }, { wch: 30 }, { wch: 14 }, { wch: 50 }, { wch: 10 }, { wch: 10 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Subvenção'); XLSX.writeFile(wb, 'subvencao-' + mesAtual + '.xlsx');
+}
+window.focoConta = function(){ window.abrirEtapa && abrirEtapa('conferencia'); };
+
+// ===================== telas =====================
+async function render(){
+  await carregarMeses();
+  balMes = await getBal(mesAtual); await carregarRazao(mesAtual);
+  CALC = calcular(mesAtual); LANC = gerarLanc(CALC);
+  $('stTopo').textContent = (balMes ? 'Balancete de ' + mesLbl(mesAtual) + ' carregado do Book' : 'Sem balancete de ' + mesLbl(mesAtual) + ' no Book') + ' · ' + (RAZ.__ok ? 'razão do mês carregado' : 'sem razão do mês') + '.';
+  $('titConf').textContent = '· ' + mesLbl(mesAtual);
+  renderChips(); renderKpis(); renderConf(); renderLanc(); await renderAcum(); renderApur(); renderPlan(); renderRazao();
+}
+function renderChips(){
+  const ms = Object.keys(dados.meses).sort().reverse(), P = dados.plan;
+  $('chXlsx').innerHTML = (P ? `<span class="chip" title="${esc(P.arquivo)}">Planilha · ${esc(P.arquivo)}<button type="button" onclick="tirarPlanilha()" aria-label="Remover">×</button></span>` : '') +
+    ms.filter(m => dados.meses[m].apur).map(m => `<span class="chip" title="${esc(dados.meses[m].apur.arquivo)}">Apuração ${mesLbl(m)} · ${esc(dados.meses[m].apur.arquivo)}<button type="button" onclick="tirarApuracao('${m}')" aria-label="Remover">×</button></span>`).join('') ||
+    '<span class="muted small">Nenhuma planilha importada.</span>';
+  const gs = [];
+  ms.forEach(m => { const G = dados.meses[m].guia; if (G) (G.arquivos || []).forEach(a => gs.push(`<span class="chip" title="${esc(a.nome)}">${mesLbl(m)} · ${fmt(a.valor)}<button type="button" onclick="tirarGuia('${m}',${esc(JSON.stringify(a.nome))})" aria-label="Remover">×</button></span>`)); });
+  $('chGuia').innerHTML = gs.join('') || '<span class="muted small">Nenhuma guia importada.</span>';
+}
+function renderKpis(){
+  const C = CALC, card = (t, v, s, cls) => `<div class="kpi ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
+  const st = k => isNaN(C[k].dif) ? ['', isNaN(C[k].esp) ? 'sem valor esperado' : 'sem razão do mês'] : ok(C[k].dif) ? ['ok', '✓ contabilizado'] : ['bad', 'diferença ' + fmt(C[k].dif)];
+  $('kpis').innerHTML = KL.map(k => { const s = st(k); return card(LCTO[k][0], fmt(C[k].esp), s[1], s[0]); }).join('') +
+    card('Guia TTD (DAE)', fmt(C.guia), isNaN(C.dGuia) ? (isNaN(C.guia) ? 'importe o PDF da guia' : '') : ok(C.dGuia) ? '✓ igual ao RE' : 'difere do RE em ' + fmt(C.dGuia), isNaN(C.dGuia) ? '' : ok(C.dGuia) ? 'ok' : 'bad');
+}
+function linha(lbl, e, c, d, ex, cls){ return `<tr class="${cls || ''}"><td>${lbl}</td><td>${e}</td><td>${c}</td><td>${d}</td><td class="ex">${ex || ''}</td></tr>`; }
+function campoMan(k){
+  const man = ((dados.meses[mesAtual] || {}).man || {})[k];
+  return `<input type="text" class="gv" value="${isNaN(CALC[k].esp) ? '' : fmt(CALC[k].esp)}" placeholder="—" onchange="setMan('${k}',this.value)" title="${man !== undefined ? 'Valor digitado (apague para voltar ao da planilha/apuração)' : 'Valor da ' + esc(CALC[k].origem || 'planilha/apuração') + ' — pode digitar outro'}"${man !== undefined ? ' style="background:#FFF8E6"' : ''}>`;
+}
+function renderConf(){
+  const C = CALC, X = C.X, p = X.p, a = X.a, v = x => fmt(x);
+  let h = '';
+  h += linha('<b>Planilha de subvenção</b>', '', '', '', p ? 'Planilha “' + esc(dados.plan.arquivo) + '”' : '<span class="dbad">Importe a planilha “AVALIAÇÃO SUBVENÇÃO”.</span>', 'sub');
+  if (p){
+    h += linha('Destaque de débito (−) destaque de crédito', v(r2(p.deb - p.cred)), '', '', 'Débito ' + v(p.deb) + ' · crédito ' + v(p.cred));
+    h += linha('= ICMS normal sem o regime especial', v(p.normal), '', chk(C.plan.dNormal), 'Conferência da própria planilha', 'cmp');
+    h += linha('(−) Recolhimento efetivo (RE)', v(p.re), '', '', 'Valor que vai na guia TTD');
+    h += linha('= Subvenção do mês', v(p.subv), '', chk(C.plan.dSubv), 'ICMS normal − RE', 'cmp');
+  }
+  h += linha('<b>Guia TTD (DAE 219-6)</b>', '', '', '', X.g ? (X.g.arquivos || []).map(x => esc(x.nome)).join(', ') || 'valor digitado' : '<span class="muted">Importe o PDF da guia do mês.</span>', 'sub');
+  h += linha('Guia da competência × RE', v(C.guia), '', chk(C.dGuia, 'sem guia'), X.g && X.g.venc ? 'Vence em ' + br(X.g.venc) + ' (paga no mês seguinte)' : '', 'cmp');
+  h += linha('Pagamento da guia de ' + mesLbl(mesAnt(mesAtual)) + ' neste mês', v(C.reAnt), C.pgAnt ? v(C.pgAnt.deb) : '', C.pgAnt === null ? '<span class="muted small">—</span>' : C.pgAnt ? '<span class="dok">✓ OK</span>' : '<span class="dbad">não achei</span>',
+    C.pgAnt ? 'Débito na 2.1.15.2001 em ' + br(C.pgAnt.data) + ': ' + esc(C.pgAnt.hist) : C.pgAnt === false ? 'Nenhum débito na 2.1.15.2001 com o valor da guia do mês anterior.' : '');
+  h += linha('<b>Lançamentos da subvenção</b>', 'Esperado', 'No razão', 'Diferença', RAZ.__ok ? 'Razão de ' + mesLbl(mesAtual) + ' do Book' : '<span class="dbad">Sem razão de ' + mesLbl(mesAtual) + ' no Book de conciliação.</span>', 'sub');
+  KL.forEach(k => {
+    const o = C[k], L = LCTO[k];
+    h += linha(L[0] + `<div class="muted small">D ${L[1]} / C ${L[2]}</div>`, campoMan(k), v(o.cont), chk(o.dif, isNaN(o.esp) ? 'falta o esperado' : 'sem razão'), o.origem ? 'Esperado: ' + esc(o.origem) : (k === 'estDeb' || k === 'estCred' ? 'Importe a apuração do regime especial de ' + mesLbl(mesAtual) + ' ou digite o valor.' : ''), 'cmp');
+  });
+  if (a) h += linha('<b>Apuração do regime especial</b>', '', '', '', 'Detalhe na etapa 3 · Apuração', 'sub') +
+    linha('ICMS normal a recolher (apuração)', v(a.icmsNormal), '', '', 'Guia de ICMS normal da filial (fora do TTD)') +
+    linha('Crédito presumido sobre saídas', v(a.credPres), '', '', 'Benefício do regime especial');
+  $('confBody').innerHTML = h;
+}
+async function renderAcum(){
+  const ano = mesAtual.slice(0, 4), P = dados.plan, linhas = [];
+  let tP = 0, tC = 0, tRe = 0, tG = 0, tPc = 0, nC = 0;
+  for (let i = 1; i <= +mesAtual.slice(5, 7); i++){
+    const m = ano + '-' + String(i).padStart(2, '0'), p = P && P.meses[m];
+    const agg = RAZINFO && RAZINFO.agg && RAZINFO.agg[m] ? RAZINFO.agg[m][C_SUBC] : null;
+    let cont = agg ? r2(agg.c - agg.d) : NaN;
+    if (!agg){ const b = await getBal(m); const x = b && b.contas && b.contas[C_SUBC]; if (x) cont = r2(x.c - x.d); else if (b) cont = 0; }
+    const g = (dados.meses[m] || {}).guia, sp = p ? p.subv : NaN, d = isNaN(sp) || isNaN(cont) ? NaN : r2(sp - cont);
+    if ((!p || !p.subv) && isNaN(cont) && !g) continue;
+    tP += sp || 0; tC += cont || 0; if (!isNaN(cont) && !isNaN(sp)){ tPc += sp; nC++; } tRe += (p ? p.re : 0) || 0; tG += g ? g.valor : 0;
+    linhas.push(`<tr${m === mesAtual ? ' style="background:#FFF8E6"' : ''}><td>${mesLbl(m)}</td><td>${fmt(sp)}</td><td>${fmt(cont)}</td><td>${chk(d, isNaN(cont) ? 'sem razão/balancete' : 'sem planilha')}</td><td>${fmt(p ? p.re : NaN)}</td><td>${g ? fmt(g.valor) : '—'}</td><td class="left small">${g && p ? (ok(g.valor - p.re) ? '<span class="dok">guia = RE</span>' : '<span class="dbad">guia ≠ RE</span>') : ''}</td></tr>`);
+  }
+  $('acumBody').innerHTML = linhas.join('') || `<tr><td colspan="7" class="empty">Importe a planilha de subvenção.</td></tr>`;
+  $('acumFoot').innerHTML = linhas.length ? `<tr><td>Jan–${MES[+mesAtual.slice(5, 7) - 1]}</td><td>${fmt(r2(tP))}</td><td>${fmt(r2(tC))}</td><td>${nC ? chk(r2(tPc - tC)) : '<span class="muted small">sem razão</span>'}${nC ? '<div class="muted small">nos ' + nC + ' mês(es) com razão</div>' : ''}</td><td>${fmt(r2(tRe))}</td><td>${fmt(r2(tG))}</td><td></td></tr>` : '';
+  const b = balMes && balMes.contas && balMes.contas[C_SUBC];
+  $('acumInfo').innerHTML = 'Lançado na 3.3.01.1004 = créditos − débitos do mês (razão do Book; sem razão, o balancete).' + (b ? ' Saldo acumulado da conta no balancete de ' + mesLbl(mesAtual) + ': <b>' + fmt(Math.abs(b.sf)) + '</b> (é a exclusão da subvenção no LALUR).' : '') +
+    (P && !isNaN(P.bc) ? ' Planilha: base estimada de subvenção no ano ' + fmt(P.bc) + (isNaN(P.irpj) ? '' : ' · IRPJ/CSLL sobre a subvenção ' + fmt(P.irpj)) + '.' : '');
+}
+function renderApur(){
+  $('titApur').textContent = '· ' + mesLbl(mesAtual);
+  const a = (dados.meses[mesAtual] || {}).apur;
+  if (!a){ $('apurBox').innerHTML = `<div class="empty">Sem apuração do regime especial de ${mesLbl(mesAtual)}. Importe no topo.</div>`; return; }
+  const L = (t, x, ex) => `<tr><td>${t}</td><td>${fmt(x)}</td><td class="ex">${ex || ''}</td></tr>`;
+  $('apurBox').innerHTML = `<div class="muted small" style="margin-bottom:8px">Planilha “${esc(a.arquivo)}”, importada em ${new Date(a.em).toLocaleString('pt-BR')}.</div><div class="tscroll" style="max-height:none"><table class="pc"><thead><tr><th>Item</th><th>Valor</th><th class="left">Observação</th></tr></thead><tbody>` +
+    (a.saidas ? L('Total de saídas no mês — ICMS destacado', a.saidas.icms, 'Valor total ' + fmt(a.saidas.vc) + ' · base ' + fmt(a.saidas.bc)) : '') +
+    (a.alc ? L('Operações alcançadas pelo regime especial — ICMS', a.alc.icms, 'Valor total ' + fmt(a.alc.vc) + ' · ICMS das não alcançadas ' + fmt(a.foraIcms)) : '') +
+    L('Estorno de débito do ICMS (campo 90 DAPI)', a.estDeb, 'Lançamento: D 2.1.15.2001 / C 3.1.01.2007') +
+    L('Estorno de crédito — devolução de venda (campo 95)', a.estCredDev, '') +
+    L('Estorno de crédito — devolução de venda TTD (campo 95)', a.estCredTTD, '') +
+    L('Estorno proporcional ao benefício (campo 95)', a.estProp, 'Percentual ' + (isNaN(a.pctProp) ? '—' : (a.pctProp * 100).toFixed(2).replace('.', ',') + '%') + ' sobre ' + fmt(a.totAntesProp)) +
+    `<tr class="res"><td>= Estornos de crédito (campo 95)</td><td>${fmt(a.estCred)}</td><td class="ex">Lançamento: D 3.1.01.2007 / C 2.1.15.2001</td></tr>` +
+    L('Crédito presumido sobre saídas', a.credPres, '') +
+    `<tr class="res"><td>Recolhimento efetivo (RE)</td><td>${fmt(a.re)}</td><td class="ex">Guia TTD (DAE 219-6) · lançamento D 3.1.01.2002 / C 2.1.15.2001</td></tr>` +
+    L('ICMS normal a recolher (fora do regime)', a.icmsNormal, 'ICMS de entrada ' + fmt(a.icmsEntrada)) +
+    '</tbody></table></div>';
+}
+function renderPlan(){
+  const P = dados.plan;
+  $('infoPlan').innerHTML = P ? 'Planilha “' + esc(P.arquivo) + '”, importada em ' + new Date(P.em).toLocaleString('pt-BR') + '. A guia pode ser digitada quando não houver o PDF.' : 'Importe a planilha “AVALIAÇÃO SUBVENÇÃO” no topo.';
+  const ms = [...new Set((P ? Object.keys(P.meses) : []).concat(Object.keys(dados.meses).filter(m => dados.meses[m].guia), [mesAtual]))].sort();
+  let t = { deb: 0, cred: 0, normal: 0, re: 0, subv: 0, g: 0 };
+  $('planBody').innerHTML = ms.map(m => {
+    const p = P && P.meses[m], G = (dados.meses[m] || {}).guia;
+    if (p) Object.keys(t).forEach(k => { if (k !== 'g') t[k] += p[k] || 0; });
+    if (G) t.g += G.valor;
+    const conf = p ? (ok(p.normal - (p.deb - p.cred)) && ok(p.subv - (p.normal - p.re)) ? '<span class="dok">✓ fecha</span>' : '<span class="dbad">não fecha</span>') : '';
+    const dG = G && p ? r2(G.valor - p.re) : NaN;
+    return `<tr${m === mesAtual ? ' style="background:#FFF8E6"' : ''}><td>${mesLbl(m)}</td><td>${fmt(p ? p.deb : NaN)}</td><td>${fmt(p ? p.cred : NaN)}</td><td>${fmt(p ? p.normal : NaN)}</td><td>${fmt(p ? p.re : NaN)}</td><td>${fmt(p ? p.subv : NaN)}</td><td class="left">${conf}</td>` +
+      `<td><input type="text" class="gv" value="${G ? fmt(G.valor) : ''}" placeholder="—" onchange="setGuia('${m}',this.value)" title="${G && G.manual ? 'digitado' : 'do PDF'}"> ${isNaN(dG) ? '' : ok(dG) ? '<span class="dok">✓</span>' : '<span class="dbad">' + fmt(dG) + '</span>'}</td>` +
+      `<td class="left small">${G && G.venc ? br(G.venc) : ''}${G && (G.arquivos || []).length ? '<br>' + G.arquivos.map(a => esc(a.nome)).join('<br>') : ''}</td></tr>`;
+  }).join('');
+  $('planFoot').innerHTML = P ? `<tr><td>Total</td><td>${fmt(r2(t.deb))}</td><td>${fmt(r2(t.cred))}</td><td>${fmt(r2(t.normal))}</td><td>${fmt(r2(t.re))}</td><td>${fmt(r2(t.subv))}</td><td></td><td>${fmt(r2(t.g))}</td><td></td></tr>` : '';
+}
+function renderRazao(){
+  $('titRaz').textContent = '· ' + mesLbl(mesAtual);
+  const sel = $('fContaR'), atual = sel.value || C_SUBC;
+  sel.innerHTML = CONTAS_RAZ.map(([c, n]) => `<option value="${c}" ${c === atual ? 'selected' : ''}>${c} · ${n}${RAZ[c] ? ' (' + RAZ[c].length + ')' : ''}</option>`).join('');
+  const c = sel.value, so = $('fSoSub').checked && c === C_REC;
+  const L = (RAZ[c] || []).filter(l => !ehSped(l) && (!so || classe(l, c)));
+  if (!L.length){ $('razBody').innerHTML = `<tr><td colspan="5" class="empty">${RAZ.__ok ? 'Sem lançamentos desta conta no mês' + (so ? ' com histórico de subvenção/TTD' : '') + '.' : 'Sem razão de ' + mesLbl(mesAtual) + ' no Book de conciliação.'}</td></tr>`; $('razFoot').innerHTML = ''; return; }
+  $('razBody').innerHTML = L.map(l => `<tr><td>${br(l.data)}</td><td class="left wrap" style="max-width:520px">${esc(l.hist)}${l.cp ? ' <span class="muted small">· contrap. ' + esc(l.cp) + '</span>' : ''}</td><td>${l.deb ? fmt(l.deb) : ''}</td><td>${l.cred ? fmt(l.cred) : ''}</td><td class="left">${NOME_CLS[classe(l, c)] || ''}</td></tr>`).join('');
+  const D = r2(L.reduce((a, l) => a + l.deb, 0)), Cr = r2(L.reduce((a, l) => a + l.cred, 0));
+  $('razFoot').innerHTML = `<tr><td colspan="2">Total (${L.length} lançamentos${(RAZ[c] || []).length > L.length ? ' · notas “-SPED” fora' : ''})</td><td>${fmt(D)}</td><td>${fmt(Cr)}</td><td></td></tr>`;
+}
+
+(async () => { await carregarNuvem(); await render(); assinBase = await assinaturaBase(); })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => { mesAtual = m; render(); });   // mês trocado no Book
+</script>
+
+<script>
+/* etapas (mesmo comportamento dos outros painéis) */
+(function(){
+  var KEY = location.pathname.split('/').pop() + ':etapa';
+  function abrir(t){
+    document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.setAttribute('aria-selected', b.getAttribute('data-tab') === t ? 'true' : 'false'); });
+    document.querySelectorAll('section.panel').forEach(function(s){ s.classList.toggle('active', s.id === 'tab-' + t); });
+    try { sessionStorage.setItem(KEY, t); } catch(e){}
+    var m = document.getElementById('menuAbas'); if (m) m.classList.remove('open');
+  }
+  window.abrirEtapa = abrir;
+  document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.addEventListener('click', function(){ abrir(b.getAttribute('data-tab')); }); });
+  var tg = document.getElementById('navToggle');
+  if (tg) tg.addEventListener('click', function(){ var m = document.getElementById('menuAbas'); var o = m.classList.toggle('open'); tg.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+  var salvo = null; try { salvo = sessionStorage.getItem(KEY); } catch(e){}
+  abrir(salvo || 'conferencia');
+})();
+</script>
+</body>
+</html>
