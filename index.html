@@ -277,6 +277,7 @@ body.rel-open{overflow:hidden}
 .rp-t tr.rp-rt td{background:#F3EBD3;font-weight:700;color:#0D1B2E;border-top:1px solid #C9A84C}
 .rp-t tr.rp-rst td{background:#F5F7FA;font-weight:700}
 .rp-t tr.rp-rs td{color:#34495E}
+.rp-t tr.rp-rsub td{color:#5B6B7C;font-size:.92em}.rp-t tr.rp-rsub td:first-child{padding-left:20px}
 .rp-t td.tot{background:rgba(201,168,76,.10);font-weight:700}
 .rp-t tr.rp-rt td.tot{background:#EADFBF}
 .rp-t td.neg{color:#C0392B}
@@ -690,6 +691,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <span class="fl">Balanço em:</span><select class="fs" id="relBal" onchange="buildRelatorio()"></select>
     <div class="fdiv"></div>
     <span class="fl">DRE:</span><select class="fs" id="relDreNiv" onchange="buildRelatorio()"><option value="full">Completa</option><option value="n1">Até 1º nível</option><option value="sint">Sintética</option></select>
+    <span class="fl">Balanço:</span><select class="fs" id="relBalNiv" onchange="buildRelatorio()"><option value="anal">Com contas analíticas</option><option value="res">Resumido</option></select>
     <span class="fl">Valores:</span><select class="fs" id="relUnit" onchange="buildRelatorio()"><option value="rs">R$</option><option value="mil">R$ mil</option></select>
     <label class="fl" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="relLalur" checked onchange="buildRelatorio()">Incluir LALUR</label>
     <span class="sp"></span>
@@ -2161,12 +2163,14 @@ function relSecDRE(d){
 }
 
 /* ---------- 5. Balanço Patrimonial ---------- */
-var REL_BA=[['Caixa e Equivalentes','caixa'],['Créditos (Clientes)','cred'],['Tributos a Recuperar','trib'],['Estoques','est'],['=Ativo Circulante','ac'],
-  ['Realizável a Longo Prazo','rlp'],['Investimentos','inv'],['Imobilizado','imo'],['Intangível','intang'],['=Ativo Não Circulante','anc'],['#ATIVO TOTAL','at']];
-var REL_BP=[['Fornecedores','forn'],['Empréstimos e Financiamentos CP','empCP'],['Obrigações Trabalhistas','obrT'],['Obrigações Tributárias','obrTrib'],['Outras Obrigações CP','outrosPC'],['=Passivo Circulante','pc'],
-  ['Empréstimos e Financiamentos LP','empLP'],['Tributos Parcelados — Federal','tribFed'],['Tributos Parcelados — Estadual','tribEst'],['=Passivo Não Circulante','pnc'],
-  ['Capital Social','capSoc'],['Reservas de Lucros','resLucros'],['Ajuste de Avaliação Patrimonial','ajusteAval'],['Lucros / Prejuízos Acumulados','lucrosAcum'],['Resultado do Exercício','resExerc'],['=Patrimônio Líquido','pl'],
-  ['#PASSIVO + PATRIMÔNIO LÍQUIDO','pt']];
+// mesma composição da tela Balanço & Índices; '?' = linha que só aparece quando tem saldo
+var REL_BA=[['Caixa e Equivalentes','caixa'],['Créditos','cred'],['?Tributos a Recuperar','trib'],['Estoques','est'],['?Outros Ativos Circulantes','outAC'],['=Ativo Circulante','ac'],
+  ['?Realizável a Longo Prazo','rlp'],['Investimentos','inv'],['Imobilizado','imo'],['?Intangível','intang'],['?Outros Ativos Não Circulantes','outANC'],['=Ativo Não Circulante','anc'],['#ATIVO TOTAL','at']];
+var REL_BP=[['Fornecedores','forn'],['Empréstimos CP','empCP'],['Obrig. Trabalhistas','obrT'],['Obrig. Tributárias','obrTrib'],['?Outros Passivos Circulantes','outrosPC'],['=Passivo Circulante','pc'],
+  ['Empréstimos LP','empLP'],['Tributos Parcelados Federal','tribFed'],['Tributos Parcelados Estadual','tribEst'],['?Outros Passivos Não Circulantes','outrosPNC'],['=Passivo Não Circulante','pnc'],
+  ['Capital Social','capSoc'],['Ajuste Aval. Patrimonial','ajusteAval'],['Lucros Acumulados','lucTot'],['Resultado do Exercício','resExerc'],['?Outras Contas do PL','outrosPL'],['=Patrimônio Líquido','pl'],
+  ['#PASSIVO + PL','pt']];
+function relBalV(i,k){var b=BALHIST[i]||{};return k==='lucTot'?relNum(b.resLucros)+relNum(b.lucrosAcum):relNum(b[k]);}
 function relSecBal(d){
   // Ativo à esquerda e Passivo + PL à direita, mês mais antigo à esquerda e variação no fim:
   // trimestre → os meses do trimestre (Abr | Mai | Jun); outro período → primeiro × último mês (Jan | Jul);
@@ -2175,16 +2179,30 @@ function relSecBal(d){
   var cols=d.tri&&meses.length>1?meses:meses.length>1?[meses[0],meses[meses.length-1]]:[d.bm-1,d.bm].filter(function(i){return BALHIST[i];});
   var cur=cols[cols.length-1],ini=cols[0],b=BALHIST[cur];
   if(!b||cur!==(meses.length>1?meses[meses.length-1]:d.bm))return {html:'<p>Não há balancete importado para a data-base selecionada.</p>',xl:{name:'Balanço',rows:[['Não há balancete importado para a data-base selecionada.']],w:[60]}};
-  var comp=cols.length>1,dense=cols.length>2,dec=dense?0:2;
+  var comp=cols.length>1,dense=cols.length>2,dec=dense?0:2,anal=(relEl('relBalNiv')||{}).value!=='res';
   var xr=[['Grupo','Conta'].concat(cols.map(function(i){return MF[i];}),comp?['Variação %']:[])];
   var tbl=function(title,L){
     var t='<table class="rp-t'+(dense?' dense':'')+'"><thead><tr><th>'+title+'</th>'+cols.map(function(i){return '<th>'+M[i]+'/26</th>';}).join('')+(comp?'<th title="'+MF[cur]+' sobre '+MF[ini]+'">Var.</th>':'')+'</tr></thead><tbody>';
+    var linha=function(lbl,cls,vs){
+      var v=vs[vs.length-1],pv=vs[0],vr=comp&&pv?(v-pv)/Math.abs(pv):null;
+      t+='<tr class="'+cls+'"><td>'+relEsc(lbl)+'</td>'+vs.map(function(x){return '<td'+(x<0?' class="neg"':'')+'>'+relN(x,dec)+'</td>';}).join('')+(comp?'<td>'+(vr===null?'—':(vr>=0?'+':'')+(vr*100).toFixed(1).replace('.',',')+'%')+'</td>':'')+'</tr>';
+      xr.push([title,(cls==='rsub'?'    ':'')+lbl].concat(vs,comp?[vr===null?'':{p:vr}]:[]));
+    };
+    var nada=function(vs){return vs.every(function(x){return Math.abs(x)<0.01;});};
     L.forEach(function(it){
-      var lbl=it[0],cls='rs';
+      var lbl=it[0],cls='rs',opc=false;
+      if(lbl[0]==='?'){opc=true;lbl=lbl.slice(1);}
       if(lbl[0]==='='){cls='rst';lbl=lbl.slice(1);}else if(lbl[0]==='#'){cls='rt';lbl=lbl.slice(1);}
-      var vs=cols.map(function(i){return relNum(BALHIST[i][it[1]]);}),v=vs[vs.length-1],pv=vs[0],vr=comp&&pv?(v-pv)/Math.abs(pv):null;
-      t+='<tr class="'+cls+'"><td>'+lbl+'</td>'+vs.map(function(x){return '<td'+(x<0?' class="neg"':'')+'>'+relN(x,dec)+'</td>';}).join('')+(comp?'<td>'+(vr===null?'—':(vr>=0?'+':'')+(vr*100).toFixed(1).replace('.',',')+'%')+'</td>':'')+'</tr>';
-      xr.push([title,lbl].concat(vs,comp?[vr===null?'':{p:vr}]:[]));
+      var vs=cols.map(function(i){return relBalV(i,it[1]);});
+      if(opc&&nada(vs))return;
+      linha(lbl,cls,vs);
+      // contas analíticas: a mesma abertura da tela (o que não cai em nenhuma subconta vira "Outros")
+      var det=anal?(BAL_DET[it[1]]||[]).filter(function(x){return cols.some(function(i){return typeof BALHIST[i][x[1]]==='number';});}):[];
+      if(!det.length)return;
+      var soma=cols.map(function(){return 0;});
+      det.forEach(function(x){var sv=cols.map(function(i){return relNum(BALHIST[i][x[1]]);});sv.forEach(function(z,n){soma[n]+=z;});if(!nada(sv))linha(x[0],'rsub',sv);});
+      var out=vs.map(function(z,n){return z-soma[n];});
+      if(!nada(out))linha('Outros','rsub',out);
     });
     return t+'</tbody></table>';
   };
@@ -2192,7 +2210,7 @@ function relSecBal(d){
         '<div class="rp-grid2">'+tbl('ATIVO',REL_BA)+tbl('PASSIVO E PATRIMÔNIO LÍQUIDO',REL_BP)+'</div>';
   var dif=relNum(b.at)-relNum(b.pt);
   var dataCur=meses.length>1?'fim de cada mês':d.bmData;
-  h+='<div class="rp-note">Saldos acumulados em '+dataCur+' extraídos dos balancetes; valores em '+d.unitLbl+(dense?' (sem centavos)':'')+'. '+(comp?'Var. = '+MF[cur]+' sobre '+MF[ini]+'. ':'')+
+  h+='<div class="rp-note">Saldos acumulados em '+dataCur+' extraídos dos balancetes; valores em '+d.unitLbl+(dense?' (sem centavos)':'')+'. '+(anal?'Linhas recuadas: contas analíticas que compõem o grupo. ':'')+(comp?'Var. = '+MF[cur]+' sobre '+MF[ini]+'. ':'')+
      (Math.abs(dif)<1?'Conferência: Ativo Total = Passivo + PL ✓':'<b style="color:#C0392B">Atenção: diferença de '+relR(dif)+' entre Ativo e Passivo + PL.</b>')+'</div>';
   return {html:h,xl:{name:'Balanço',rows:xr,w:[30,36].concat(cols.map(function(){return 18;}),comp?[11]:[])}};
 }
@@ -2316,7 +2334,7 @@ function buildRelatorio(){
     '• DRE e indicadores apresentam o movimento de cada mês; o Balanço apresenta saldos acumulados na data-base.<br>'+
     '• Percentuais de análise vertical: Receita Bruta e Deduções sobre a Receita Bruta; da Receita Líquida para baixo, sobre a Receita Líquida. Valores entre parênteses são negativos.</div>'+
     '<div class="rp-sign"><div>'+relEsc(d.emp.elab||'Responsável técnico')+'<br>Audicon Contadores</div></div>';
-  out.forEach(function(o){o.html=o.html.replace(/<tr class="(rt|rst|rs)"/g,'<tr class="rp-$1"');});
+  out.forEach(function(o){o.html=o.html.replace(/<tr class="(rt|rst|rsub|rs)"/g,'<tr class="rp-$1"');});
   REL.last={d:d,secs:secs,out:out};
   relEl('relDoc').innerHTML=out.map(function(o,i){
     return '<div class="rp-sheet">'+relHead(d)+'<div class="rp-body"><div class="rp-sec"><span class="rp-num">'+(i+1)+'</span>'+secs[i][0]+'</div>'+o.html+'</div>'+
