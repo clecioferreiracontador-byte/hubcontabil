@@ -339,6 +339,14 @@ table.lanc td .muted.small{font-size:.7rem;line-height:1.2}
       <span class="muted small">CSV no layout do importador Audicon (separador “;”, ANSI, contas sem pontos).</span>
     </div>
   </div>
+  <div class="box so-admin">
+    <h2>Contas salvas para as próximas apurações <span class="muted small" id="salvasTit"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Contas de resultado que você escolheu para as linhas da planilha de apuração. Ficam gravadas na base (e no Firebase) e são usadas automaticamente todo mês; se o código da conta na planilha mudar, a linha é reconhecida pela descrição.</div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Tributo</th><th>Tipo</th><th class="left">Linha da apuração</th><th class="left">Conta</th><th></th></tr></thead>
+      <tbody id="salvasBody"></tbody>
+    </table></div>
+  </div>
 </section>
 
 <section class="panel" id="tab-apuracao">
@@ -452,7 +460,13 @@ async function carregarNuvem(){
   if (!HUB){ stNuvem('Base guardada neste navegador (abra pelo Hub para salvar no Firebase).'); return; }
   try {
     const d = await HUB.lerDoc(DOC_NUVEM);
-    if (d && d.meses && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){ dados = d; lsSet(LS, dados); stNuvem('☁ Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok'); }
+    if (d && d.meses && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){
+      // não perde contas salvas só neste navegador quando a base do Firebase é mais nova
+      const loc = dados.contaLinha || {}, novas = Object.keys(loc).filter(k => !(d.contaLinha || {})[k]);
+      if (novas.length){ d.contaLinha = d.contaLinha || {}; novas.forEach(k => d.contaLinha[k] = loc[k]); }
+      dados = d; lsSet(LS, dados); stNuvem('☁ Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok');
+      if (novas.length) salvar();
+    }
     else if (dados.savedAt && (!d || (d.savedAt || '') < dados.savedAt)) agendarNuvem();
     else if (d) stNuvem('☁ Base em dia com o Firebase.', 'ok');
   } catch(e){ stNuvem('⚠ Não foi possível ler a base no Firebase: ' + ((e && e.message) || e) + ' — usando a deste navegador.', 'err'); }
@@ -665,9 +679,24 @@ function grupos(L, k){
   (L || []).forEach(l => { const key = (l.gConta || '') + '|' + (l.gDesc || l.desc); const o = g[key] = g[key] || { conta: l.gConta || '', desc: l.gDesc || l.desc, v: 0 }; o.v += l[k]; });
   return Object.values(g).map(o => (o.v = r2(o.v), o)).filter(o => Math.abs(o.v) >= 0.005);
 }
+// contas salvas: chave "pis|cred|<CONTA DA PLANILHA> <DESCRIÇÃO>"; valem para todos os meses.
+// Se a conta da planilha mudar de um mês para o outro, procura pela descrição; se só um dos
+// tributos tiver a conta salva, o outro usa a mesma (marcado para conferir).
+const descDaChave = key => String(key).split('|').slice(2).join('|').replace(/^[\d.]+\s+/, '').trim();
+function contaSalva(k, tipo, key, desc){
+  const CL = dados.contaLinha || {};
+  if (CL[key]) return { conta: CL[key], origem: 'manual' };
+  const d = norm(desc), pref = k + '|' + tipo + '|';
+  let x = Object.keys(CL).find(c => c.indexOf(pref) === 0 && descDaChave(c) === d);
+  if (x) return { conta: CL[x], origem: 'manual' };
+  const outro = (k === 'pis' ? 'cof' : 'pis') + '|' + tipo + '|';
+  x = CL[outro + key.slice(pref.length)] ? outro + key.slice(pref.length) : Object.keys(CL).find(c => c.indexOf(outro) === 0 && descDaChave(c) === d);
+  if (x) return { conta: CL[x], origem: 'outro' };
+  return null;
+}
 function contaResultado(gr, k, tipo){
-  const key = k + '|' + tipo + '|' + norm(gr.conta + ' ' + gr.desc), man = (dados.contaLinha || {})[key];
-  if (man) return { conta: man, key, origem: 'manual' };
+  const key = k + '|' + tipo + '|' + norm(gr.conta + ' ' + gr.desc), man = contaSalva(k, tipo, key, gr.desc);
+  if (man) return { conta: man.conta, key, origem: man.origem };
   const C = (balMes && balMes.contas) || {};
   if (tipo === 'deb') return { conta: /^3\.3\.02/.test(gr.conta) ? TRIB[k].fin : TRIB[k].ded, key, origem: 'auto' };
   if (gr.conta && C[gr.conta]) return { conta: gr.conta, key, origem: 'auto' };
@@ -685,6 +714,21 @@ function setContaLinha(key, v){
   v = String(v || '').trim(); dados.contaLinha = dados.contaLinha || {};
   if (!v) delete dados.contaLinha[key]; else if (/^\d(\.\d+)+$/.test(v)) dados.contaLinha[key] = v; else { msg('Conta inválida: ' + esc(v), 'err'); render(); return; }
   salvar(); render();
+  msg(v ? 'Conta ' + esc(v) + ' salva: será usada nas próximas apurações.' : 'Conta removida das contas salvas.', 'ok');
+}
+function removerContaLinha(key){ if (!confirm('Remover esta conta salva? A linha volta para a conta sugerida automaticamente.')) return; setContaLinha(key, ''); }
+function renderContasSalvas(){
+  const el = $('salvasBody'); if (!el) return;
+  const CL = dados.contaLinha || {}, ks = Object.keys(CL).sort();
+  $('salvasTit').textContent = ks.length ? '· ' + ks.length + ' conta(s)' : '';
+  if (!ks.length){ el.innerHTML = `<tr><td colspan="5" class="empty">Nenhuma conta salva ainda. Troque a conta de uma linha em “Lançamentos a fazer” e ela fica guardada aqui.</td></tr>`; return; }
+  const TIPO = { deb: 'Débito', cred: 'Crédito' };
+  el.innerHTML = ks.map(key => {
+    const p = key.split('|'), trib = TRIB[p[0]] ? TRIB[p[0]].nome : p[0], linha = p[1] === 'resid' ? 'Ajuste no resultado (diferença da integração)' : p.slice(2).join('|');
+    return `<tr><td>${esc(trib)}</td><td>${esc(TIPO[p[1]] || 'Ajuste')}</td><td class="left wrap">${esc(linha)}</td>`
+      + `<td class="left"><input type="text" value="${esc(CL[key])}" style="width:110px;padding:3px 6px;font-size:.8rem" onchange="setContaLinha(${esc(JSON.stringify(key))},this.value)"><div class="muted small">${esc(descConta(CL[key]))}</div></td>`
+      + `<td><button type="button" class="danger" style="padding:3px 10px" onclick="removerContaLinha(${esc(JSON.stringify(key))})">Remover</button></td></tr>`;
+  }).join('');
 }
 function gerarLanc(C){
   const out = [], md = dados.meses[mesAtual] || {}, A = md.apur, mm = mesLbl(mesAtual).toUpperCase();
@@ -736,7 +780,9 @@ let LANC = [];
 function contaTd(conta, o, lado){
   const d = descConta(conta);
   if (o.edit === lado && o.key){
-    const av = o.origem === 'nome' || o.origem === 'padrao' ? ' <span class="pill warn" title="Conta sugerida pelo nome da linha — confira">conferir</span>' : '';
+    const av = o.origem === 'nome' || o.origem === 'padrao' ? ' <span class="pill warn" title="Conta sugerida pelo nome da linha — confira">conferir</span>'
+      : o.origem === 'manual' ? ' <span class="pill ok" title="Conta salva: usada em todas as apurações">salva</span>'
+      : o.origem === 'outro' ? ` <span class="pill warn" title="Mesma conta salva para o ${o.k === 'pis' ? 'COFINS' : 'PIS'} — confira; ao confirmar, fica salva também para este tributo">do ${o.k === 'pis' ? 'COFINS' : 'PIS'}</span>` : '';
     return `<td class="left"><input type="text" value="${esc(conta)}" style="width:110px;padding:3px 6px;font-size:.8rem" onchange="setContaLinha(${esc(JSON.stringify(o.key))},this.value)" title="Conta de resultado (vale para os próximos meses)">${av}<div class="muted small">${esc(d)}</div></td>`;
   }
   return `<td class="left">${esc(conta)}<div class="muted small">${esc(d)}</div></td>`;
@@ -789,7 +835,7 @@ async function render(){
   LANC = gerarLanc(C); publicarSuportes(C);
   $('stTopo').textContent = (balMes ? 'Balancete de ' + mesLbl(mesAtual) + ' carregado do Book' : 'Sem balancete de ' + mesLbl(mesAtual) + ' no Book') + ' · ' + (RAZ.__ok ? 'razão do mês carregado' : 'sem razão do mês') + '.';
   $('titConf').textContent = '· ' + mesLbl(mesAtual);
-  renderChips(); renderKpis(C, md); renderConf(C, md); renderMov(C); renderLanc(); renderApur(md); renderGuias(); renderRazao();
+  renderChips(); renderKpis(C, md); renderConf(C, md); renderMov(C); renderLanc(); renderContasSalvas(); renderApur(md); renderGuias(); renderRazao();
 }
 function renderChips(){
   const ms = Object.keys(dados.meses).sort().reverse();
