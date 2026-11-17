@@ -346,6 +346,18 @@ tr.grp0 td .dsc{color:#CD9A56}
     <div class="toolbar" style="margin-top:10px"><button type="button" onclick="novaClasse()">+ Nova classe</button></div>
   </div>
   <div class="box">
+    <h2>Crédito de PIS/COFINS sobre o imobilizado</h2>
+    <div class="muted small" style="margin-bottom:10px">Vem das apurações importadas no painel PIS/COFINS (linha “Ativo Imobilizado - Apropriação Direta”). O crédito é lançado contra a conta de custo do bem; a conta é a salva para essa linha no painel PIS/COFINS ou, se não houver, a conta padrão abaixo. Na conferência, o crédito acumulado desde o mês indicado é descontado do custo do controle.</div>
+    <div class="toolbar" style="margin-bottom:10px">
+      <label>Considerar a partir de <input type="month" id="credDesde" style="width:auto" onchange="setCred('credDesde',this.value)"></label>
+      <label>Conta padrão <input type="text" id="credConta" style="width:120px" placeholder="1.2.05.1005" onchange="setCred('credConta',this.value)"></label>
+    </div>
+    <div class="tscroll"><table>
+      <thead><tr><th>Mês</th><th class="left">Linha da apuração</th><th>PIS</th><th>COFINS</th><th>Crédito</th><th class="left">Conta de custo</th></tr></thead>
+      <tbody id="credBody"></tbody><tfoot id="credFoot"></tfoot>
+    </table></div>
+  </div>
+  <div class="box">
     <h2>Importar a planilha (opcional)</h2>
     <div class="muted small" style="margin-bottom:10px">O controle é mantido aqui, mês a mês (lance as aquisições e baixas na etapa 3 · Bens). Só use se quiser substituir um mês pelo da aba “Controle Patrimonial” do Book NHD.</div>
     <button type="button" onclick="document.getElementById('inImob').click()">Importar controle patrimonial (.xlsx)</button>
@@ -644,6 +656,53 @@ function ajustarPadroes(){
   if (mudou){ salvar(); renderClasses(); }
 }
 
+// ===================== crédito de PIS/COFINS sobre o imobilizado =====================
+// A apuração de PIS/COFINS toma crédito sobre a aquisição do imobilizado (linha “Ativo Imobilizado - Apropriação
+// Direta”) e o crédito é lançado contra a conta de custo do bem: a conta fica menor que o controle patrimonial, que
+// guarda o valor da nota. O crédito acumulado desde cfg.credDesde entra como item de conciliação do custo.
+const RE_CRED_IMOB = /IMOBILIZ/, CRED_DESDE = '2026-08', CRED_CONTA = '1.2.05.1005';
+let PC = null;
+async function carregarPisCofins(){
+  PC = lsGet('aud-piscofins-v1', null);
+  if ((!PC || !PC.meses) && HUB) try { PC = await HUB.lerDoc('pis-cofins'); } catch(e){}
+}
+// conta escolhida no painel PIS/COFINS para a linha (Contas salvas); serve só se for conta do imobilizado
+function contaCredPC(conta, desc){
+  const CL = (PC && PC.contaLinha) || {}, d = norm(desc), exata = norm((conta || '') + ' ' + desc);
+  for (const k of ['pis', 'cof']){
+    if (CL[k + '|cred|' + exata]) return CL[k + '|cred|' + exata];
+    const x = Object.keys(CL).find(c => c.indexOf(k + '|cred|') === 0 && c.split('|').slice(2).join('|').replace(/^[\d.]+\s+/, '').trim() === d);
+    if (x) return CL[x];
+  }
+  return '';
+}
+function creditosImob(ate, so){
+  const out = { total: 0, porConta: {}, meses: [] };
+  if (!PC || !PC.meses || !ate) return out;
+  const desde = cfg.credDesde || CRED_DESDE;
+  Object.keys(PC.meses).sort().filter(m => so ? m === so : m >= desde && m <= ate).forEach(m => {
+    const L = (((PC.meses[m] || {}).apur || {}).linhas || {}).cred || [];
+    L.filter(l => RE_CRED_IMOB.test(norm(l.gDesc || l.desc))).forEach(l => {
+      const v = r2((+l.pis || 0) + (+l.cof || 0)); if (Math.abs(v) < 0.005) return;
+      const desc = l.gDesc || l.desc, salva = contaCredPC(l.gConta, desc);
+      const conta = /^1\.2\./.test(salva) ? salva : (cfg.credConta || CRED_CONTA);
+      out.porConta[conta] = r2((out.porConta[conta] || 0) + v); out.total = r2(out.total + v);
+      out.meses.push({ m, desc, pis: r2(+l.pis || 0), cof: r2(+l.cof || 0), v, conta, salva: /^1\.2\./.test(salva) });
+    });
+  });
+  return out;
+}
+function setCred(k, v){ v = String(v || '').trim(); if (k === 'credConta' && v && !/^\d(\.\d+)+$/.test(v)){ msg('Conta inválida: ' + esc(v), 'err'); render(); return; } cfg[k] = v; salvar(); render(); }
+function renderCred(){
+  const el = $('credBody'); if (!el) return;
+  $('credDesde').value = cfg.credDesde || CRED_DESDE; $('credConta').value = cfg.credConta || CRED_CONTA;
+  const fimLista = Object.keys(dados).sort().pop() || mesAtual;
+  const CI = creditosImob(fimLista);
+  el.innerHTML = CI.meses.map(x => `<tr><td>${mesLbl(x.m)}</td><td class="left wrap">${esc(x.desc)}</td><td>${fmt(x.pis)}</td><td>${fmt(x.cof)}</td><td>${fmt(x.v)}</td><td class="left">${esc(x.conta)}${x.salva ? ' <span class="pill ok" title="Conta salva no painel PIS/COFINS">PIS/COFINS</span>' : ' <span class="pill cinza" title="Conta padrão desta tela">padrão</span>'}</td></tr>`).join('')
+    || `<tr><td colspan="6" class="muted">${PC && PC.meses ? 'Nenhum crédito sobre o imobilizado nas apurações importadas a partir de ' + mesLbl(cfg.credDesde || CRED_DESDE) + '.' : 'Sem apurações no painel PIS/COFINS neste navegador.'}</td></tr>`;
+  $('credFoot').innerHTML = CI.meses.length ? `<tr><td colspan="4">Acumulado até ${mesLbl(fimLista)}</td><td>${fmt(CI.total)}</td><td></td></tr>` : '';
+}
+
 // ===================== conferência =====================
 async function carregarBal(m){
   balMes = null;
@@ -671,8 +730,10 @@ async function render(){
   const D = dados[mesAtual];
   $('vazio').style.display = D ? 'none' : ''; $('conteudo').style.display = D ? '' : 'none';
   $('stTopo').textContent = D ? 'Data-base ' + br(fimMes(mesAtual)) + ' · ' + D.origem : '';
+  await carregarPisCofins(); renderCred();
   if (!D){ renderBens(); return; }
   await carregarBal(mesAtual);
+  const CI = creditosImob(mesAtual), CImes = creditosImob(mesAtual, mesAtual), credUsado = new Set();
   const cb = c => balMes && balMes.contas && c ? balMes.contas[c] : null;
   const usadas = new Set(), T = { cC: 0, cB: 0, dC: 0, dB: 0, mC: 0, mB: 0, dFix: 0 }, sup = {};
   let ok = 0, div = 0;
@@ -697,10 +758,13 @@ async function render(){
     fixas.forEach(o => { T.dFix = r2(T.dFix - o.x.sf);
       sup[o.c] = { fonte: FONTE, saldo: r2(o.x.sf), data: fimMes(mesAtual), detalhe: 'Controle patrimonial · ' + k.classes.join(' + ') + ' · depreciação acumulada pelo saldo próprio (a depreciação dos bens está em ' + (CD[0] || k.classes[0]) + ')' }; });
     const custoB = soma(CC, x => x.sf), daB = soma(CD, x => -x.sf), mesB = soma(CD, x => x.c - x.d);
+    // crédito de PIS/COFINS lançado contra as contas de custo do grupo
+    const credG = r2(CC.reduce((a, c) => a + (CI.porConta[c] || 0), 0)); CC.forEach(c => credUsado.add(c));
+    const custoEsp = r2(k.custo - credG);
     if (Math.abs(k.daMes) >= 0.005 || (!isNaN(mesB) && Math.abs(mesB) >= 0.005)) LANC.push({ nome: k.classes.join(' + '), conta: CD.join(' + '), ctl: r2(k.daMes), feito: mesB });
     T.cC += k.custo; T.dC += k.da; T.mC += k.daMes;
     if (!k.custo && !k.da && !custoB && !daB) return '';
-    const dC = isNaN(custoB) ? NaN : r2(custoB - k.custo), dD = isNaN(daB) ? NaN : r2(daB - k.da), dM = isNaN(mesB) ? NaN : r2(mesB - k.daMes);
+    const dC = isNaN(custoB) ? NaN : r2(custoB - custoEsp), dD = isNaN(daB) ? NaN : r2(daB - k.da), dM = isNaN(mesB) ? NaN : r2(mesB - k.daMes);
     [dC, dD].forEach(d => { if (!isNaN(d)) (Math.abs(d) < 1 ? ok++ : div++); });
     const nome = k.classes.join(' + '), dt = fimMes(mesAtual);
     // suporte do Book: as contas que entram junto levam o próprio saldo e a principal leva o resto do controle,
@@ -712,11 +776,11 @@ async function render(){
         sup[c] = { fonte: FONTE, saldo: v, data: dt, detalhe: 'Controle patrimonial · ' + nome + ' · ' + tipo + ' (conciliada junto com ' + L[0] + ')' }; });
       sup[L[0]] = { fonte: FONTE, saldo: resto, data: dt, detalhe: 'Controle patrimonial · ' + nome + ' · ' + tipo + (L.length > 1 ? ' (conciliada junto com ' + L.slice(1).join(', ') + ')' : '') };
     };
-    suportes(CC, k.custo, x => x.sf, 'custo');
+    suportes(CC, custoEsp, x => x.sf, credG ? 'custo menos ' + fmt(credG) + ' de crédito de PIS/COFINS sobre o imobilizado' : 'custo');
     suportes(CD, -k.da, x => x.sf, 'depreciação acumulada');
     const contas = L => L.length ? L.map(esc).join('<br>+ ') : '';
     const notaFix = fixas.length ? '<div class="muted small">' + fixas.map(o => esc(o.c) + ' ' + fmt(-o.x.sf) + ' pelo saldo próprio').join('<br>') + '</div>' : '';
-    return `<tr><td><b>${esc(nome)}</b>${k.classes.length > 1 ? '<div class="muted small">conciliadas juntas</div>' : ''}</td><td>${contas(CC) || '<span class="muted">sem conta</span>'}</td><td>${fmt(k.custo)}</td><td>${fmt(custoB)}</td>${difTd(dC)}
+    return `<tr><td><b>${esc(nome)}</b>${k.classes.length > 1 ? '<div class="muted small">conciliadas juntas</div>' : ''}</td><td>${contas(CC) || '<span class="muted">sem conta</span>'}</td><td>${fmt(k.custo)}${credG ? `<div class="muted small" title="Crédito de PIS/COFINS sobre a aquisição do imobilizado (apuração PIS/COFINS desde ${mesLbl(cfg.credDesde || CRED_DESDE)}), lançado contra a conta de custo">(−) créd. PIS/COFINS ${fmt(credG)}<br>= ${fmt(custoEsp)}</div>` : ''}</td><td>${fmt(custoB)}</td>${difTd(dC)}
       <td>${contas(CD) || '<span class="muted">—</span>'}${notaFix}</td><td>${fmt(k.da)}</td><td>${fmt(daB)}</td>${difTd(dD)}<td>${fmt(k.daMes)}</td><td>${fmt(mesB)}</td>${difTd(dM)}</tr>`;
   }).join('');
   $('confBody').innerHTML = html;
@@ -730,9 +794,12 @@ async function render(){
   const contasImob = balMes && balMes.contas ? Object.keys(balMes.contas).filter(c => /^1\.2\.(05|10)\.\d\d\d\d$/.test(c)) : [];
   const ehDA = c => /^1\.2\.(05|10)\.2/.test(c);
   contasImob.forEach(c => { const x = balMes.contas[c]; if (ehDA(c)){ T.dB += -x.sf; T.mB += x.c - x.d; } else T.cB += x.sf; });
-  $('confFoot').innerHTML = `<tr><td colspan="2">TOTAL do controle × contas 1.2.05 / 1.2.10</td><td>${fmt(T.cC)}</td><td>${balMes ? fmt(T.cB) : '—'}</td>${balMes ? difTd(r2(T.cB - T.cC)) : '<td>—</td>'}<td>${T.dFix ? '<span class="muted small">controle + ' + fmt(T.dFix) + ' pelo saldo próprio</span>' : ''}</td><td>${fmt(r2(T.dC + T.dFix))}</td><td>${balMes ? fmt(T.dB) : '—'}</td>${balMes ? difTd(r2(T.dB - T.dC - T.dFix)) : '<td>—</td>'}<td>${fmt(T.mC)}</td><td>${balMes ? fmt(T.mB) : '—'}</td>${balMes ? difTd(r2(T.mB - T.mC)) : '<td>—</td>'}</tr>`;
+  const credFora = Object.keys(CI.porConta).filter(c => !credUsado.has(c));
+  $('confFoot').innerHTML = `<tr><td colspan="2">TOTAL do controle × contas 1.2.05 / 1.2.10</td><td>${fmt(T.cC)}${CI.total ? '<div class="muted small">(−) créd. PIS/COFINS ' + fmt(CI.total) + '<br>= ' + fmt(r2(T.cC - CI.total)) + '</div>' : ''}</td><td>${balMes ? fmt(T.cB) : '—'}</td>${balMes ? difTd(r2(T.cB - T.cC + CI.total)) : '<td>—</td>'}<td>${T.dFix ? '<span class="muted small">controle + ' + fmt(T.dFix) + ' pelo saldo próprio</span>' : ''}</td><td>${fmt(r2(T.dC + T.dFix))}</td><td>${balMes ? fmt(T.dB) : '—'}</td>${balMes ? difTd(r2(T.dB - T.dC - T.dFix)) : '<td>—</td>'}<td>${fmt(T.mC)}</td><td>${balMes ? fmt(T.mB) : '—'}</td>${balMes ? difTd(r2(T.mB - T.mC)) : '<td>—</td>'}</tr>`;
   const sem = contasImob.filter(c => !usadas.has(c) && (Math.abs(balMes.contas[c].sf) >= 0.005 || Math.abs(balMes.contas[c].d) >= 0.005 || Math.abs(balMes.contas[c].c) >= 0.005));
-  $('semClasse').innerHTML = sem.length ? `<div class="msg warn" style="margin-top:10px"><b>${sem.length} conta(s) com saldo sem classe no controle patrimonial</b> (entram só no total; ligue a conta a uma classe na etapa 4 · Classes e contas): ${sem.map(c => esc(c) + ' ' + esc(balMes.contas[c].desc) + ' (' + fmt(balMes.contas[c].sf) + ')').join(' · ')}</div>` : '';
+  $('semClasse').innerHTML = (sem.length ? `<div class="msg warn" style="margin-top:10px"><b>${sem.length} conta(s) com saldo sem classe no controle patrimonial</b> (entram só no total; ligue a conta a uma classe na etapa 4 · Classes e contas): ${sem.map(c => esc(c) + ' ' + esc(balMes.contas[c].desc) + ' (' + fmt(balMes.contas[c].sf) + ')').join(' · ')}</div>` : '')
+    + (credFora.length ? `<div class="msg warn" style="margin-top:10px"><b>Crédito de PIS/COFINS em conta sem classe:</b> ${credFora.map(c => esc(c) + ' ' + fmt(CI.porConta[c])).join(' · ')} (entra só no total). Confira a conta na etapa 4 · Classes e contas.</div>` : '')
+    + (CI.total ? `<div class="msg" style="margin-top:10px"><b>Crédito de PIS/COFINS sobre o imobilizado: ${fmt(CI.total)}</b> acumulado desde ${mesLbl(cfg.credDesde || CRED_DESDE)} (${CI.meses.map(x => mesLbl(x.m) + ' ' + fmt(x.v)).join(' · ')}). A apuração toma crédito sobre a aquisição e a contabilidade lança contra a conta de custo do bem; o controle patrimonial guarda o valor da nota, então o crédito é descontado do custo do controle na conferência.</div>` : '');
   $('tituloConf').textContent = '· ' + mesLbl(mesAtual) + (balMes ? ' · saldos ' + balMes.__fonte : ' · sem balancete deste mês');
   $('confInfo').textContent = balMes ? 'Os saldos do controle foram enviados ao Book de conciliação como suporte automático das contas ligadas.' : 'Importe o balancete de ' + mesLbl(mesAtual) + ' no Book de conciliação para comparar.';
   $('kpis').innerHTML = [['Custo do imobilizado', fmt(T.cC)], ['Depreciação acumulada', fmt(T.dC)], ['Valor residual', fmt(T.cC - T.dC)], ['Depreciação do mês', fmt(T.mC)], ['Contas conferidas', ok + ' OK · ' + div + ' com diferença']]
@@ -743,7 +810,7 @@ async function render(){
   const custoContas = contasImob.filter(c => !ehDA(c));
   const debC = balMes ? custoContas.reduce((a, c) => a + balMes.contas[c].d, 0) : NaN, credC = balMes ? custoContas.reduce((a, c) => a + balMes.contas[c].c, 0) : NaN;
   $('movBody').innerHTML = `<tr><td>Aquisições do mês (${doMes.filter(b => b.valor > 0).length} lançamento(s)) × débitos nas contas de custo</td><td>${fmt(aq)}</td><td>${fmt(debC)}</td>${difTd(r2(debC - aq))}</tr>
-    <tr><td>Baixas do mês (${doMes.filter(b => b.valor < 0).length}) × créditos nas contas de custo</td><td>${fmt(bx)}</td><td>${fmt(credC)}</td>${difTd(r2(credC - bx))}</tr>
+    <tr><td>Baixas do mês (${doMes.filter(b => b.valor < 0).length})${CImes.total ? ' + crédito de PIS/COFINS sobre aquisições (' + fmt(CImes.total) + ')' : ''} × créditos nas contas de custo</td><td>${fmt(r2(bx + CImes.total))}</td><td>${fmt(credC)}</td>${difTd(r2(credC - bx - CImes.total))}</tr>
     <tr><td>Depreciação do mês × créditos líquidos na depreciação acumulada</td><td>${fmt(T.mC)}</td><td>${balMes ? fmt(T.mB) : '—'}</td>${balMes ? difTd(r2(T.mB - T.mC)) : '<td>—</td>'}</tr>`;
   const s = lsGet(LS_SUP, {}); Object.keys(s).forEach(k => { if (s[k].fonte === FONTE || s[k].fonte === 'Imobilizado') delete s[k]; }); Object.assign(s, sup); lsSet(LS_SUP, s);
   const cls = [...new Set(D.bens.map(b => b.classe).concat(cfg.classes.map(c => c.classe)))].sort();
@@ -766,6 +833,8 @@ function renderBens(){
   $('bensFoot').innerHTML = `<tr><td colspan="5">TOTAL (${L.length})</td><td>${fmt(sv)}</td><td></td><td></td><td>${fmt(sd)}</td><td>${fmt(sv - sd)}</td><td></td></tr>`;
 }
 window.focoConta = function(){ window.abrirEtapa && abrirEtapa('conferencia'); };
+// apuração/contas salvas no painel PIS/COFINS mudaram: refaz a conferência
+window.addEventListener('storage', e => { if (e.key === 'aud-piscofins-v1') render(); });
 // abre no mês escolhido no Book (o mês é criado a partir do anterior se ainda não existir e houver balancete)
 const irMesHub = async m => { await criarMesesAuto(); if (m && dados[m]) mesAtual = m; await render(); };
 (async () => { await carregarNuvem(); await irMesHub(window.mesDoHub ? mesDoHub() : ''); })();
