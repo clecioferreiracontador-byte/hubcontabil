@@ -627,14 +627,16 @@ function ativoEsperadoEm(iso){ const old = competencia; competencia = iso; const
 function difCell(d){ return isNaN(d) ? '—' : (Math.abs(d) < 0.5 ? '<span class="dif-ok">OK</span>' : `<span class="dif-bad">${fmtBRL(d)}</span>`); }
 
 // total pago (ativo) e saldo a pagar (passivo CP/LP) viram o "saldo do suporte" das contas no Book de conciliação.
-// Só envia quando todas as cotas têm extrato cobrindo a data-base.
+// Envia quando há data-base e nenhuma cota ficou sem histórico para ela. Cota com extrato anterior à data-base
+// (ex.: extrato de 15/09 para o fechamento de 30/09) entra pela posição do extrato, e o detalhe do suporte avisa.
 function enviarSuportesBook(vs, e){
   let sup = {}; try { sup = JSON.parse(localStorage.getItem('aud-hub-suportes') || '{}'); } catch(x){}
   Object.keys(sup).forEach(k => { if (sup[k].fonte === 'Consórcios') delete sup[k]; });
-  const completo = vs.some(v => v.c.dataExtrato) && !vs.some(v => v.depoisDoExtrato || v.semDados);
+  const completo = !!competencia && vs.some(v => v.c.dataExtrato) && !vs.some(v => v.semDados);
   const cod = s => (String(s || '').match(/^\s*(\d(?:\.\d+)+)/) || [])[1];
   if (completo){
-    const det = vs.length + ' cota(s)';
+    const ant = vs.filter(v => v.depoisDoExtrato).map(v => v.c.dataExtrato);
+    const det = vs.length + ' cota(s)' + (ant.length ? ' · ' + ant.length + ' com extrato anterior à data-base (' + [...new Set(ant)].join(', ') + '): pagamentos depois do extrato não entram' : '');
     if (cod(concCfg.contaAtivo)) sup[cod(concCfg.contaAtivo)] = { fonte: 'Consórcios', saldo: r2(e.ativo), data: competencia, detalhe: det + ' · total pago' };
     if (concCfg.passivo !== 'nenhuma'){
       if (cod(concCfg.contaCP)) sup[cod(concCfg.contaCP)] = { fonte: 'Consórcios', saldo: -r2(e.cp), data: competencia, detalhe: det + ' · saldo a pagar CP (' + concCfg.passivo + ')' };
