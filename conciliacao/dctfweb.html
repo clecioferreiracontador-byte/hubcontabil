@@ -388,7 +388,7 @@ table.lanc td .muted.small{font-size:.7rem;line-height:1.2}
     <tr><td>R1</td><td>Contribuição previdenciária (segurados, patronal, outras entidades e contribuições diversas) = provisão da folha na <b>2.1.10.1004</b> (INSS da folha − salário-família − salário-maternidade) + INSS retido de terceiros na <b>2.1.15.1007</b>.</td></tr>
     <tr><td>R2</td><td>IRRF = IRRF da folha na <b>2.1.10.1005</b> + IRRF retido de terceiros na <b>2.1.15.1006</b>. CSRF (PIS/COFINS/CSLL retidos) = <b>2.1.15.1001</b>.</td></tr>
     <tr><td>R3</td><td>No fechamento, o saldo das contas de origem é transferido para a <b>2.1.15.1011</b> (D origem / C 2.1.15.1011). DARF pago e lançado na conta de origem é reclassificado (D 2.1.15.1011 / C origem).</td></tr>
-    <tr><td>R4</td><td>Saldo esperado da 2.1.15.1011 = saldo a pagar do recibo da competência (contribuição previdenciária + IRRF + CSRF). PIS e COFINS também são declarados na DCTFWeb, mas ficam nas contas próprias (2.1.15.1002 e 2.1.15.1003) e são conciliados no painel PIS/COFINS — aqui só se confere o valor e o pagamento.</td></tr>
+    <tr><td>R4</td><td>Saldo esperado da 2.1.15.1011 = saldo a pagar do recibo da competência (contribuição previdenciária + IRRF + CSRF). PIS e COFINS também são declarados na DCTFWeb, mas ficam nas contas próprias (2.1.15.1002 e 2.1.15.1003) e são conciliados só no painel PIS/COFINS — não entram nesta conciliação.</td></tr>
     <tr><td>R5</td><td>Razão: débito com contrapartida em banco (ou histórico de DARF/GPS) = pagamento; lançamento entre as contas do grupo = transferência; o resto = provisão/ajuste do mês. Diferença até R$ 0,01 é arredondamento.</td></tr>
     <tr><td>R6</td><td>Saldo de competências anteriores = saldo inicial do grupo − pagamentos do mês. Com o recibo do mês anterior importado, os pagamentos do mês são comparados com o saldo a pagar dele.</td></tr>
   </tbody></table></div>
@@ -449,7 +449,7 @@ const KG = ['cp', 'irrf', 'csrf'];
 const INFO = { pis: '2.1.15.1002', cofins: '2.1.15.1003' };   // conciliados no painel PIS/COFINS
 const NOME_C = { '2.1.15.1011': 'Tributos federais unificados (DCTFWeb)', '2.1.10.1004': 'INSS folha a recolher', '2.1.10.1005': 'IRRF folha a recolher',
   '2.1.15.1001': 'PIS/COFINS/CSLL retidos a recolher', '2.1.15.1006': 'IRRF a recolher (terceiros)', '2.1.15.1007': 'INSS retido a recolher', '2.1.15.1002': 'PIS a recolher', '2.1.15.1003': 'COFINS a recolher' };
-const FONTES = KG.flatMap(g => GR[g].fontes), GRUPO = [C_DCTF].concat(FONTES), TODAS = GRUPO.concat(Object.values(INFO));
+const FONTES = KG.flatMap(g => GR[g].fontes), GRUPO = [C_DCTF].concat(FONTES), TODAS = GRUPO;
 const grupoDaConta = c => KG.find(g => GR[g].fontes.includes(c)) || '';
 const PUBLICA = [C_DCTF, '2.1.15.1001', '2.1.15.1006', '2.1.15.1007'];   // 2.1.10.1004/1005 são suporte do painel Fol. Pag.
 
@@ -646,8 +646,6 @@ function pagamentos(m){
   const pagos = c => (RAZ1[c] || []).filter(l => { const k = classe(l, c); return k === 'pag' || k === 'comp'; }).map(l => Object.assign({ conta: c }, l));
   const lin = [];
   const add = (nome, dec, contas) => { const ls = contas.flatMap(pagos), v = soma(ls.map(l => l.deb - l.cred)); lin.push({ nome, dec, pago: v, dif: r2(v - dec), ls }); };
-  add('PIS', sal(R, 'pis'), [INFO.pis]);
-  add('COFINS', sal(R, 'cofins'), [INFO.cofins]);
   add('CSRF', salGrupo(R, 'csrf'), GR.csrf.fontes);
   add('Contribuição previdenciária + IRRF (DARF unificado)', r2(salGrupo(R, 'cp') + salGrupo(R, 'irrf')), GR.cp.fontes.concat(GR.irrf.fontes, [C_DCTF]));
   return lin;
@@ -673,7 +671,7 @@ function renderKpis(){
   const C = CALC, card = (t, v, s, cls) => `<div class="kpi ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
   const nL = C.LANC.length, P = pagamentos(mesAtual), pOk = P ? P.every(x => ok(x.dif)) : null;
   $('kpis').innerHTML =
-    card('Recibo · saldo a pagar (total)', C.R ? fmt(C.R.total ? C.R.total.saldo : soma(Object.values(C.R.trib).map(x => x.saldo))) : '—', C.R ? 'com PIS e COFINS' + (C.R.retif ? ' · retificadora' : '') : 'importe o recibo de ' + mesLbl(mesAtual)) +
+    card('Recibo · saldo a pagar (sem PIS/COFINS)', C.R ? fmt(salDctf(C.R)) : '—', C.R ? 'CP + IRRF + CSRF' + (C.R.retif ? ' · retificadora' : '') : 'importe o recibo de ' + mesLbl(mesAtual)) +
     card('DCTFWeb esperada na 2.1.15.1011', fmt(C.esperado), 'CP + IRRF + CSRF do recibo') +
     card('Grupo na contabilidade', balMes ? fmt(C.tot.sf) : '—', '2.1.15.1011 + contas de origem') +
     card('Diferença', fmt(C.dif), isNaN(C.dif) ? '' : ok(C.dif) ? '✓ conciliado' : 'ver divergências', isNaN(C.dif) ? '' : ok(C.dif) ? 'ok' : 'bad') +
@@ -707,9 +705,6 @@ function renderTrib(){
   if (!ok(rem)) h += `<tr><td>Diferença não explicada pelo razão</td><td></td><td></td><td>${fmt(rem)}</td><td><span class="dbad">dif. ${fmt(rem)}</span></td><td class="ex">O razão do Book não traz todos os lançamentos do balancete: importe o razão atualizado</td></tr>`;
   if (RAZ.__ok && !ok(C.resid)) h += `<tr><td>Saldo de competências anteriores</td><td></td><td>${C.RA ? fmt(r2(C.decAnt - C.tot.pag)) : ''}</td><td>${fmt(C.resid)}</td><td><span class="dbad">dif. ${fmt(C.resid)}</span></td><td class="ex">Saldo inicial do grupo ${fmt(C.tot.sa)} − pagamentos do mês ${fmt(C.tot.pag)}</td></tr>`;
   h += `<tr class="res"><td>Total DCTFWeb (2.1.15.1011)</td><td>${fmt(soma(KG.map(g => C.G[g].deb)))}</td><td>${fmt(C.esperado)}</td><td>${balMes ? fmt(C.tot.sf) : '—'}</td><td>${balMes ? chk(C.dif) : ''}</td><td class="ex">Saldo do grupo no balancete × saldo a pagar do recibo</td></tr>`;
-  h += `<tr class="sub"><td colspan="6">Informativo — conciliados no painel PIS/COFINS (ficam nas contas próprias)</td></tr>`;
-  ['pis', 'cofins'].forEach(k => { const c = INFO[k], x = C.X[c], prov = x.mov, d = RAZ.__ok ? r2(prov - sal(R, k)) : NaN;
-    h += `<tr><td>${k.toUpperCase()}</td><td>${fmt(debA(R, k))}</td><td>${fmt(sal(R, k))}</td><td>${RAZ.__ok ? fmt(prov) : '—'}</td><td>${RAZ.__ok ? chk(d) : ''}</td><td class="ex">${c} · saldo final ${fmt(x.sf)} (provisão líquida do mês: créditos − devoluções − créditos aproveitados)</td></tr>`; });
   const out = TRIB.filter(t => t[3] === 'outros' && (debA(R, t[0]) || sal(R, t[0])));
   out.forEach(t => h += `<tr><td>${t[1]}</td><td>${fmt(debA(R, t[0]))}</td><td>${fmt(sal(R, t[0]))}</td><td></td><td></td><td class="ex">Conferir no painel Tributos a pagar</td></tr>`);
   $('tribBody').innerHTML = h;
@@ -745,8 +740,6 @@ function renderDiv(){
         : ' Importe o recibo de ' + mesLbl(mesAnt(mesAtual)) + ' para saber se é pagamento que falta ou provisão a maior.';
       out.push(item('warn', 'Saldo de competências anteriores sem baixa', t));
     }
-    ['pis', 'cofins'].forEach(k => { const x = C.X[INFO[k]], d = r2(x.mov - sal(R, k)); if (ok(d)) return;
-      out.push(item('', k.toUpperCase() + ' (informativo): provisionado ' + fmt(x.mov) + ' × declarado ' + fmt(sal(R, k)), 'Diferença ' + fmt(d) + '. Concilie no painel PIS/COFINS (créditos da EFD-Contribuições não contabilizados, devoluções, retenções). Saldo da ' + INFO[k] + ': ' + fmt(x.sf) + '.')); });
   }
   const P = pagamentos(mesAtual);
   if (P) P.filter(x => !ok(x.dif)).forEach(x => out.push(item('warn', 'Pagamento em ' + mesLbl(mesSeg(mesAtual)) + ' — ' + x.nome + ': recibo ' + fmt(x.dec) + ' × pago ' + fmt(x.pago),
@@ -768,7 +761,7 @@ function renderLanc(){
 function renderPag(){
   const m1 = mesSeg(mesAtual), P = pagamentos(mesAtual);
   $('titPag').textContent = '· recibo de ' + mesLbl(mesAtual) + ' × razão de ' + mesLbl(m1);
-  $('infoPag').textContent = 'O DARF da DCTFWeb vence no dia 20 (PIS/COFINS no dia 25) do mês seguinte: os pagamentos são procurados no razão de ' + mesLbl(m1) + ' nas contas do grupo, em débito com contrapartida em banco.';
+  $('infoPag').textContent = 'O DARF da DCTFWeb vence no dia 20 do mês seguinte (PIS/COFINS ficam no painel PIS/COFINS): os pagamentos são procurados no razão de ' + mesLbl(m1) + ' nas contas do grupo, em débito com contrapartida em banco.';
   if (!P){ $('pagBody').innerHTML = `<tr><td colspan="5" class="empty">${dados.recibos[mesAtual] ? 'Importe o razão de ' + mesLbl(m1) + ' no Book de conciliação para conferir o pagamento.' : 'Importe o recibo de ' + mesLbl(mesAtual) + '.'}</td></tr>`; return; }
   $('pagBody').innerHTML = P.map(x => `<tr><td>${esc(x.nome)}</td><td>${fmt(x.dec)}</td><td>${fmt(x.pago)}</td><td>${chk(x.dif)}</td><td class="ex">${x.ls.map(l => esc(br(l.data) + ' · ' + l.conta + ' · ' + fmt(l.deb) + ' · ' + l.hist)).join('<br>') || 'nenhum pagamento encontrado'}</td></tr>`).join('');
 }
@@ -779,9 +772,9 @@ function renderRec(){
   const info = R ? `<div class="muted small" style="margin-bottom:8px">${R.arquivo ? 'Arquivo “' + esc(R.arquivo) + '”' : 'Valores digitados'}${R.numero ? ' · recibo nº ' + esc(R.numero) : ''}${R.transm ? ' · transmitida em ' + br(R.transm) : ''}${R.retif ? ' · <b>retificadora</b>' : ''}${R.editado ? ' · <b>valores editados aqui</b>' : ''}</div>` : `<div class="muted small" style="margin-bottom:8px">Sem recibo de ${mesLbl(mesAtual)}: importe o PDF no topo ou digite os valores.</div>`;
   const sd = R ? soma(Object.values(R.trib).map(x => x.saldo)) : 0;
   $('recBox').innerHTML = info + `<div class="tscroll" style="max-height:none"><table class="pc"><thead><tr><th class="left">Tributo</th><th>Débitos apurados</th><th>Saldo a pagar</th><th class="left">Grupo / conta</th></tr></thead><tbody>` +
-    TRIB.map(t => `<tr><td>${t[1]}</td><td>${inp(t[0], 'deb')}</td><td>${inp(t[0], 'saldo')}</td><td class="ex">${t[3] === 'outros' ? 'Tributos a pagar' : INFO[t[3]] ? INFO[t[3]] + ' (painel PIS/COFINS)' : GR[t[3]].nome + ' → ' + C_DCTF}</td></tr>`).join('') +
+    TRIB.map(t => `<tr><td>${t[1]}</td><td>${inp(t[0], 'deb')}</td><td>${inp(t[0], 'saldo')}</td><td class="ex">${t[3] === 'outros' ? 'Tributos a pagar' : INFO[t[3]] ? INFO[t[3]] + ' · não conciliado aqui (painel PIS/COFINS)' : GR[t[3]].nome + ' → ' + C_DCTF}</td></tr>`).join('') +
     `</tbody><tfoot><tr><td>Total</td><td>${R && R.total ? fmt(R.total.deb) : ''}</td><td>${R ? fmt(R.total ? R.total.saldo : sd) : ''}${R && R.total && !ok(sd - R.total.saldo) ? ' <span class="dbad">soma ' + fmt(sd) + '</span>' : ''}</td><td></td></tr></tfoot></table></div>`;
-  const ms = Object.keys(dados.recibos).sort().reverse(), cols = [['DCTFWeb (CP+IRRF+CSRF)', R => salDctf(R)], ['CP', R => salGrupo(R, 'cp')], ['IRRF', R => salGrupo(R, 'irrf')], ['CSRF', R => salGrupo(R, 'csrf')], ['PIS', R => sal(R, 'pis')], ['COFINS', R => sal(R, 'cofins')], ['Total', R => R.total ? R.total.saldo : soma(Object.values(R.trib).map(x => x.saldo))]];
+  const ms = Object.keys(dados.recibos).sort().reverse(), cols = [['DCTFWeb (CP+IRRF+CSRF)', R => salDctf(R)], ['CP', R => salGrupo(R, 'cp')], ['IRRF', R => salGrupo(R, 'irrf')], ['CSRF', R => salGrupo(R, 'csrf')], ['Total do recibo', R => R.total ? R.total.saldo : soma(Object.values(R.trib).map(x => x.saldo))]];
   $('recHead').innerHTML = '<tr><th class="left">Competência</th>' + cols.map(c => `<th>${c[0]}</th>`).join('') + '<th class="left">Arquivo</th></tr>';
   $('recListBody').innerHTML = ms.map(m => { const X = dados.recibos[m]; return `<tr${m === mesAtual ? ' style="background:#FFF8E6"' : ''}><td><a href="#" onclick="mesAtual='${m}';render();return false">${mesLbl(m)}</a>${X.retif ? ' <span class="pill cinza">retif.</span>' : ''}</td>` + cols.map(c => `<td>${fmt(c[1](X))}</td>`).join('') + `<td class="left small">${esc(X.arquivo || 'digitado')}</td></tr>`; }).join('') ||
     `<tr><td colspan="${cols.length + 2}" class="empty">Nenhum recibo importado.</td></tr>`;
