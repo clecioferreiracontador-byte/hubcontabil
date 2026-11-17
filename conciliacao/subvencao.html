@@ -255,6 +255,10 @@ table.pc .neg{color:var(--aud-danger-text)}
 .chip button{border:0;background:transparent;padding:0 6px;font-size:.9rem;line-height:1;color:var(--aud-gray-500)}
 .chip button:hover{background:#fff;color:var(--aud-danger-text)}
 td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
+table.lanc td{padding:4px 8px;vertical-align:middle;line-height:1.3}
+table.lanc td.oq{width:24%;min-width:180px}
+table.lanc td.hist{min-width:360px;font-size:.74rem}
+table.lanc td .muted.small{font-size:.7rem;line-height:1.2}
 .passo{counter-reset:p}
 </style>
 </head>
@@ -318,7 +322,7 @@ td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
   <div class="box">
     <h2>Lançamentos a fazer <span class="muted small" id="titLanc"></span></h2>
     <div class="muted small" style="margin-bottom:10px">Diferença entre o esperado e o que já está no razão. Valor negativo vira o lançamento invertido (estorno do excesso). Conta de resultado leva o centro de resultado 11011002.</div>
-    <div class="tscroll"><table class="pc">
+    <div class="tscroll"><table class="pc lanc">
       <thead><tr><th class="left">O que é</th><th class="left">Débito</th><th class="left">Crédito</th><th>Valor</th><th class="left">Histórico</th></tr></thead>
       <tbody id="lancBody"></tbody><tfoot id="lancFoot"></tfoot>
     </table></div>
@@ -697,7 +701,7 @@ function renderLanc(){
     $('lancBody').innerHTML = `<tr><td colspan="5" class="empty">${falta}</td></tr>`; $('lancFoot').innerHTML = ''; return;
   }
   const td = c => `<td class="left">${esc(c)}<div class="muted small">${esc(descConta(c))}</div></td>`;
-  $('lancBody').innerHTML = LANC.map(o => `<tr><td class="left wrap" style="max-width:280px">${esc(o.nome)}</td>${td(o.deb)}${td(o.cred)}<td>${fmt(o.valor)}</td><td class="left wrap small" style="max-width:320px">${esc(o.hist)}</td></tr>`).join('');
+  $('lancBody').innerHTML = LANC.map(o => `<tr><td class="left wrap oq">${esc(o.nome)}</td>${td(o.deb)}${td(o.cred)}<td>${fmt(o.valor)}</td><td class="left wrap hist">${esc(o.hist)}</td></tr>`).join('');
   $('lancFoot').innerHTML = `<tr><td colspan="3">${LANC.length} lançamento(s)</td><td>${fmt(r2(LANC.reduce((s, o) => s + o.valor, 0)))}</td><td></td></tr>`;
 }
 const nfBR = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

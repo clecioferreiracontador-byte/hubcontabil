@@ -255,6 +255,10 @@ table.pc .neg{color:var(--aud-danger-text)}
 .chip button{border:0;background:transparent;padding:0 6px;font-size:.9rem;line-height:1;color:var(--aud-gray-500)}
 .chip button:hover{background:#fff;color:var(--aud-danger-text)}
 td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
+table.lanc td{padding:4px 8px;vertical-align:middle;line-height:1.3}
+table.lanc td.oq{width:24%;min-width:180px}
+table.lanc td.hist{min-width:360px;font-size:.74rem}
+table.lanc td .muted.small{font-size:.7rem;line-height:1.2}
 .passo{counter-reset:p}
 </style>
 </head>
@@ -325,7 +329,7 @@ td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
   <div class="box">
     <h2>Lançamentos a fazer <span class="muted small" id="titLanc"></span></h2>
     <div class="muted small" style="margin-bottom:10px">O que falta na contabilidade para as contas fecharem com a apuração. Débitos e créditos vão direto na conta a recolher (passivo) contra o resultado; o saldo da conta a recuperar é transferido para a conta a recolher e a diferença que sobrar é ajuste no resultado. A conta de resultado de cada linha pode ser trocada (vale para os próximos meses).</div>
-    <div class="tscroll"><table class="pc">
+    <div class="tscroll"><table class="pc lanc">
       <thead><tr><th>Tributo</th><th class="left">O que é</th><th class="left">Débito</th><th class="left">Crédito</th><th>Valor</th><th class="left">Histórico</th></tr></thead>
       <tbody id="lancBody"></tbody><tfoot id="lancFoot"></tfoot>
     </table></div>
@@ -743,7 +747,7 @@ function renderLanc(){
     $('lancBody').innerHTML = `<tr><td colspan="6" class="empty">${(dados.meses[mesAtual] || {}).apur ? 'Nada a lançar: a contabilidade já está igual à apuração.' : 'Importe a planilha de apuração do mês.'}</td></tr>`;
     $('lancFoot').innerHTML = ''; return;
   }
-  $('lancBody').innerHTML = LANC.map(o => `<tr><td>${TRIB[o.k].nome}</td><td class="left wrap" style="max-width:280px">${esc(o.tipo)}</td>${contaTd(o.deb, o, 'deb')}${contaTd(o.cred, o, 'cred')}<td>${fmt(o.valor)}</td><td class="left wrap small" style="max-width:300px">${esc(o.hist.toUpperCase())}</td></tr>`).join('');
+  $('lancBody').innerHTML = LANC.map(o => `<tr><td>${TRIB[o.k].nome}</td><td class="left wrap oq">${esc(o.tipo)}</td>${contaTd(o.deb, o, 'deb')}${contaTd(o.cred, o, 'cred')}<td>${fmt(o.valor)}</td><td class="left wrap hist">${esc(o.hist.toUpperCase())}</td></tr>`).join('');
   const tot = k => r2(LANC.filter(o => o.k === k).reduce((s, o) => s + o.valor, 0));
   $('lancFoot').innerHTML = `<tr><td colspan="4">${LANC.length} lançamentos · PIS ${fmt(tot('pis'))} · COFINS ${fmt(tot('cof'))}</td><td></td><td></td></tr>`;
 }
