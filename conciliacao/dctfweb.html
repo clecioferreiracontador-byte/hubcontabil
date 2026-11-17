@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DCTFWeb Audicon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tema Audicon (mesmo padrão da Conferência de Faturamento): azul #122A4F, dourado #CD9A56, Red Hat Display */
+:root{
+  --aud-primary:#122A4F; --aud-primary-dark:#0C182B; --aud-secondary:#CD9A56; --aud-secondary-hover:#B5833F;
+  --aud-text:#231F20; --aud-white:#FFFFFF; --aud-gray-100:#F1F1F1; --aud-gray-500:#69727D; --aud-gray-700:#33373D;
+  --aud-gold-soft:rgba(205,154,86,.55);
+  --aud-success:#04751A; --aud-warning:#F5AD00; --aud-info:#46CECD; --aud-danger:#FF0016; --aud-danger-text:#B0000F;
+  --aud-radius:.5rem;
+  --font:"Red Hat Display","Segoe UI",Calibri,Arial,sans-serif;
+  /* nomes usados pelo código dos painéis */
+  --page-bg:var(--aud-gray-100); --panel:#fff; --panel-2:#F7F8FA; --border:#e1e4e8;
+  --text:var(--aud-text); --muted:var(--aud-gray-500); --accent:var(--aud-primary); --accent-2:var(--aud-secondary);
+  --good:var(--aud-success); --warn:#8A5A00; --bad:var(--aud-danger-text); --bad-border:#f5b5bb;
+  --btn-bg:#fff; --textarea-bg:#fff; --textarea-border:#c5cbd3;
+  --results-bg:#F7F8FA; --results-border:#e1e4e8; --item-bg:#fff; --item-border:#e1e4e8; --badge-bg:var(--aud-gray-100);
+  --radius:var(--aud-radius);
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--aud-gray-100);color:var(--aud-text);font-family:var(--font);font-weight:400;line-height:1.5}
+h1,h2,h3,h4{font-weight:600;color:var(--aud-primary);margin:0}
+.wrap{width:100%;margin:0 auto;padding:0 16px}
+@media (min-width:576px){.wrap{max-width:540px}}
+@media (min-width:768px){.wrap{max-width:720px}}
+@media (min-width:992px){.wrap{max-width:960px}}
+@media (min-width:1200px){.wrap{max-width:1140px}}
+@media (min-width:1400px){.wrap{max-width:1320px}}
+/* cabeçalho */
+header.top{background:var(--aud-primary);color:var(--aud-white);padding:10px 0 9px;border-bottom:3px solid var(--aud-secondary)}
+header.top .eyebrow{color:var(--aud-secondary);font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
+header.top h1{color:var(--aud-white);font-size:clamp(1.05rem,.95rem + .45vw,1.3rem);line-height:1.25}
+header.top p{margin:2px 0 0;font-size:.78rem;color:#dbe3ef}
+/* menu de etapas (hambúrguer abaixo de 992px) */
+nav.tabs{background:var(--aud-primary-dark);position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(5,11,20,.25)}
+nav.tabs .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between}
+nav.tabs .brand{color:var(--aud-white);font-weight:600;font-size:.875rem;padding:12px 0}
+nav.tabs .toggler{display:inline-flex;border:1px solid var(--aud-gold-soft);background:transparent;color:var(--aud-white);border-radius:var(--aud-radius);padding:6px 10px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer}
+nav.tabs .menu{display:none;width:100%;flex-direction:column;padding-bottom:8px}
+nav.tabs .menu.open{display:flex}
+nav.tabs .menu button{border:0;border-left:3px solid transparent;background:transparent;color:var(--aud-white);padding:10px 12px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;text-align:left;border-radius:0}
+nav.tabs .menu button:hover{color:var(--aud-secondary);filter:none}
+nav.tabs .menu button[aria-selected="true"]{color:var(--aud-secondary);border-left-color:var(--aud-secondary)}
+@media (min-width:992px){
+  nav.tabs .toggler{display:none}
+  nav.tabs .menu{display:flex;flex-direction:row;width:auto;padding-bottom:0;gap:4px}
+  nav.tabs .menu button{border-left:0;border-bottom:3px solid transparent;padding:14px 16px;text-align:center}
+  nav.tabs .menu button[aria-selected="true"]{border-bottom-color:var(--aud-secondary)}
+}
+main{padding-top:24px;padding-bottom:40px}
+@media (min-width:992px){main{padding-top:32px;padding-bottom:56px}}
+section.panel{display:none}
+section.panel.active{display:block}
+/* cartões: blocos da página (.box, .summary) e cartões de cada cota/parcelamento (.card) */
+.box,.summary{background:var(--aud-white);border:0;border-radius:var(--aud-radius);padding:20px;margin-bottom:20px;box-shadow:0 .125rem .5rem rgba(18,42,79,.12);overflow-x:auto}
+.box h2,.summary h2{margin:0 0 12px;font-size:clamp(1.15rem,1rem + .6vw,1.4rem);color:var(--aud-primary);padding-bottom:8px;border-bottom:2px solid var(--aud-gold-soft)}
+.box h3{margin:14px 0 6px;font-size:1rem;color:var(--aud-primary)}
+.summary h2 .tag{font-size:.8rem!important;font-weight:500!important;color:var(--aud-gray-500)!important;margin-left:6px}
+.summary h2 select{font-size:.85rem!important}
+.muted{color:var(--aud-gray-500)}
+.small{font-size:.85rem}
+/* barra de ações */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar label{display:flex;align-items:center;gap:6px;margin:0;font-size:.85rem!important;font-weight:600;color:var(--aud-gray-700)!important}
+.toolbar select{width:auto!important}
+.pdf-msg{font-size:.85rem;margin-left:4px}
+/* botões: principal dourado com texto azul; demais brancos com borda azul */
+button{cursor:pointer;border:1px solid var(--aud-primary);background:var(--aud-white);color:var(--aud-primary);padding:8px 14px;border-radius:var(--aud-radius);font:inherit;font-size:.8125rem;font-weight:600;line-height:1.3}
+button:hover{background:var(--aud-primary);color:var(--aud-white)}
+button.primary{background:var(--aud-secondary);border-color:var(--aud-secondary);color:var(--aud-primary)}
+button.primary:hover{background:var(--aud-secondary-hover);border-color:var(--aud-secondary-hover);color:var(--aud-primary)}
+button.ghost{border-color:#c5cbd3;color:var(--aud-gray-700)}
+button.ghost:hover{background:var(--aud-gray-100);color:var(--aud-primary)}
+button.danger{color:var(--aud-danger-text);border-color:var(--bad-border);background:var(--aud-white)}
+button.danger:hover{background:#FFE3E6;color:var(--aud-danger-text)}
+:focus-visible{outline:3px solid var(--aud-secondary);outline-offset:2px}
+input[type=file]{display:none}
+/* tabelas: cabeçalho azul, total com linha dourada */
+table{border-collapse:collapse;width:100%;font-size:.875rem}
+th,td{padding:7px 9px;text-align:right;border-bottom:1px solid #e1e4e8;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child,td.left,th.left{text-align:left}
+thead th{background:var(--aud-primary);color:var(--aud-white);font-weight:600;font-size:.8rem}
+tfoot td{font-weight:700;background:var(--aud-gray-100);border-top:2px solid var(--aud-secondary)}
+tbody tr:hover td{background:#fbf3e8}
+/* cartão de cada cota / parcelamento */
+.card{background:var(--aud-white);border:0;border-radius:var(--aud-radius);margin-bottom:16px;overflow:hidden;box-shadow:0 .125rem .5rem rgba(18,42,79,.12)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--aud-white);padding:12px 18px;border-left:5px solid var(--aud-secondary);border-bottom:1px solid #e1e4e8;cursor:pointer}
+.card-head .title{font-weight:600;font-size:1rem;color:var(--aud-primary)}
+.card-head .title .tag{font-weight:500;color:var(--aud-gray-500);font-size:.8rem;margin-left:8px}
+.card-body{padding:18px;display:none}
+.card.open .card-body{display:block}
+.card-head .chev{transition:transform .15s;color:var(--aud-secondary)}
+.card.open .card-head .chev{transform:rotate(90deg)}
+.paste-box{margin-bottom:14px}
+.paste-box textarea{width:100%;min-height:90px;font-family:Consolas,monospace;font-size:.75rem;border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:10px;resize:vertical;background:#fff;color:var(--aud-text)}
+.paste-actions{display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap}
+.parse-msg{font-size:.85rem;color:var(--aud-success)}
+.parse-msg.err{color:var(--aud-danger-text)}
+fieldset{border:1px solid #e1e4e8;border-radius:var(--aud-radius);margin:0 0 14px;padding:12px 14px}
+legend{font-size:.8rem;font-weight:600;color:var(--aud-primary);padding:0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 14px}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--aud-gray-700);margin-bottom:3px}
+input[type=text],input[type=date],input[type=number],select{width:100%;font:inherit;font-size:.9rem;padding:7px 9px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);background:var(--aud-white);color:var(--aud-text)}
+select:focus,input:focus{outline:none;border-color:var(--aud-secondary)}
+input[readonly]{background:#F7F8FA}
+/* resultados (indicadores no estilo KPI) */
+.results{background:#F7F8FA;border:1px solid #e1e4e8;border-radius:var(--aud-radius);padding:14px 16px}
+.results h3{font-size:.95rem;margin:0 0 10px;color:var(--aud-primary)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px}
+.rgrid .item{background:var(--aud-white);border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary);border-radius:var(--aud-radius);padding:8px 10px}
+.rgrid .item .lbl{font-size:.75rem;color:var(--aud-gray-500)}
+.rgrid .item .val{font-size:1rem;font-weight:700;margin-top:2px;color:var(--aud-text)}
+.rgrid .item.hi{border-top-color:var(--aud-primary)}
+.rgrid .item.hi .val{color:var(--aud-primary)}
+/* notas e etiquetas */
+.note{font-size:.8rem;margin-top:10px;padding:8px 12px;border-radius:var(--aud-radius);background:#FFF8E6;border-left:4px solid var(--aud-warning);color:var(--aud-text)}
+.note.exact{background:#EAF6EC;border-left-color:var(--aud-success);color:#0b4f1a}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap;background:var(--aud-gray-100);color:var(--aud-primary);margin-left:6px}
+.badge.ok{background:var(--aud-success);color:var(--aud-white)}
+.badge.warn{background:var(--aud-warning);color:var(--aud-text)}
+.dif-ok{color:var(--aud-success);font-weight:700}
+.dif-bad{color:var(--aud-danger-text);font-weight:700}
+.conc-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 14px;margin-bottom:12px}
+/* roteiro (etapa 1) */
+ol.steps{padding-left:22px;margin:6px 0}
+ol.steps li{margin:8px 0}
+ul.cl{padding-left:0;margin:6px 0}
+ul.cl li{list-style:none;margin:6px 0}
+ul.cl label{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;font-weight:400;color:var(--aud-text)}
+.box table td,.box table th{white-space:normal;text-align:left}
+footer{display:none}
+@media (max-width:575px){html{font-size:15px}.box,.summary{padding:14px}}
+@media print{
+  header.top,nav.tabs,.toolbar,.card-head button,.paste-actions,.paste-box{display:none!important}
+  body{background:#fff}.box,.summary,.card{box-shadow:none}
+  section.panel{display:block!important}
+}
+/* modo visualização (usuário com permissão "Book: visualizar"): nada de importar, salvar ou editar */
+body.leitura .upl-grid,body.leitura .so-admin,body.leitura .lupa,body.leitura nav.tabs button[data-tab="lanc"],body.leitura nav.tabs button[data-tab="fontes"],
+body.leitura ul.cl,body.leitura #btnLimparChecklist,body.leitura .so-admin-box{display:none!important}
+body.leitura #bkBody input,body.leitura #bkBody textarea,body.leitura #bkBody select{pointer-events:none;background:transparent;border-color:transparent;resize:none;color:inherit;opacity:1;-webkit-appearance:none;appearance:none}
+.ro-aviso{display:none;margin:0 0 10px;padding:9px 12px;border-radius:8px;background:#EAF2FB;color:#1A3A6B;font-size:.9rem;border:1px solid #BBD3EE}
+body.leitura .ro-aviso{display:block}
+</style>
+<style>
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--aud-success);color:#fff}
+.pill.bad{background:#FFE3E6;color:var(--aud-danger-text);border:1px solid #f5b5bb}
+.pill.warn{background:var(--aud-warning);color:var(--aud-text)}
+.pill.info{background:var(--aud-info);color:var(--aud-primary)}
+.pill.cinza{background:var(--aud-gray-100);color:var(--aud-gray-500)}
+.msg{padding:10px 14px;border-radius:var(--aud-radius);margin:8px 0;font-size:.9rem;background:#fff;border:1px solid #e1e4e8;border-left:5px solid var(--aud-primary)}
+.msg.err{border-left-color:var(--aud-danger);background:#FFF1F2;color:var(--aud-danger-text)}
+.msg.warn{border-left-color:var(--aud-warning);background:#FFF8E6}
+.msg.ok{border-left-color:var(--aud-success);background:#EAF6EC;color:#0b4f1a}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.filters label{display:flex;flex-direction:column;font-size:.78rem;font-weight:600;color:var(--aud-gray-700);gap:3px;margin:0}
+.filters select,.filters input[type=text]{width:auto}
+.filters label.ck{flex-direction:row;align-items:center;gap:6px}
+.tscroll{overflow:auto;max-height:680px;border:1px solid #e1e4e8;border-radius:var(--aud-radius)}
+.tscroll thead th{position:sticky;top:0;z-index:2}
+/* Bens: filtros e cabeçalho da tabela ficam congelados ao descer pelos lançamentos */
+.box.bensMain{overflow:visible}
+.bensTopo{position:sticky;top:var(--navH,0px);z-index:6;background:var(--aud-white);margin:0 -20px;padding:8px 20px 10px}
+.bensMain .tscroll{overflow:visible;max-height:none}
+.bensMain .tscroll thead th{top:calc(var(--navH,0px) + var(--topoH,0px))}
+td.wrap,th.wrap{white-space:normal;text-align:left}
+td input[type=text]{padding:4px 6px;font-size:.82rem;min-width:110px}
+td input.obs{min-width:220px}
+td select{padding:3px 4px;font-size:.8rem;width:auto}
+/* Book compacto: usa a largura toda e cabe sem rolagem lateral */
+.wrap{max-width:none!important;padding:0 8px}
+#tab-conferencia .box{padding:12px 10px}
+table.bk{font-size:.72rem;table-layout:auto}
+table.bk th,table.bk td{padding:4px 4px}
+table.bk thead th{font-size:.68rem;white-space:normal;line-height:1.15;text-align:center}
+table.bk .dsc{width:112px;white-space:normal;line-height:1.2;overflow-wrap:anywhere}
+table.bk td input[type=text]{min-width:0;width:68px;padding:2px 4px;font-size:.72rem}
+table.bk td.obs{width:30%;min-width:175px}
+table.bk td.c-raz{width:22px;text-align:center}
+table.bk textarea.obs{width:100%;min-height:30px;font:inherit;font-size:.76rem;line-height:1.25;padding:3px 6px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);resize:vertical;background:#fff;color:var(--aud-text)}
+table.bk textarea.obs:focus{outline:none;border-color:var(--aud-secondary)}
+table.bk .auto{font-size:.66rem;line-height:1.2}
+table.bk .lupa{font-size:.9rem;padding:0 2px}
+/* status: a própria etiqueta abre as opções */
+select.stsel{appearance:none;-webkit-appearance:none;border:0;cursor:pointer;padding:3px 18px 3px 8px;border-radius:999px;font:inherit;font-size:.68rem;font-weight:600;width:auto;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23122A4F' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
+select.stsel.ok{background-color:var(--aud-success);color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23fff' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
+select.stsel.bad{background-color:#FFE3E6;color:var(--aud-danger-text);box-shadow:inset 0 0 0 1px #f5b5bb}
+select.stsel.warn{background-color:var(--aud-warning);color:var(--aud-text)}
+select.stsel.info{background-color:var(--aud-info);color:var(--aud-primary)}
+select.stsel.cinza{background-color:var(--aud-gray-100);color:var(--aud-gray-500)}
+select.stsel option{background:#fff;color:var(--aud-text);font-weight:400}
+select.stsel.manual{outline:2px dashed var(--aud-secondary);outline-offset:1px}
+tr.grp td{background:#EEF2F8;font-weight:700;color:var(--aud-primary)}
+tr.grp1 td{background:var(--aud-primary);color:#fff;font-weight:700}
+tr.grp0 td{background:#0C182B;color:#fff;font-weight:700;font-size:.95rem}
+tr.grp0 td .dsc{color:#CD9A56}
+.fech{margin-bottom:14px}
+.fech h2{margin-bottom:4px}
+.fech .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:10px}
+.fech .card{border:1px solid #e1e4e8;border-radius:var(--aud-radius);padding:12px 14px;background:#fff}
+.fech .card h3{font-size:.85rem;margin:0 0 8px;color:var(--aud-primary)}
+.fech .card table{width:100%;border-collapse:collapse;font-size:.85rem}
+.fech .card td{padding:3px 0;border-bottom:1px dashed #eceff3}
+.fech .card td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fech .card tr.tot td{font-weight:700;border-bottom:0;padding-top:6px}
+.fech .res{font-size:1.25rem;font-weight:700}
+.fech .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:700}
+.fech .pill.ok{background:#E3F4E7;color:var(--aud-success)}
+.fech .pill.bad{background:#FDE7E9;color:var(--aud-danger-text)}
+.fech .pill.info{background:#EEF2F8;color:var(--aud-primary)}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-bottom:14px}
+.kpi{border-radius:var(--aud-radius);padding:12px 14px;background:#fff;border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary)}
+.kpi .t{font-size:.78rem;font-weight:600;color:var(--aud-gray-500)}
+.kpi .v{font-size:1.15rem;font-weight:700;color:var(--aud-primary)}
+.upl{border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:14px;background:#fff}
+.upl h3{margin:0 0 4px;font-size:1rem}
+.empty{padding:24px;text-align:center;color:var(--aud-gray-500)}
+.dbad{color:var(--aud-danger-text);font-weight:600}
+.dok{color:var(--aud-success);font-weight:600}
+.lupa{border:0;background:transparent;cursor:pointer;font-size:1rem;padding:2px 4px}
+.lupa:hover{background:var(--aud-gray-100);color:inherit}
+.auto{font-size:.72rem;color:var(--aud-gray-500)}
+</style>
+<script src="vendor/sheetjs/xlsx.full.min.js"></script>
+<script src="vendor/pdfjs/pdf.min.js"></script>
+<script src="hub-db.js?v=2"></script>
+<script src="recolher.js?v=1"></script>
+<script src="mes-hub.js?v=3" data-dados="aud-dctfweb-v1"></script>
+<style>
+.wrap{max-width:none!important;padding:0 8px}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:14px}
+.kpi .s{font-size:.72rem;color:var(--aud-gray-500)}
+.kpi.ok{border-top-color:var(--aud-success)}.kpi.bad{border-top-color:var(--aud-danger)}
+table.pc{font-size:.82rem}
+table.pc th,table.pc td{padding:5px 9px}
+table.pc td:first-child{white-space:normal;text-align:left}
+table.pc tr.sub td{background:#F7F8FA;font-weight:700;color:var(--aud-primary)}
+table.pc tr.res td{background:#FFF8E6;font-weight:700;color:var(--aud-primary);border-top:2px solid var(--aud-secondary)}
+table.pc tr.cmp td{font-weight:700}
+table.pc td.ex{font-size:.72rem;color:var(--aud-gray-500);white-space:normal;text-align:left;max-width:360px}
+table.pc .neg{color:var(--aud-danger-text)}
+.upl-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#EEF2F8;color:var(--aud-primary);border-radius:999px;padding:2px 4px 2px 10px;font-size:.74rem;font-weight:600}
+.chip button{border:0;background:transparent;padding:0 6px;font-size:.9rem;line-height:1;color:var(--aud-gray-500)}
+.chip button:hover{background:#fff;color:var(--aud-danger-text)}
+td input.gv{width:120px;text-align:right;padding:3px 6px;font-size:.8rem}
+table.lanc td{padding:4px 8px;vertical-align:middle;line-height:1.3}
+table.lanc td.oq{width:24%;min-width:180px}
+table.lanc td.hist{min-width:360px;font-size:.74rem}
+table.lanc td .muted.small{font-size:.7rem;line-height:1.2}
+.passo{counter-reset:p}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="eyebrow">Audicon Contadores · Controladoria</div>
+  <h1>DCTFWeb — Recibo × Razão (tributos federais unificados)</h1>
+  <p>NHD Foods · Confere o resumo do recibo da DCTFWeb com as contas de INSS, IRRF, CSRF e a 2.1.15.1011 no razão do Book de conciliação, aponta as divergências e gera as reclassificações para a conta da DCTFWeb</p>
+</div></header>
+<nav class="tabs" role="navigation" aria-label="Etapas"><div class="wrap">
+  <span class="brand">DCTFWeb</span>
+  <button type="button" class="toggler" id="navToggle" aria-expanded="false" aria-controls="menuAbas" aria-label="Alternar menu">☰ Menu</button>
+  <div class="menu" id="menuAbas" role="tablist">
+    <button type="button" role="tab" aria-selected="false" data-tab="processo">1 · Processo mensal</button>
+    <button type="button" role="tab" aria-selected="true" data-tab="conferencia">2 · Conferência</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="recibos">3 · Recibos</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="razao">4 · Razão do mês</button>
+  </div>
+</div></nav>
+<main class="wrap">
+
+<div class="box">
+  <div class="upl" id="recImport" data-recolher="Importação (recibos da DCTFWeb)">
+    <div class="upl-grid">
+      <div>
+        <h3>🧾 Recibo de entrega da DCTFWeb</h3>
+        <div class="muted small">PDF do recibo (ficha “Totalização dos tributos apurados no período”). Lê o período de apuração, os débitos apurados e o saldo a pagar de cada tributo. Aceita vários meses de uma vez; uma retificadora substitui o recibo do mesmo mês.</div>
+        <div class="paste-actions"><button class="primary" type="button" onclick="$('inRec').click()">Importar recibos (PDF)</button></div>
+        <div class="chips" id="chRec"></div>
+      </div>
+      <div>
+        <h3>📚 Balancete e razão</h3>
+        <div class="muted small">Vêm do <b>Book de conciliação</b> (não precisa importar de novo aqui). Para conferir os pagamentos do recibo, o razão do <b>mês seguinte</b> também precisa estar no Book.</div>
+        <div class="muted small" id="stBase" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <input type="file" id="inRec" accept=".pdf" multiple onchange="importarRecibos([...this.files]);this.value=''">
+  </div>
+  <div class="toolbar" style="margin-top:12px">
+    <label>Mês:<select id="selMes" onchange="mesAtual=this.value;render()"></select></label>
+    <span class="muted small" id="stTopo"></span>
+    <span class="muted small" id="stNuvem" style="flex-basis:100%"></span>
+  </div>
+  <div id="msgs"></div>
+</div>
+
+<section class="panel active" id="tab-conferencia">
+  <div class="kpis" id="kpis"></div>
+  <div class="box">
+    <h2>Composição do saldo <span class="muted small" id="titComp"></span></h2>
+    <div class="muted small" style="margin-bottom:8px">Passivo com saldo credor positivo. A DCTFWeb do mês fica toda na 2.1.15.1011: as contas de origem (INSS e IRRF da folha, CSRF, IRRF e INSS retidos de terceiros) são transferidas para ela no fechamento e o pagamento do DARF baixa a 2.1.15.1011.</div>
+    <div class="tscroll" style="max-height:none"><table class="pc">
+      <thead><tr><th class="left">Conta</th><th>Saldo inicial</th><th>Pagamentos no mês</th><th>Provisões e ajustes</th><th>Transferências</th><th>Saldo final</th><th class="left">Situação</th></tr></thead>
+      <tbody id="compBody"></tbody><tfoot id="compFoot"></tfoot>
+    </table></div>
+  </div>
+  <div class="box">
+    <h2>Recibo × contabilidade, tributo a tributo <span class="muted small" id="titTrib"></span></h2>
+    <div class="tscroll" style="max-height:none"><table class="pc">
+      <thead><tr><th class="left">Tributo</th><th>Débito apurado</th><th>Saldo a pagar (recibo)</th><th>Provisionado no mês</th><th>Diferença</th><th class="left">Onde está na contabilidade</th></tr></thead>
+      <tbody id="tribBody"></tbody>
+    </table></div>
+  </div>
+  <div class="box">
+    <h2>Divergências e o que fazer <span class="muted small" id="titDiv"></span></h2>
+    <div id="divBox"></div>
+  </div>
+  <div class="box">
+    <h2>Lançamentos a fazer (reclassificações) <span class="muted small" id="titLanc"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Leva para a 2.1.15.1011 o que ficou nas contas de origem: provisões ainda não transferidas e pagamentos de DARF lançados fora da conta da DCTFWeb. Depois de importados, a 2.1.15.1011 passa a mostrar o saldo da DCTFWeb do mês.</div>
+    <div class="tscroll"><table class="pc lanc">
+      <thead><tr><th class="left">O que é</th><th class="left">Débito</th><th class="left">Crédito</th><th>Valor</th><th class="left">Histórico</th></tr></thead>
+      <tbody id="lancBody"></tbody><tfoot id="lancFoot"></tfoot>
+    </table></div>
+    <div class="toolbar" style="margin-top:10px">
+      <button type="button" class="primary" onclick="baixarCsv()">Baixar CSV de importação</button>
+      <button type="button" onclick="baixarXlsx()">Baixar Excel</button>
+      <span class="muted small">CSV no layout do importador Audicon (separador “;”, ANSI, contas sem pontos).</span>
+    </div>
+  </div>
+  <div class="box">
+    <h2>Pagamento do recibo <span class="muted small" id="titPag"></span></h2>
+    <div class="muted small" style="margin-bottom:8px" id="infoPag"></div>
+    <div class="tscroll" style="max-height:none"><table class="pc">
+      <thead><tr><th class="left">Tributo</th><th>Saldo a pagar (recibo)</th><th>Pago (razão)</th><th>Diferença</th><th class="left">DARFs encontrados</th></tr></thead>
+      <tbody id="pagBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-recibos">
+  <div class="box">
+    <h2>Recibo do mês <span class="muted small" id="titRec"></span></h2>
+    <div id="recBox"></div>
+    <div class="muted small" style="margin-top:8px">Os valores podem ser digitados quando o PDF não for lido (aceita soma, ex.: <i>1.000,00 + 250,00</i>).</div>
+  </div>
+  <div class="box">
+    <h2>Recibos importados <span class="muted small">saldo a pagar por competência</span></h2>
+    <div class="tscroll"><table class="pc">
+      <thead id="recHead"></thead><tbody id="recListBody"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-razao">
+  <div class="box">
+    <h2>Razão do mês <span class="muted small" id="titRaz"></span></h2>
+    <div class="filters"><label>Conta<select id="fContaR" onchange="renderRazao()"></select></label>
+      <label>Mês<select id="fMesR" onchange="renderRazao()"><option value="0">Mês da conferência</option><option value="1">Mês seguinte (pagamentos)</option></select></label></div>
+    <div class="tscroll"><table class="pc">
+      <thead><tr><th>Data</th><th class="left">Histórico</th><th>Débito</th><th>Crédito</th><th class="left">Classificação</th></tr></thead>
+      <tbody id="razBody"></tbody><tfoot id="razFoot"></tfoot>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-processo">
+  <div class="box"><h2>Objetivo</h2><p>Conferir, todo mês, se o saldo da conta <b>2.1.15.1011 — Tributos federais unificados (DCTFWeb)</b> é o saldo a pagar declarado no recibo da DCTFWeb da competência, se as provisões de INSS, IRRF e CSRF bateram com o declarado e se o DARF foi pago pelo valor do recibo. As contas de origem não podem ficar com saldo: o que estiver nelas vira reclassificação para a 2.1.15.1011.</p></div>
+  <div class="box"><h2>Passo a passo</h2><ol class="steps">
+    <li>No <b>Book de conciliação</b>, importar o balancete e o razão do mês (e, para conferir o pagamento, o razão do mês seguinte). O mês escolhido lá abre aqui.</li>
+    <li>Aqui, importar o <b>PDF do recibo da DCTFWeb</b> da competência (e o do mês anterior, para separar o que sobrou de competências anteriores).</li>
+    <li>Na etapa <b>2 · Conferência</b>, ver a composição do saldo, as diferenças tributo a tributo e as <b>divergências</b> com o que fazer.</li>
+    <li>Baixar o CSV dos <b>lançamentos a fazer</b> (transferências e reclassificações para a 2.1.15.1011) e importar no sistema contábil.</li>
+    <li>O saldo esperado da 2.1.15.1011 (saldo a pagar do recibo) vai sozinho para o Book como suporte da conta.</li>
+  </ol></div>
+  <div class="box"><h2>Regras</h2><table><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
+    <tr><td>R1</td><td>Contribuição previdenciária (segurados, patronal, outras entidades e contribuições diversas) = provisão da folha na <b>2.1.10.1004</b> (INSS da folha − salário-família − salário-maternidade) + INSS retido de terceiros na <b>2.1.15.1007</b>.</td></tr>
+    <tr><td>R2</td><td>IRRF = IRRF da folha na <b>2.1.10.1005</b> + IRRF retido de terceiros na <b>2.1.15.1006</b>. CSRF (PIS/COFINS/CSLL retidos) = <b>2.1.15.1001</b>.</td></tr>
+    <tr><td>R3</td><td>No fechamento, o saldo das contas de origem é transferido para a <b>2.1.15.1011</b> (D origem / C 2.1.15.1011). DARF pago e lançado na conta de origem é reclassificado (D 2.1.15.1011 / C origem).</td></tr>
+    <tr><td>R4</td><td>Saldo esperado da 2.1.15.1011 = saldo a pagar do recibo da competência (contribuição previdenciária + IRRF + CSRF). PIS e COFINS também são declarados na DCTFWeb, mas ficam nas contas próprias (2.1.15.1002 e 2.1.15.1003) e são conciliados no painel PIS/COFINS — aqui só se confere o valor e o pagamento.</td></tr>
+    <tr><td>R5</td><td>Razão: débito com contrapartida em banco (ou histórico de DARF/GPS) = pagamento; lançamento entre as contas do grupo = transferência; o resto = provisão/ajuste do mês. Diferença até R$ 0,01 é arredondamento.</td></tr>
+    <tr><td>R6</td><td>Saldo de competências anteriores = saldo inicial do grupo − pagamentos do mês. Com o recibo do mês anterior importado, os pagamentos do mês são comparados com o saldo a pagar dele.</td></tr>
+  </tbody></table></div>
+</section>
+
+</main>
+
+<script>
+// ===================== utilitários =====================
+const $ = id => document.getElementById(id);
+const LS = 'aud-dctfweb-v1';
+const r2 = v => Math.round((v + Number.EPSILON) * 100) / 100;
+const fmt = v => (v === null || v === undefined || isNaN(v)) ? '—' : (Math.abs(v) < 0.005 ? 0 : v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+const dig = s => String(s ?? '').replace(/\D/g, '');
+const MES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const mesLbl = m => m ? MES[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4) : '';
+const fimMes = m => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm, 0); return y + '-' + String(mm).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const somaMes = (m, k) => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm - 1 + k, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+const mesAnt = m => somaMes(m, -1), mesSeg = m => somaMes(m, 1);
+const br = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '';
+const ok = d => Math.abs(d) < 0.015;
+const soma = a => r2(a.reduce((s, x) => s + (x || 0), 0));
+function lsGet(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+function msg(t, tipo){ const d = document.createElement('div'); d.className = 'msg ' + (tipo || ''); d.innerHTML = t; $('msgs').appendChild(d); setTimeout(() => d.remove(), tipo === 'err' ? 15000 : 9000); }
+function num(v){
+  if (v === null || v === undefined || v === '') return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim().replace(/\s|R\$/g, ''); if (!s || s === '-') return NaN;
+  if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+  return parseFloat(s);
+}
+const chk = (d, vazio) => isNaN(d) ? `<span class="muted small">${vazio || '—'}</span>` : ok(d) ? '<span class="dok">✓ OK</span>' : `<span class="dbad">dif. ${fmt(d)}</span>`;
+
+// ===================== tributos e contas =====================
+// tributos da ficha "Totalização dos tributos apurados no período": chave, nome, rótulo no recibo, grupo
+const TRIB = [
+  ['cpSeg', 'CP — segurados', 'CONTRIBUICAO PREVIDENCIARIA SEGURADOS', 'cp'],
+  ['cpPat', 'CP — patronal', 'CONTRIBUICAO PREVIDENCIARIA PATRONAL', 'cp'],
+  ['terc', 'Outras entidades e fundos (terceiros)', 'CONTRIBUICAO PARA OUTRAS ENTIDADES E FUNDOS', 'cp'],
+  ['div', 'Contribuições diversas', 'CONTRIBUICOES DIVERSAS', 'cp'],
+  ['irrf', 'IRRF', 'IRRF', 'irrf'],
+  ['csrf', 'CSRF (PIS/COFINS/CSLL retidos)', 'CSRF', 'csrf'],
+  ['pis', 'PIS', 'PIS', 'pis'],
+  ['cofins', 'COFINS', 'COFINS', 'cofins'],
+  ['irpj', 'IRPJ', 'IRPJ', 'outros'], ['csll', 'CSLL', 'CSLL', 'outros'], ['ipi', 'IPI', 'IPI', 'outros'], ['iof', 'IOF', 'IOF', 'outros'],
+  ['cosirf', 'COSIRF', 'COSIRF', 'outros'], ['cpss', 'CPSS', 'CPSS', 'outros'], ['ret', 'RET/Pagamento unificado', 'RET/PAGAMENTO UNIFICADO', 'outros']
+];
+const C_DCTF = '2.1.15.1011';
+const GR = {
+  cp: { nome: 'Contribuição previdenciária', fontes: ['2.1.10.1004', '2.1.15.1007'] },
+  irrf: { nome: 'IRRF', fontes: ['2.1.10.1005', '2.1.15.1006'] },
+  csrf: { nome: 'CSRF', fontes: ['2.1.15.1001'] }
+};
+const KG = ['cp', 'irrf', 'csrf'];
+const INFO = { pis: '2.1.15.1002', cofins: '2.1.15.1003' };   // conciliados no painel PIS/COFINS
+const NOME_C = { '2.1.15.1011': 'Tributos federais unificados (DCTFWeb)', '2.1.10.1004': 'INSS folha a recolher', '2.1.10.1005': 'IRRF folha a recolher',
+  '2.1.15.1001': 'PIS/COFINS/CSLL retidos a recolher', '2.1.15.1006': 'IRRF a recolher (terceiros)', '2.1.15.1007': 'INSS retido a recolher', '2.1.15.1002': 'PIS a recolher', '2.1.15.1003': 'COFINS a recolher' };
+const FONTES = KG.flatMap(g => GR[g].fontes), GRUPO = [C_DCTF].concat(FONTES), TODAS = GRUPO.concat(Object.values(INFO));
+const grupoDaConta = c => KG.find(g => GR[g].fontes.includes(c)) || '';
+const PUBLICA = [C_DCTF, '2.1.15.1001', '2.1.15.1006', '2.1.15.1007'];   // 2.1.10.1004/1005 são suporte do painel Fol. Pag.
+
+// ===================== dados (navegador + Firebase) =====================
+// dados.recibos['aaaa-mm'] = { arquivo, em, retif, numero, transm, trib: { chave: { deb, saldo } }, total: { deb, saldo }, manual }
+let dados = lsGet(LS, null);
+if (!dados || typeof dados.recibos !== 'object') dados = { recibos: {} };
+let mesAtual = '', balMes = null, mesesBal = [];
+const HUB = (() => { try { return window.parent !== window && window.parent.HubAuth ? window.parent.HubAuth : null; } catch(e){ return null; } })();
+const DOC_NUVEM = 'dctfweb';
+let tNuvem = null;
+function stNuvem(t, tipo){ const el = $('stNuvem'); if (!el) return; el.textContent = t; el.style.color = tipo === 'err' ? 'var(--aud-danger-text)' : tipo === 'ok' ? 'var(--aud-success)' : ''; }
+function salvar(){ dados.savedAt = new Date().toISOString(); if (!lsSet(LS, dados)) msg('Não foi possível salvar neste navegador (espaço cheio).', 'err'); agendarNuvem(); }
+function agendarNuvem(){
+  if (!HUB || HUB.papel !== 'admin') return;
+  clearTimeout(tNuvem); stNuvem('☁ Salvando no Firebase…');
+  tNuvem = setTimeout(async () => {
+    try { await HUB.gravarDoc(DOC_NUVEM, dados); stNuvem('☁ Base salva no Firebase às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.', 'ok'); }
+    catch(e){ stNuvem('⚠ Não foi possível salvar no Firebase: ' + (e && e.code === 'permission-denied' ? 'o seu acesso não permite salvar' : (e && e.message) || e) + ' (os dados continuam neste navegador).', 'err'); }
+  }, 2500);
+}
+async function carregarNuvem(){
+  if (!HUB){ stNuvem('Base guardada neste navegador (abra pelo Hub para salvar no Firebase).'); return; }
+  try {
+    const d = await HUB.lerDoc(DOC_NUVEM);
+    if (d && d.recibos && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){ dados = d; lsSet(LS, dados); stNuvem('☁ Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok'); }
+    else if (dados.savedAt && (!d || (d.savedAt || '') < dados.savedAt)) agendarNuvem();
+    else if (d) stNuvem('☁ Base em dia com o Firebase.', 'ok');
+  } catch(e){ stNuvem('⚠ Não foi possível ler a base no Firebase: ' + ((e && e.message) || e) + ' — usando a deste navegador.', 'err'); }
+}
+let assinBase = '';
+async function assinaturaBase(){
+  if (!window.HubDB) return '';
+  try {
+    const i = await HubDB.getMeta('razao'), ks = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).sort();
+    return JSON.stringify([((i && i.arquivos) || []).map(a => a.nome + '@' + a.em), ks]);
+  } catch(e){ return ''; }
+}
+async function vigiarBase(){ const a = await assinaturaBase(); if (assinBase && a && a !== assinBase){ assinBase = a; await render(); msg('Razão/balancete novo no Book de conciliação: valores atualizados.', 'ok'); } else if (a) assinBase = a; }
+setInterval(vigiarBase, 15000);
+window.addEventListener('focus', vigiarBase);
+
+// ===================== recibo (PDF) =====================
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+async function textoPdf(f){
+  const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise; let t = '';
+  for (let p = 1; p <= pdf.numPages; p++){ const c = await (await pdf.getPage(p)).getTextContent(); t += c.items.map(i => i.str).join(' ') + '\n'; }
+  return t;
+}
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+const V = '(-?[\\d.]+,\\d{2})';
+function lerRecibo(t){
+  const T = norm(t);
+  if (!/DCTFWEB/.test(T) || !/TOTALIZACAO DOS TRIBUTOS/.test(T)) throw new Error('não parece um recibo da DCTFWeb (falta a “Totalização dos tributos apurados no período”)');
+  let m = T.match(/PERIODO DE APURACAO:?\s*(\d{2})\s*\/\s*(\d{4})/);
+  if (!m) throw new Error('não achei o período de apuração');
+  const r = { per: m[2] + '-' + m[1], trib: {} };
+  r.retif = /DECLARACAO RETIFICADORA:?\s*SIM/.test(T);
+  m = T.match(/RECIBO DE ENTREGA:?\s*(\d{10,})/); r.numero = m ? m[1] : '';
+  m = T.match(/RECEBIDA VIA INTERNET.*?EM\s*(\d{2})\/(\d{2})\/(\d{4})/); r.transm = m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+  TRIB.forEach(([k, , rot]) => {
+    const x = T.match(new RegExp('(?:^|\\s)' + reEsc(rot) + '\\s+R\\$\\s*' + V + '\\s+R\\$\\s*' + V));
+    if (x) r.trib[k] = { deb: r2(num(x[1])), saldo: r2(num(x[2])) };
+  });
+  m = T.match(new RegExp('(?:^|\\s)TOTAL\\s+R\\$\\s*' + V + '\\s+R\\$\\s*' + V));
+  if (m) r.total = { deb: r2(num(m[1])), saldo: r2(num(m[2])) };
+  if (!Object.keys(r.trib).length) throw new Error('não achei os valores dos tributos');
+  return r;
+}
+async function importarRecibos(files){
+  if (!window.pdfjsLib){ msg('Leitor de PDF não carregou.', 'err'); return; }
+  for (const f of files){
+    try {
+      const r = lerRecibo(await textoPdf(f));
+      const sd = soma(Object.values(r.trib).map(x => x.saldo)), sdeb = soma(Object.values(r.trib).map(x => x.deb));
+      const confere = !r.total || (ok(sd - r.total.saldo) && ok(sdeb - r.total.deb));
+      const ant = dados.recibos[r.per];
+      dados.recibos[r.per] = Object.assign(r, { arquivo: f.name, em: new Date().toISOString() });
+      msg(`“${esc(f.name)}”: recibo da DCTFWeb de ${mesLbl(r.per)}${r.retif ? ' (retificadora)' : ''} — saldo a pagar ${fmt(r.total ? r.total.saldo : sd)}${ant ? ' · substituiu o recibo anterior do mês' : ''}.` +
+        (confere ? '' : ` <b>Atenção:</b> a soma dos tributos (${fmt(sd)}) não bate com o total do recibo (${fmt(r.total.saldo)}) — confira na etapa 3.`), confere ? 'ok' : 'warn');
+      mesAtual = r.per;
+      if (window.publicarMesHub) publicarMesHub(r.per);
+    } catch(e){ msg('Erro ao ler “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
+  }
+  salvar(); await render();
+}
+function tirarRecibo(m){ if (!dados.recibos[m] || !confirm('Remover o recibo da DCTFWeb de ' + mesLbl(m) + '?')) return; delete dados.recibos[m]; salvar(); render(); }
+function setTrib(k, campo, txt){
+  const partes = String(txt).split('+').map(num).filter(x => !isNaN(x));
+  const R = dados.recibos[mesAtual] = dados.recibos[mesAtual] || { trib: {}, manual: true, em: new Date().toISOString(), arquivo: '' };
+  R.trib[k] = R.trib[k] || { deb: 0, saldo: 0 };
+  R.trib[k][campo] = partes.length ? r2(partes.reduce((a, x) => a + x, 0)) : 0;
+  if (campo === 'deb' && !partes.length) R.trib[k].saldo = R.trib[k].saldo || 0;
+  R.editado = true; R.total = { deb: soma(Object.values(R.trib).map(x => x.deb)), saldo: soma(Object.values(R.trib).map(x => x.saldo)) };
+  salvar(); render();
+}
+const sal = (R, k) => R && R.trib[k] ? R.trib[k].saldo : 0;
+const debA = (R, k) => R && R.trib[k] ? R.trib[k].deb : 0;
+const salGrupo = (R, g) => soma(TRIB.filter(t => t[3] === g).map(t => sal(R, t[0])));
+const debGrupo = (R, g) => soma(TRIB.filter(t => t[3] === g).map(t => debA(R, t[0])));
+const salDctf = R => soma(KG.map(g => salGrupo(R, g)));
+
+// ===================== balancete e razão (Book) =====================
+async function carregarMeses(){
+  mesesBal = [];
+  try { if (window.HubDB) mesesBal = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10)).sort(); } catch(e){}
+  const todos = [...new Set(mesesBal.concat(Object.keys(dados.recibos)))].sort();
+  const mHub = window.mesDoHub ? mesDoHub() : '';
+  if (mHub && !mesAtual) mesAtual = mHub;
+  if (!mesAtual) mesAtual = todos[todos.length - 1] || new Date().toISOString().slice(0, 7);
+  if (!todos.includes(mesAtual)) todos.push(mesAtual);
+  todos.sort();
+  $('selMes').innerHTML = todos.slice().reverse().map(m => `<option value="${m}" ${m === mesAtual ? 'selected' : ''}>${mesLbl(m)}${mesesBal.includes(m) ? '' : ' (sem balancete)'}${dados.recibos[m] ? '' : ' · sem recibo'}</option>`).join('');
+}
+async function getBal(m){ try { return window.HubDB ? await HubDB.getMeta('balancete:' + m) : null; } catch(e){ return null; } }
+let RAZ = {}, RAZ1 = {}, RAZINFO = null;   // conta -> lançamentos do mês / do mês seguinte
+async function carregarRazao(m){
+  RAZ = {}; RAZ1 = {}; RAZINFO = null; if (!window.HubDB) return;
+  try { RAZINFO = await HubDB.getMeta('razao'); } catch(e){}
+  const agg = RAZINFO && RAZINFO.agg ? RAZINFO.agg : {}, m1 = mesSeg(m);
+  for (const c of TODAS){
+    if (agg[m] && agg[m][c]) try { RAZ[c] = await HubDB.lancamentosConta(c, [m]); } catch(e){}
+    if (agg[m1] && agg[m1][c]) try { RAZ1[c] = await HubDB.lancamentosConta(c, [m1]); } catch(e){}
+  }
+  RAZ.__ok = !!agg[m]; RAZ1.__ok = !!agg[m1];
+}
+// classificação de um lançamento numa conta do grupo
+function classe(l, c){
+  const h = norm(l.hist), cp = l.cp || '', cpd = dig(cp);
+  if (l.deb > 0 && (/^1101[12]/.test(cpd) || /^DEB-(DAR|INS|GPS)|\bDARF\b|\bGPS\b|PAGTO|PAGAMENTO/.test(h))) return 'pag';
+  if (l.deb > 0 && /COMPENSA|PER\/?DCOMP|PERDCOMP/.test(h)) return 'comp';
+  if (cp && GRUPO.includes(cp) && cp !== c && (c === C_DCTF || cp === C_DCTF || grupoDaConta(cp) === grupoDaConta(c))) return 'transf';
+  return 'mov';
+}
+const NOME_CLS = { pag: 'Pagamento (DARF)', comp: 'Compensação', transf: 'Transferência no grupo', mov: 'Provisão / ajuste' };
+const bc = c => balMes && balMes.contas ? balMes.contas[c] || null : null;
+
+// ===================== cálculo =====================
+function contaMes(c){
+  const b = bc(c), L = RAZ[c] || [];
+  const o = { conta: c, tem: !!b, sa: b ? r2(-b.sa) : 0, sf: b ? r2(-b.sf) : 0, d: b ? r2(b.d) : 0, c: b ? r2(b.c) : 0, pag: 0, transf: 0, mov: 0, prox: 0, lPag: [], lMov: [], razOk: true };
+  if (RAZ.__ok){
+    L.forEach(l => { const k = classe(l, c);
+      if (k === 'pag' || k === 'comp'){ o.pag += l.deb - l.cred; o.lPag.push(l); }
+      else if (k === 'transf') o.transf += l.cred - l.deb;
+      else { o.mov += l.cred - l.deb; o.lMov.push(l); if (/PROX(IMO)? MES/.test(norm(l.hist))) o.prox += l.cred - l.deb; } });
+    o.pag = r2(o.pag); o.transf = r2(o.transf); o.mov = r2(o.mov); o.prox = r2(o.prox);
+    const D = r2(L.reduce((a, l) => a + l.deb, 0)), C = r2(L.reduce((a, l) => a + l.cred, 0));
+    if (b && (!ok(D - o.d) || !ok(C - o.c))) o.razOk = false;   // razão do Book diferente do balancete
+  } else { o.mov = r2(o.c - o.d); o.razOk = false; }
+  return o;
+}
+function calcular(m){
+  const R = dados.recibos[m] || null, RA = dados.recibos[mesAnt(m)] || null, X = {};
+  GRUPO.concat(Object.values(INFO)).forEach(c => X[c] = contaMes(c));
+  const G = {};
+  KG.forEach(g => {
+    const fs = GR[g].fontes.map(c => X[c]), prov = soma(fs.map(x => x.mov)), dec = R ? salGrupo(R, g) : NaN;
+    G[g] = { prov, dec, deb: R ? debGrupo(R, g) : NaN, dif: R ? r2(prov - dec) : NaN, prox: soma(fs.map(x => x.prox)), fs };
+  });
+  const grp = GRUPO.map(c => X[c]);
+  const tot = { sa: soma(grp.map(x => x.sa)), pag: soma(grp.map(x => x.pag)), mov: soma(grp.map(x => x.mov)), transf: soma(grp.map(x => x.transf)), sf: soma(grp.map(x => x.sf)) };
+  const outros1011 = X[C_DCTF].mov, resid = r2(tot.sa - tot.pag);
+  const esperado = R ? salDctf(R) : NaN, dif = R ? r2(tot.sf - esperado) : NaN;
+  const decAnt = RA ? salDctf(RA) : NaN;
+  // reclassificações: zera as contas de origem contra a 2.1.15.1011
+  const LANC = [], H = ' ' + MES[+m.slice(5, 7) - 1].toUpperCase() + '/' + m.slice(0, 4);
+  FONTES.forEach(c => {
+    const x = X[c]; if (!x.tem) return;
+    const nome = NOME_C[c] || c, P = x.pag;
+    if (P > 0.005) LANC.push({ tipo: 'pag', nome: `Pagamento (DARF) lançado na ${c} — ${nome}: reclassificar para a conta da DCTFWeb`, deb: C_DCTF, cred: c, valor: P,
+      hist: 'VR REF RECLASS PAGTO DCTFWEB LANCADO EM ' + norm(nome) + H, det: x.lPag.map(l => br(l.data) + ' ' + l.hist + ' ' + fmt(l.deb)).join(' · ') });
+    const Rr = r2(x.sf + (P > 0.005 ? P : 0));
+    if (Rr > 0.005) LANC.push({ tipo: 'transf', nome: `Provisão de ${grupoDaConta(c) === 'cp' ? 'contribuição previdenciária' : GR[grupoDaConta(c)].nome} está na ${c} — ${nome}: transferir para a conta da DCTFWeb`, deb: c, cred: C_DCTF, valor: Rr,
+      hist: 'VR TRANSF SALDO ' + norm(nome) + ' P/ DCTFWEB' + H });
+    else if (Rr < -0.005){
+      const exc = x.transf < -0.005;   // transferiu para a DCTFWeb mais do que tinha de provisão
+      LANC.push({ tipo: 'dev', nome: exc ? `Transferência para a DCTFWeb maior que a provisão na ${c} — ${nome} (transferido ${fmt(-x.transf)}, provisão do mês ${fmt(x.mov)}): estornar o excesso`
+          : `Saldo devedor na ${c} — ${nome} (débitos sem provisão): reclassificar para a conta da DCTFWeb`, deb: C_DCTF, cred: c, valor: -Rr,
+        hist: (exc ? 'VR ESTORNO TRANSF A MAIOR ' : 'VR REF RECLASS SALDO DEVEDOR ') + norm(nome) + ' P/ DCTFWEB' + H }); }
+  });
+  return { R, RA, X, G, tot, outros1011, resid, esperado, dif, decAnt, LANC };
+}
+let CALC = null;
+const descConta = c => { const b = bc(c); return b && b.desc ? b.desc : (NOME_C[c] || ''); };
+// pagamentos do recibo do mês (razão do mês seguinte)
+function pagamentos(m){
+  const R = dados.recibos[m]; if (!R || !RAZ1.__ok) return null;
+  const pagos = c => (RAZ1[c] || []).filter(l => { const k = classe(l, c); return k === 'pag' || k === 'comp'; }).map(l => Object.assign({ conta: c }, l));
+  const lin = [];
+  const add = (nome, dec, contas) => { const ls = contas.flatMap(pagos), v = soma(ls.map(l => l.deb - l.cred)); lin.push({ nome, dec, pago: v, dif: r2(v - dec), ls }); };
+  add('PIS', sal(R, 'pis'), [INFO.pis]);
+  add('COFINS', sal(R, 'cofins'), [INFO.cofins]);
+  add('CSRF', salGrupo(R, 'csrf'), GR.csrf.fontes);
+  add('Contribuição previdenciária + IRRF (DARF unificado)', r2(salGrupo(R, 'cp') + salGrupo(R, 'irrf')), GR.cp.fontes.concat(GR.irrf.fontes, [C_DCTF]));
+  return lin;
+}
+
+// ===================== telas =====================
+async function render(){
+  await carregarMeses();
+  balMes = await getBal(mesAtual); await carregarRazao(mesAtual);
+  CALC = calcular(mesAtual);
+  const m1 = mesSeg(mesAtual);
+  $('stTopo').textContent = (balMes ? 'Balancete de ' + mesLbl(mesAtual) + ' carregado do Book' : 'Sem balancete de ' + mesLbl(mesAtual) + ' no Book') + ' · ' + (RAZ.__ok ? 'razão do mês carregado' : 'sem razão do mês') + ' · ' + (RAZ1.__ok ? 'razão de ' + mesLbl(m1) + ' carregado (pagamentos)' : 'sem razão de ' + mesLbl(m1)) + '.';
+  $('stBase').innerHTML = $('stTopo').textContent;
+  ['titComp', 'titTrib', 'titDiv'].forEach(i => $(i).textContent = '· ' + mesLbl(mesAtual) + ' · data-base ' + br(fimMes(mesAtual)));
+  renderChips(); renderKpis(); renderComp(); renderTrib(); renderDiv(); renderLanc(); renderPag(); renderRec(); renderRazao(); publicarSuportes();
+}
+function renderChips(){
+  const ms = Object.keys(dados.recibos).sort().reverse();
+  $('chRec').innerHTML = ms.map(m => { const R = dados.recibos[m]; return `<span class="chip" title="${esc(R.arquivo || 'digitado')}">${mesLbl(m)}${R.retif ? ' (retif.)' : ''} · ${fmt(R.total ? R.total.saldo : NaN)}<button type="button" onclick="tirarRecibo('${m}')" aria-label="Remover">×</button></span>`; }).join('') ||
+    '<span class="muted small">Nenhum recibo importado.</span>';
+}
+function renderKpis(){
+  const C = CALC, card = (t, v, s, cls) => `<div class="kpi ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
+  const nL = C.LANC.length, P = pagamentos(mesAtual), pOk = P ? P.every(x => ok(x.dif)) : null;
+  $('kpis').innerHTML =
+    card('Recibo · saldo a pagar (total)', C.R ? fmt(C.R.total ? C.R.total.saldo : soma(Object.values(C.R.trib).map(x => x.saldo))) : '—', C.R ? 'com PIS e COFINS' + (C.R.retif ? ' · retificadora' : '') : 'importe o recibo de ' + mesLbl(mesAtual)) +
+    card('DCTFWeb esperada na 2.1.15.1011', fmt(C.esperado), 'CP + IRRF + CSRF do recibo') +
+    card('Grupo na contabilidade', balMes ? fmt(C.tot.sf) : '—', '2.1.15.1011 + contas de origem') +
+    card('Diferença', fmt(C.dif), isNaN(C.dif) ? '' : ok(C.dif) ? '✓ conciliado' : 'ver divergências', isNaN(C.dif) ? '' : ok(C.dif) ? 'ok' : 'bad') +
+    card('Saldo atual da 2.1.15.1011', balMes ? fmt(C.X[C_DCTF].sf) : '—', nL ? nL + ' reclassificação(ões) a fazer' : 'sem reclassificações', nL ? 'bad' : (balMes ? 'ok' : '')) +
+    card('Pagamento em ' + mesLbl(mesSeg(mesAtual)), P ? fmt(soma(P.map(x => x.pago))) : '—', P ? (pOk ? '✓ igual ao recibo' : 'diferente do recibo') : (C.R ? 'sem razão de ' + mesLbl(mesSeg(mesAtual)) : ''), P ? (pOk ? 'ok' : 'bad') : '');
+}
+function renderComp(){
+  const C = CALC;
+  if (!balMes){ $('compBody').innerHTML = `<tr><td colspan="7" class="empty">Sem balancete de ${mesLbl(mesAtual)} no Book de conciliação.</td></tr>`; $('compFoot').innerHTML = ''; return; }
+  const row = c => { const x = C.X[c], dest = c === C_DCTF;
+    const st = dest ? (isNaN(C.esperado) ? '<span class="muted small">sem recibo</span>' : ok(x.sf - C.esperado) ? '<span class="dok">✓ = recibo</span>' : '<span class="dbad">recibo ' + fmt(C.esperado) + '</span>')
+      : ok(x.sf) ? '<span class="dok">✓ zerada</span>' : x.sf > 0 ? '<span class="dbad">transferir ' + fmt(x.sf) + ' para a 2.1.15.1011</span>' : '<span class="dbad">saldo devedor ' + fmt(-x.sf) + ' — reclassificar</span>';
+    return `<tr${dest ? ' class="sub"' : ''}><td>${c} · ${esc(descConta(c))}${!x.razOk && RAZ.__ok ? ' <span class="pill warn" title="Os débitos/créditos do razão no Book não batem com o balancete: importe o razão atualizado">razão ≠ balancete</span>' : ''}</td><td>${fmt(x.sa)}</td><td>${x.pag ? fmt(-x.pag) : ''}</td><td>${x.mov ? fmt(x.mov) : ''}</td><td>${x.transf ? fmt(x.transf) : ''}</td><td>${fmt(x.sf)}</td><td class="left">${st}</td></tr>`; };
+  $('compBody').innerHTML = GRUPO.map(row).join('');
+  const T = C.tot;
+  $('compFoot').innerHTML = `<tr><td>Total do grupo</td><td>${fmt(T.sa)}</td><td>${fmt(-T.pag)}</td><td>${fmt(T.mov)}</td><td>${fmt(T.transf)}</td><td>${fmt(T.sf)}</td><td class="left">${C.R ? 'recibo ' + fmt(C.esperado) + ' · ' + chk(C.dif) : ''}</td></tr>`;
+}
+function renderTrib(){
+  const C = CALC, R = C.R;
+  if (!R){ $('tribBody').innerHTML = `<tr><td colspan="6" class="empty">Importe o recibo da DCTFWeb de ${mesLbl(mesAtual)}.</td></tr>`; return; }
+  let h = '';
+  KG.forEach(g => {
+    const o = C.G[g], onde = o.fs.map(x => `${x.conta}: ${fmt(x.mov)}`).join(' · ');
+    h += `<tr class="cmp"><td>${GR[g].nome}</td><td>${fmt(o.deb)}</td><td>${fmt(o.dec)}</td><td>${RAZ.__ok ? fmt(o.prov) : '—'}</td><td>${RAZ.__ok ? chk(o.dif) : '<span class="muted small">sem razão</span>'}</td><td class="ex">Provisões do mês — ${onde}</td></tr>`;
+    if (g === 'cp') TRIB.filter(t => t[3] === 'cp' && (debA(R, t[0]) || sal(R, t[0]))).forEach(t => {
+      const ded = r2(debA(R, t[0]) - sal(R, t[0]));
+      h += `<tr><td style="padding-left:24px">${t[1]}</td><td>${fmt(debA(R, t[0]))}</td><td>${fmt(sal(R, t[0]))}</td><td></td><td></td><td class="ex">${ded ? 'Deduções no recibo ' + fmt(ded) + ' (salário-família/maternidade, retenções)' : ''}</td></tr>`; });
+  });
+  if (RAZ.__ok && !ok(C.outros1011)) h += `<tr><td>Outros lançamentos na 2.1.15.1011</td><td></td><td></td><td>${fmt(C.outros1011)}</td><td><span class="dbad">dif. ${fmt(C.outros1011)}</span></td><td class="ex">Não são transferência das contas de origem nem pagamento</td></tr>`;
+  const rem = R && balMes && RAZ.__ok ? r2(C.dif - C.resid - soma(KG.map(g => C.G[g].dif)) - C.outros1011) : 0;
+  if (!ok(rem)) h += `<tr><td>Diferença não explicada pelo razão</td><td></td><td></td><td>${fmt(rem)}</td><td><span class="dbad">dif. ${fmt(rem)}</span></td><td class="ex">O razão do Book não traz todos os lançamentos do balancete: importe o razão atualizado</td></tr>`;
+  if (RAZ.__ok && !ok(C.resid)) h += `<tr><td>Saldo de competências anteriores</td><td></td><td>${C.RA ? fmt(r2(C.decAnt - C.tot.pag)) : ''}</td><td>${fmt(C.resid)}</td><td><span class="dbad">dif. ${fmt(C.resid)}</span></td><td class="ex">Saldo inicial do grupo ${fmt(C.tot.sa)} − pagamentos do mês ${fmt(C.tot.pag)}</td></tr>`;
+  h += `<tr class="res"><td>Total DCTFWeb (2.1.15.1011)</td><td>${fmt(soma(KG.map(g => C.G[g].deb)))}</td><td>${fmt(C.esperado)}</td><td>${balMes ? fmt(C.tot.sf) : '—'}</td><td>${balMes ? chk(C.dif) : ''}</td><td class="ex">Saldo do grupo no balancete × saldo a pagar do recibo</td></tr>`;
+  h += `<tr class="sub"><td colspan="6">Informativo — conciliados no painel PIS/COFINS (ficam nas contas próprias)</td></tr>`;
+  ['pis', 'cofins'].forEach(k => { const c = INFO[k], x = C.X[c], prov = x.mov, d = RAZ.__ok ? r2(prov - sal(R, k)) : NaN;
+    h += `<tr><td>${k.toUpperCase()}</td><td>${fmt(debA(R, k))}</td><td>${fmt(sal(R, k))}</td><td>${RAZ.__ok ? fmt(prov) : '—'}</td><td>${RAZ.__ok ? chk(d) : ''}</td><td class="ex">${c} · saldo final ${fmt(x.sf)} (provisão líquida do mês: créditos − devoluções − créditos aproveitados)</td></tr>`; });
+  const out = TRIB.filter(t => t[3] === 'outros' && (debA(R, t[0]) || sal(R, t[0])));
+  out.forEach(t => h += `<tr><td>${t[1]}</td><td>${fmt(debA(R, t[0]))}</td><td>${fmt(sal(R, t[0]))}</td><td></td><td></td><td class="ex">Conferir no painel Tributos a pagar</td></tr>`);
+  $('tribBody').innerHTML = h;
+}
+function item(tipo, titulo, txt){ return `<div class="msg ${tipo}"><b>${titulo}</b><div class="small" style="margin-top:3px">${txt}</div></div>`; }
+function renderDiv(){
+  const C = CALC, R = C.R, out = [];
+  if (!R) out.push(item('warn', 'Falta o recibo da DCTFWeb de ' + mesLbl(mesAtual), 'Importe o PDF do recibo para comparar com a contabilidade.'));
+  if (!balMes) out.push(item('warn', 'Falta o balancete de ' + mesLbl(mesAtual), 'Importe o balancete no Book de conciliação.'));
+  if (balMes && !RAZ.__ok) out.push(item('warn', 'Falta o razão de ' + mesLbl(mesAtual), 'Sem o razão não dá para separar provisões, pagamentos e transferências; as reclassificações saem só pelo saldo.'));
+  const desat = GRUPO.concat(Object.values(INFO)).filter(c => RAZ.__ok && C.X[c].tem && !C.X[c].razOk);
+  if (desat.length) out.push(item('warn', 'Razão do Book diferente do balancete em ' + desat.join(', '), 'Os débitos/créditos do razão importado não batem com o balancete (o balancete é mais recente?). Importe o razão atualizado no Book para a análise ficar exata.'));
+  // contas de origem com saldo
+  C.LANC.forEach(l => out.push(item('err', l.tipo === 'pag' ? 'Pagamento fora da conta da DCTFWeb' : l.tipo === 'transf' ? 'Provisão fora da conta da DCTFWeb' : 'Saldo devedor em conta de origem (' + l.cred + ')',
+    esc(l.nome) + ' — <b>' + fmt(l.valor) + '</b> (D ' + l.deb + ' / C ' + l.cred + ').' + (l.det ? '<br><span class="muted">' + esc(l.det) + '</span>' : ''))));
+  if (R && RAZ.__ok){
+    KG.forEach(g => { const o = C.G[g]; if (ok(o.dif)) return;
+      let dica = '';
+      if (g === 'cp'){
+        if (!ok(o.prox)) dica += ` Inclui ${fmt(o.prox)} de INSS de férias do mês seguinte (vai na DCTFWeb do próximo mês).`;
+        const ret = C.X['2.1.15.1007'].mov; if (!ok(ret)) dica += ` INSS retido de terceiros no mês: ${fmt(ret)} (Reinf R-2010; confira se entrou na DCTFWeb).`;
+        dica += ' Se o recibo estiver certo, ajustar a provisão da folha (D 2.1.10.1004 / C despesa de INSS) ou retificar a DCTFWeb.';
+      } else if (g === 'irrf') dica = ' IRRF de terceiros entra na Reinf (R-4000) pela data do pagamento; a contabilidade provisiona pela nota — diferença de competência ou de retenção.';
+      else dica = ' A CSRF entra na Reinf (R-4020) pela data do pagamento ao fornecedor; a contabilidade retém na entrada da nota. Diferença de competência: confira as notas pagas no mês.';
+      out.push(item('warn', GR[g].nome + ': provisionado ' + fmt(o.prov) + ' × declarado ' + fmt(o.dec), (o.dif > 0 ? 'Provisão maior que a DCTFWeb em ' : 'Provisão menor que a DCTFWeb em ') + '<b>' + fmt(Math.abs(o.dif)) + '</b>.' + dica));
+    });
+    if (!ok(C.outros1011)) out.push(item('warn', 'Lançamentos na 2.1.15.1011 que não são transferência nem pagamento: ' + fmt(C.outros1011), C.X[C_DCTF].lMov.map(l => esc(br(l.data) + ' ' + l.hist + ' ' + fmt(l.cred - l.deb))).join(' · ')));
+    if (!ok(C.resid)){
+      let t = 'Saldo inicial do grupo ' + fmt(C.tot.sa) + ' − pagamentos/compensações do mês ' + fmt(C.tot.pag) + ' = <b>' + fmt(C.resid) + '</b> que continua na contabilidade.';
+      t += C.RA ? ' Recibo de ' + mesLbl(mesAnt(mesAtual)) + ': saldo a pagar ' + fmt(C.decAnt) + ' (CP + IRRF + CSRF) — pago no mês ' + fmt(C.tot.pag) + ' (' + (ok(C.decAnt - C.tot.pag) ? 'igual ao recibo: a sobra é provisão a maior de meses anteriores — ajustar contra a despesa/conta de origem' : 'diferença ' + fmt(r2(C.decAnt - C.tot.pag)) + ': falta pagamento, compensação (PER/DCOMP) ou parcelamento') + ').'
+        : ' Importe o recibo de ' + mesLbl(mesAnt(mesAtual)) + ' para saber se é pagamento que falta ou provisão a maior.';
+      out.push(item('warn', 'Saldo de competências anteriores sem baixa', t));
+    }
+    ['pis', 'cofins'].forEach(k => { const x = C.X[INFO[k]], d = r2(x.mov - sal(R, k)); if (ok(d)) return;
+      out.push(item('', k.toUpperCase() + ' (informativo): provisionado ' + fmt(x.mov) + ' × declarado ' + fmt(sal(R, k)), 'Diferença ' + fmt(d) + '. Concilie no painel PIS/COFINS (créditos da EFD-Contribuições não contabilizados, devoluções, retenções). Saldo da ' + INFO[k] + ': ' + fmt(x.sf) + '.')); });
+  }
+  const P = pagamentos(mesAtual);
+  if (P) P.filter(x => !ok(x.dif)).forEach(x => out.push(item('warn', 'Pagamento em ' + mesLbl(mesSeg(mesAtual)) + ' — ' + x.nome + ': recibo ' + fmt(x.dec) + ' × pago ' + fmt(x.pago),
+    (x.dif < 0 ? 'Falta localizar ' : 'Pago a mais ') + '<b>' + fmt(Math.abs(x.dif)) + '</b> (DARF em outro banco ainda não lançado, compensação, juros/multa ou DARF de outra competência).')));
+  if (P){ const fora = P.flatMap(x => x.ls).filter(l => FONTES.includes(l.conta));
+    if (fora.length) out.push(item('', 'Em ' + mesLbl(mesSeg(mesAtual)) + ' o DARF foi lançado fora da 2.1.15.1011', fora.map(l => esc(l.conta + ' ' + br(l.data) + ' ' + fmt(l.deb))).join(' · ') + ' — vai aparecer como reclassificação no fechamento de ' + mesLbl(mesSeg(mesAtual)) + '.')); }
+  if (!out.length && R && balMes) out.push(item('ok', 'DCTFWeb conciliada', 'O saldo da 2.1.15.1011 é o saldo a pagar do recibo e as contas de origem estão zeradas.'));
+  $('divBox').innerHTML = out.join('');
+}
+function renderLanc(){
+  const L = CALC.LANC;
+  $('titLanc').textContent = '· ' + mesLbl(mesAtual) + ' · data ' + br(fimMes(mesAtual));
+  if (!L.length){ $('lancBody').innerHTML = `<tr><td colspan="5" class="empty">${balMes ? 'Nada a reclassificar: as contas de origem estão zeradas.' : 'Sem balancete de ' + mesLbl(mesAtual) + ' no Book de conciliação.'}</td></tr>`; $('lancFoot').innerHTML = ''; return; }
+  const td = c => `<td class="left">${esc(c)}<div class="muted small">${esc(descConta(c))}</div></td>`;
+  $('lancBody').innerHTML = L.map(o => `<tr><td class="left wrap oq">${esc(o.nome)}</td>${td(o.deb)}${td(o.cred)}<td>${fmt(o.valor)}</td><td class="left wrap hist">${esc(o.hist)}</td></tr>`).join('');
+  const efeito = r2(L.reduce((s, o) => s + (o.cred === C_DCTF ? o.valor : -o.valor), 0));
+  $('lancFoot').innerHTML = `<tr><td colspan="3">${L.length} lançamento(s) · a 2.1.15.1011 fica com ${fmt(r2(CALC.X[C_DCTF].sf + efeito))}${isNaN(CALC.esperado) ? '' : ' (recibo ' + fmt(CALC.esperado) + ')'}</td><td>${fmt(r2(L.reduce((s, o) => s + o.valor, 0)))}</td><td></td></tr>`;
+}
+function renderPag(){
+  const m1 = mesSeg(mesAtual), P = pagamentos(mesAtual);
+  $('titPag').textContent = '· recibo de ' + mesLbl(mesAtual) + ' × razão de ' + mesLbl(m1);
+  $('infoPag').textContent = 'O DARF da DCTFWeb vence no dia 20 (PIS/COFINS no dia 25) do mês seguinte: os pagamentos são procurados no razão de ' + mesLbl(m1) + ' nas contas do grupo, em débito com contrapartida em banco.';
+  if (!P){ $('pagBody').innerHTML = `<tr><td colspan="5" class="empty">${dados.recibos[mesAtual] ? 'Importe o razão de ' + mesLbl(m1) + ' no Book de conciliação para conferir o pagamento.' : 'Importe o recibo de ' + mesLbl(mesAtual) + '.'}</td></tr>`; return; }
+  $('pagBody').innerHTML = P.map(x => `<tr><td>${esc(x.nome)}</td><td>${fmt(x.dec)}</td><td>${fmt(x.pago)}</td><td>${chk(x.dif)}</td><td class="ex">${x.ls.map(l => esc(br(l.data) + ' · ' + l.conta + ' · ' + fmt(l.deb) + ' · ' + l.hist)).join('<br>') || 'nenhum pagamento encontrado'}</td></tr>`).join('');
+}
+function renderRec(){
+  const R = dados.recibos[mesAtual];
+  $('titRec').textContent = '· ' + mesLbl(mesAtual);
+  const inp = (k, c) => `<input type="text" class="gv" value="${R && R.trib[k] ? fmt(R.trib[k][c]) : ''}" placeholder="—" onchange="setTrib('${k}','${c}',this.value)">`;
+  const info = R ? `<div class="muted small" style="margin-bottom:8px">${R.arquivo ? 'Arquivo “' + esc(R.arquivo) + '”' : 'Valores digitados'}${R.numero ? ' · recibo nº ' + esc(R.numero) : ''}${R.transm ? ' · transmitida em ' + br(R.transm) : ''}${R.retif ? ' · <b>retificadora</b>' : ''}${R.editado ? ' · <b>valores editados aqui</b>' : ''}</div>` : `<div class="muted small" style="margin-bottom:8px">Sem recibo de ${mesLbl(mesAtual)}: importe o PDF no topo ou digite os valores.</div>`;
+  const sd = R ? soma(Object.values(R.trib).map(x => x.saldo)) : 0;
+  $('recBox').innerHTML = info + `<div class="tscroll" style="max-height:none"><table class="pc"><thead><tr><th class="left">Tributo</th><th>Débitos apurados</th><th>Saldo a pagar</th><th class="left">Grupo / conta</th></tr></thead><tbody>` +
+    TRIB.map(t => `<tr><td>${t[1]}</td><td>${inp(t[0], 'deb')}</td><td>${inp(t[0], 'saldo')}</td><td class="ex">${t[3] === 'outros' ? 'Tributos a pagar' : INFO[t[3]] ? INFO[t[3]] + ' (painel PIS/COFINS)' : GR[t[3]].nome + ' → ' + C_DCTF}</td></tr>`).join('') +
+    `</tbody><tfoot><tr><td>Total</td><td>${R && R.total ? fmt(R.total.deb) : ''}</td><td>${R ? fmt(R.total ? R.total.saldo : sd) : ''}${R && R.total && !ok(sd - R.total.saldo) ? ' <span class="dbad">soma ' + fmt(sd) + '</span>' : ''}</td><td></td></tr></tfoot></table></div>`;
+  const ms = Object.keys(dados.recibos).sort().reverse(), cols = [['DCTFWeb (CP+IRRF+CSRF)', R => salDctf(R)], ['CP', R => salGrupo(R, 'cp')], ['IRRF', R => salGrupo(R, 'irrf')], ['CSRF', R => salGrupo(R, 'csrf')], ['PIS', R => sal(R, 'pis')], ['COFINS', R => sal(R, 'cofins')], ['Total', R => R.total ? R.total.saldo : soma(Object.values(R.trib).map(x => x.saldo))]];
+  $('recHead').innerHTML = '<tr><th class="left">Competência</th>' + cols.map(c => `<th>${c[0]}</th>`).join('') + '<th class="left">Arquivo</th></tr>';
+  $('recListBody').innerHTML = ms.map(m => { const X = dados.recibos[m]; return `<tr${m === mesAtual ? ' style="background:#FFF8E6"' : ''}><td><a href="#" onclick="mesAtual='${m}';render();return false">${mesLbl(m)}</a>${X.retif ? ' <span class="pill cinza">retif.</span>' : ''}</td>` + cols.map(c => `<td>${fmt(c[1](X))}</td>`).join('') + `<td class="left small">${esc(X.arquivo || 'digitado')}</td></tr>`; }).join('') ||
+    `<tr><td colspan="${cols.length + 2}" class="empty">Nenhum recibo importado.</td></tr>`;
+}
+function renderRazao(){
+  const seg = $('fMesR').value === '1', m = seg ? mesSeg(mesAtual) : mesAtual, BASE = seg ? RAZ1 : RAZ;
+  $('titRaz').textContent = '· ' + mesLbl(m);
+  const sel = $('fContaR'), atual = sel.value || C_DCTF;
+  sel.innerHTML = TODAS.map(c => `<option value="${c}" ${c === atual ? 'selected' : ''}>${c} · ${esc(NOME_C[c] || '')}${BASE[c] ? ' (' + BASE[c].length + ')' : ''}</option>`).join('');
+  const c = sel.value, L = (BASE[c] || []).filter(l => !/^[A-Z]{2}-SPED|^[A-Z]{2}-NF/.test(norm(l.hist)) || classe(l, c) !== 'mov');
+  const tot = BASE[c] || [];
+  if (!tot.length){ $('razBody').innerHTML = `<tr><td colspan="5" class="empty">${BASE.__ok ? 'Sem lançamentos desta conta em ' + mesLbl(m) + '.' : 'Sem razão de ' + mesLbl(m) + ' no Book de conciliação.'}</td></tr>`; $('razFoot').innerHTML = ''; return; }
+  const sped = tot.filter(l => !L.includes(l)), sD = r2(sped.reduce((a, l) => a + l.deb, 0)), sC = r2(sped.reduce((a, l) => a + l.cred, 0));
+  $('razBody').innerHTML = L.map(l => `<tr><td>${br(l.data)}</td><td class="left wrap" style="max-width:520px">${esc(l.hist)}${l.cp ? ' <span class="muted small">· contrap. ' + esc(l.cp) + '</span>' : ''}</td><td>${l.deb ? fmt(l.deb) : ''}</td><td>${l.cred ? fmt(l.cred) : ''}</td><td class="left">${NOME_CLS[classe(l, c)]}</td></tr>`).join('') +
+    (sped.length ? `<tr><td></td><td class="left muted">${sped.length} lançamentos de notas (-SPED / -NF) agrupados</td><td>${sD ? fmt(sD) : ''}</td><td>${sC ? fmt(sC) : ''}</td><td class="left">Provisão / ajuste</td></tr>` : '');
+  const D = r2(tot.reduce((a, l) => a + l.deb, 0)), Cr = r2(tot.reduce((a, l) => a + l.cred, 0));
+  $('razFoot').innerHTML = `<tr><td colspan="2">Total (${tot.length} lançamentos)</td><td>${fmt(D)}</td><td>${fmt(Cr)}</td><td></td></tr>`;
+}
+// ===================== exportação =====================
+const nfBR = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function baixar(blob, nome){ const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 500); }
+function baixarCsv(){
+  const L = CALC.LANC; if (!L.length){ msg('Não há lançamentos a fazer.', 'warn'); return; }
+  const dt = br(fimMes(mesAtual)), linhas = ['Data;Conta Crédito;Conta Débito;Valor;Histórico;C Custo Deb;C Custo Cred;Item Deb;Item Cred'];
+  L.forEach(o => linhas.push([dt, dig(o.cred), dig(o.deb), nfBR.format(o.valor), o.hist.replace(/[;\r\n]+/g, ' ').replace(/[–—]/g, '-').toUpperCase().trim(), '', '', '', ''].join(';')));
+  const t = (linhas.join('\r\n') + '\r\n').normalize('NFC'), a = new Uint8Array(t.length);
+  for (let i = 0; i < t.length; i++){ const c = t.charCodeAt(i); a[i] = c < 256 ? c : 63; }
+  baixar(new Blob([a], { type: 'text/csv;charset=windows-1252' }), 'lancamentos-dctfweb-' + mesAtual + '.csv');
+}
+function baixarXlsx(){
+  const C = CALC, dt = br(fimMes(mesAtual)), rows = [['DCTFWeb — ' + mesLbl(mesAtual)], [], ['Conta', 'Descrição', 'Saldo inicial', 'Pagamentos', 'Provisões e ajustes', 'Transferências', 'Saldo final']];
+  GRUPO.forEach(c => { const x = C.X[c]; rows.push([c, descConta(c), x.sa, -x.pag, x.mov, x.transf, x.sf]); });
+  rows.push(['Total do grupo', '', C.tot.sa, -C.tot.pag, C.tot.mov, C.tot.transf, C.tot.sf], ['Recibo (CP+IRRF+CSRF)', '', '', '', '', '', C.esperado], ['Diferença', '', '', '', '', '', C.dif]);
+  rows.push([], ['Tributo', 'Débito apurado', 'Saldo a pagar', 'Provisionado no mês', 'Diferença']);
+  KG.forEach(g => rows.push([GR[g].nome, C.G[g].deb, C.G[g].dec, C.G[g].prov, C.G[g].dif]));
+  rows.push([], ['Lançamentos a fazer'], ['O que é', 'Data', 'Conta débito', 'Descrição débito', 'Conta crédito', 'Descrição crédito', 'Valor', 'Histórico']);
+  C.LANC.forEach(o => rows.push([o.nome, dt, o.deb, descConta(o.deb), o.cred, descConta(o.cred), o.valor, o.hist]));
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = [{ wch: 60 }, { wch: 30 }, { wch: 14 }, { wch: 30 }, { wch: 14 }, { wch: 30 }, { wch: 14 }, { wch: 50 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'DCTFWeb'); XLSX.writeFile(wb, 'dctfweb-' + mesAtual + '.xlsx');
+}
+// ===================== suporte para o Book =====================
+function publicarSuportes(){
+  const LS_SUP = 'aud-hub-suportes', FONTE = 'DCTFWeb', fim = fimMes(mesAtual), sup = lsGet(LS_SUP, {}), R = dados.recibos[mesAtual];
+  Object.keys(sup).forEach(c => { if (sup[c] && sup[c].fonte === FONTE) delete sup[c]; });
+  if (R){
+    sup[C_DCTF] = { fonte: FONTE, saldo: r2(-CALC.esperado), data: fim, detalhe: 'Recibo DCTFWeb ' + mesLbl(mesAtual) + (R.retif ? ' (retificadora)' : '') + ' · saldo a pagar CP + IRRF + CSRF (após as reclassificações das contas de origem)' };
+    PUBLICA.filter(c => c !== C_DCTF).forEach(c => { sup[c] = { fonte: FONTE, saldo: 0, data: fim, detalhe: 'Saldo transferido para a DCTFWeb (2.1.15.1011) no fechamento' }; });
+  }
+  lsSet(LS_SUP, sup);
+}
+window.focoConta = function(){ window.abrirEtapa && abrirEtapa('conferencia'); };
+
+(async () => { await carregarNuvem(); await render(); assinBase = await assinaturaBase(); })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => { mesAtual = m; render(); });   // mês trocado no Book
+</script>
+
+<script>
+/* etapas (mesmo comportamento dos outros painéis) */
+(function(){
+  var KEY = location.pathname.split('/').pop() + ':etapa';
+  function abrir(t){
+    document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.setAttribute('aria-selected', b.getAttribute('data-tab') === t ? 'true' : 'false'); });
+    document.querySelectorAll('section.panel').forEach(function(s){ s.classList.toggle('active', s.id === 'tab-' + t); });
+    try { sessionStorage.setItem(KEY, t); } catch(e){}
+    var m = document.getElementById('menuAbas'); if (m) m.classList.remove('open');
+  }
+  window.abrirEtapa = abrir;
+  document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.addEventListener('click', function(){ abrir(b.getAttribute('data-tab')); }); });
+  var tg = document.getElementById('navToggle');
+  if (tg) tg.addEventListener('click', function(){ var m = document.getElementById('menuAbas'); var o = m.classList.toggle('open'); tg.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+  var salvo = null; try { salvo = sessionStorage.getItem(KEY); } catch(e){}
+  abrir(salvo || 'conferencia');
+})();
+</script>
+</body>
+</html>

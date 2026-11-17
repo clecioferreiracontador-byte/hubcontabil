@@ -836,11 +836,11 @@ function toggleFech(){ const b = $('fechBox'), min = !b.classList.contains('min'
 
 // ===================== conta → painel de conciliação =====================
 // Clicar na conta abre o painel que concilia aquela conta (dentro do dash; fora dele, em nova aba).
-const PAINEL_FONTE = { 'Conciliação bancária': 'bancos', 'Consórcios': 'consorcios', 'Parcelamentos federais': 'parcelamentos-federais', 'Patrimonial': 'imobilizado', 'Imobilizado': 'imobilizado', 'Tributos a pagar': 'tributos', 'Provisões Trab.': 'provisoes', 'PIS/COFINS': 'pis-cofins', 'Fol. Pag.': 'folha', 'Subvenção': 'subvencao' };
+const PAINEL_FONTE = { 'Conciliação bancária': 'bancos', 'Consórcios': 'consorcios', 'Parcelamentos federais': 'parcelamentos-federais', 'Patrimonial': 'imobilizado', 'Imobilizado': 'imobilizado', 'Tributos a pagar': 'tributos', 'Provisões Trab.': 'provisoes', 'PIS/COFINS': 'pis-cofins', 'Fol. Pag.': 'folha', 'Subvenção': 'subvencao', 'DCTFWeb': 'dctfweb' };
 const PAINEL_REGRA = [[/^1\.1\.01\.[23]/, 'bancos'], [/^1\.2\.02\.1002$|^2\.[12]\.02\.1003$/, 'consorcios'], [/^2\.1\.15\.101[23]$|^2\.2\.03\.100[24]$/, 'parcelamentos-federais'],
   [/^2\.2\.03\.100[35]$/, 'parcelamentos-estaduais'], [/^1\.2\.(05|10)\./, 'imobilizado'],
-  [/^2\.1\.15\.100[23]$|^1\.1\.03\.100[67]$/, 'pis-cofins'], [/^2\.1\.15\.(100[89]|1011|2001|3001)$/, 'tributos'], [/^2\.1\.10\.2/, 'provisoes'], [/^2\.1\.10\.1|^1\.1\.02\.200[23]$/, 'folha'], [/^3\.3\.01\.1004$|^3\.1\.01\.20(07|10)$/, 'subvencao']];
-const NOME_PAINEL = { bancos: 'Conciliação bancária', consorcios: 'Consórcios', 'parcelamentos-federais': 'Parcelamentos federais', 'parcelamentos-estaduais': 'Parcelamentos estaduais', imobilizado: 'Patrimonial', tributos: 'Tributos a pagar', provisoes: 'Provisões Trab.', 'pis-cofins': 'PIS/COFINS', folha: 'Fol. Pag.', subvencao: 'Subvenção' };
+  [/^2\.1\.15\.100[23]$|^1\.1\.03\.100[67]$/, 'pis-cofins'], [/^2\.1\.15\.(1001|1006|1007|1011)$/, 'dctfweb'], [/^2\.1\.15\.(100[89]|2001|3001)$/, 'tributos'], [/^2\.1\.10\.2/, 'provisoes'], [/^2\.1\.10\.1|^1\.1\.02\.200[23]$/, 'folha'], [/^3\.3\.01\.1004$|^3\.1\.01\.20(07|10)$/, 'subvencao']];
+const NOME_PAINEL = { bancos: 'Conciliação bancária', consorcios: 'Consórcios', 'parcelamentos-federais': 'Parcelamentos federais', 'parcelamentos-estaduais': 'Parcelamentos estaduais', imobilizado: 'Patrimonial', tributos: 'Tributos a pagar', provisoes: 'Provisões Trab.', 'pis-cofins': 'PIS/COFINS', folha: 'Fol. Pag.', subvencao: 'Subvenção', dctfweb: 'DCTFWeb' };
 function painelDaConta(c){ const s = (mesAtual && suporteDoMes(c, mesAtual)) || suportes()[c]; if (s && PAINEL_FONTE[s.fonte]) return PAINEL_FONTE[s.fonte]; const r = PAINEL_REGRA.find(x => x[0].test(c)); return r ? r[1] : ''; }
 // ---- volta para a linha: ao sair para os lançamentos ou para um painel de conciliação, o Book guarda a conta
 // e, quando ele volta a aparecer, rola até a linha dela e a destaca por um instante
