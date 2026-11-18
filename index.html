@@ -1699,6 +1699,29 @@ function incluirContasNovas(codeMap){
   });
   return {novas:novas,comp:comp};
 }
+// Meses importados antes da abertura do balanço (ou por movimento sem base no mês anterior) ficaram sem
+// os campos d_* das contas analíticas: recalcula a abertura pelo balancete do mês salvo no Book (HubDB).
+async function completarAberturaBal(){
+  if(!window.HubDB)return 0;
+  var campos=[];Object.keys(BAL_DET).forEach(function(p){BAL_DET[p].forEach(function(s){campos.push(s);});});
+  var n=0;
+  for(var k of Object.keys(BALHIST)){
+    var b=BALHIST[k];if(!b)continue;
+    var falta=campos.filter(function(s){return typeof b[s[1]]!=='number';});
+    if(!falta.length)continue;
+    var bal=null;try{bal=await HubDB.getMeta('balancete:'+DRE_ANO+'-'+String(+k+1).padStart(2,'0'));}catch(e){}
+    if(!bal||!bal.contas)continue;
+    var C=bal.contas,cods=Object.keys(C);
+    var saldo=function(code){
+      if(C[code])return +C[code].sf||0;
+      var fs=cods.filter(function(c){return c.length>code.length&&c.indexOf(code)===0;});
+      return fs.reduce(function(t,c){return fs.some(function(o){return o!==c&&o.indexOf(c)===0;})?t:t+(+C[c].sf||0);},0);
+    };
+    falta.forEach(function(s){b[s[1]]=Math.round(s[2].reduce(function(t,x){return t+saldo(x[0])*x[1];},0)*100)/100;});
+    n++;
+  }
+  return n;
+}
 function doImport(mIdx,codeMap,soMovimento){
   extendArrays(mIdx);
   var inc=incluirContasNovas(codeMap);
@@ -1977,6 +2000,7 @@ function openRelatorio(){
   relEl('relOverlay').style.display='block';
   document.body.classList.add('rel-open');
   buildRelatorio();
+  if(IS_ADMIN)completarAberturaBal().then(function(n){if(n){buildRelatorio();buildBal();}});
 }
 function closeRelatorio(){relEl('relOverlay').style.display='none';document.body.classList.remove('rel-open');}
 function onRelPeriodo(){relSyncTri();relFillBal(true);buildRelatorio();}
@@ -2827,6 +2851,7 @@ window.HubAuthPronto.then(async function(){
     if(IS_ADMIN)loadSavedBase();
     rebuildMonthSelectors();rebuildAllViews();
     await loadRemoteBase();
+    if(IS_ADMIN&&await completarAberturaBal())buildBal();
     updSkpi();
   }finally{
     /* tira a tela de transição (o A da Audicon) quando o painel terminou de carregar */
