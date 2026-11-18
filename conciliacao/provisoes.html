@@ -287,7 +287,7 @@ table.pv tr.dif td{font-weight:600}
 <section class="panel" id="tab-processo">
   <div class="box"><h2>Objetivo</h2><p>Garantir todo mês que as contas de <b>provisão de férias</b> e <b>provisão de 13º salário</b> (grupo 2.1.10.2) estejam iguais ao relatório de provisões da folha — provisão + INSS + FGTS — e acompanhar a variação mensal de cada uma.</p></div>
   <div class="box"><h2>Passo a passo</h2><ol class="steps">
-    <li>Importar o balancete do mês no <b>Book de conciliação</b>.</li>
+    <li>Importar o balancete do mês no <b>Book de conciliação</b> ou na tela <b>Balanço &amp; Índices</b> do Hub (os dois servem).</li>
     <li>Pegar com o DP o <b>relatório de provisões</b> de férias e 13º do mês (saldo da provisão, INSS e FGTS).</li>
     <li>Na etapa <b>2</b>, digitar os valores na coluna do mês (ou importar o Book NHD, aba “Prov Trab”).</li>
     <li>Conferir a linha <b>Diferença</b> de cada provisão; a variação do mês aparece no quadro abaixo.</li>
@@ -407,14 +407,15 @@ async function carregarNuvem(){
 }
 let assinBase = '';
 async function assinaturaBase(){
-  if (!window.HubDB) return '';
+  const hub = Object.keys(balancetesDoHub()).join(',');
+  if (!window.HubDB) return hub;
   try {
     const i = await HubDB.getMeta('razao'), ks = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).sort(), partes = [];
     for (const k of ks){ const b = await HubDB.getMeta(k); const c = (b && b.contas) || {}; partes.push(k + ':' + Object.keys(c).length + ':' + Math.round(Object.values(c).reduce((a, x) => a + Math.abs(x.sf || 0) + Math.abs(x.d || 0), 0))); }
-    return JSON.stringify([((i && i.arquivos) || []).map(a => a.nome + '@' + a.em), partes]);
+    return JSON.stringify([((i && i.arquivos) || []).map(a => a.nome + '@' + a.em), partes, hub]);
   } catch(e){ return ''; }
 }
-async function vigiarBase(){ const a = await assinaturaBase(); if (assinBase && a && a !== assinBase){ assinBase = a; await render(); msg('Razão/balancete novo no Book de conciliação: valores atualizados.', 'ok'); } else if (a) assinBase = a; }
+async function vigiarBase(){ const a = await assinaturaBase(); if (assinBase && a && a !== assinBase){ assinBase = a; await render(); msg('Balancete novo no Book ou no Hub: valores atualizados.', 'ok'); } else if (a) assinBase = a; }
 setInterval(vigiarBase, 15000);
 window.addEventListener('focus', vigiarBase);
 
@@ -476,12 +477,29 @@ async function carregar(){
   mesesBal = []; bal = {};
   try { if (window.HubDB){ mesesBal = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10)).sort();
     for (const m of mesesBal){ const b = await HubDB.getMeta('balancete:' + m); if (b) bal[m] = b; } } } catch(e){}
+  // meses sem balancete no Book: usa o balancete importado na tela Balanço & Índices do Hub (saldo por conta)
+  const H = balancetesDoHub();
+  Object.keys(H).forEach(m => { if (!bal[m]){ bal[m] = H[m]; mesesBal.push(m); } });
+  mesesBal.sort();
   const anos = [...new Set(mesesBal.concat(Object.keys(dados.valores)).map(m => m.slice(0, 4)).concat([String(new Date().getFullYear())]))].sort();
   if (!ano || !anos.includes(ano)) ano = (mesesBal[mesesBal.length - 1] || '').slice(0, 4) || anos[anos.length - 1];
   $('selAno').innerHTML = anos.slice().reverse().map(a => `<option ${a === ano ? 'selected' : ''}>${a}</option>`).join('');
   if (!mesBase) mesBase = (window.mesDoHub && mesDoHub()) || mesesBal[mesesBal.length - 1] || meses(ano)[new Date().getMonth()];
   const ops = [...new Set(mesesBal.concat(Object.keys(dados.valores)).concat([mesBase]))].sort().reverse();
   $('selMes').innerHTML = ops.map(m => `<option value="${m}" ${m === mesBase ? 'selected' : ''}>${br(fimMes(m))}${mesesBal.includes(m) ? '' : ' (sem balancete)'}</option>`).join('');
+}
+// Hub principal: BALHIST[mês 0-11]._sf = { conta: saldo final } (devedor +, credor −), gravado ao importar o balancete
+function balancetesDoHub(){
+  const out = {};
+  try {
+    const P = window.parent !== window ? window.parent : null, H = P && P.BALHIST, ano = (P && P.DRE_ANO) || String(new Date().getFullYear());
+    if (!H) return out;
+    Object.keys(H).forEach(k => { const sf = H[k] && H[k]._sf; if (!sf) return;
+      const m = ano + '-' + String(+k + 1).padStart(2, '0'), contas = {};
+      Object.keys(sf).forEach(c => contas[c] = { desc: '', sf: sf[c] });
+      out[m] = { mes: m, origem: 'Balanço & Índices (Hub)', contas }; });
+  } catch(e){}
+  return out;
 }
 const contab = (m, g) => { const b = bal[m], c = dados.contas[g]; const x = b && b.contas ? b.contas[c] : null; return x ? r2(-x.sf) : NaN; };
 
