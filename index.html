@@ -1701,23 +1701,36 @@ function incluirContasNovas(codeMap){
 }
 // Meses importados antes da abertura do balanço (ou por movimento sem base no mês anterior) ficaram sem
 // os campos d_* das contas analíticas: recalcula a abertura pelo balancete do mês salvo no Book (HubDB).
+// abertura (campos d_*) a partir de um mapa conta → saldo final (devedor +, credor −)
+function balDetDe(sal){
+  var cods=Object.keys(sal),out={};
+  var saldo=function(code){
+    if(typeof sal[code]==='number')return sal[code];
+    var fs=cods.filter(function(c){return c.length>code.length&&c.indexOf(code)===0;});
+    return fs.reduce(function(t,c){return fs.some(function(o){return o!==c&&o.indexOf(c)===0;})?t:t+sal[c];},0);
+  };
+  Object.keys(BAL_DET).forEach(function(p){BAL_DET[p].forEach(function(s){out[s[1]]=Math.round(s[2].reduce(function(t,x){return t+saldo(x[0])*x[1];},0)*100)/100;});});
+  return out;
+}
+// saldos finais das contas patrimoniais do balancete importado no hub (guardados no mês: _sf)
+function saldosPatrimoniais(codeMap){
+  var o={};Object.keys(codeMap).forEach(function(c){if(!/^[12]/.test(c))return;var v=parseSaldoDC(codeMap[c].f);if(Math.abs(v)>=0.005)o[c]=Math.round(v*100)/100;});
+  return o;
+}
 async function completarAberturaBal(){
-  if(!window.HubDB)return 0;
   var campos=[];Object.keys(BAL_DET).forEach(function(p){BAL_DET[p].forEach(function(s){campos.push(s);});});
   var n=0;
   for(var k of Object.keys(BALHIST)){
     var b=BALHIST[k];if(!b)continue;
     var falta=campos.filter(function(s){return typeof b[s[1]]!=='number';});
     if(!falta.length)continue;
+    // 1º: saldos do balancete importado no hub principal; 2º: balancete do mesmo mês no Book
+    if(b._sf){var dd=balDetDe(b._sf);falta.forEach(function(s){b[s[1]]=dd[s[1]];});n++;continue;}
+    if(!window.HubDB)continue;
     var bal=null;try{bal=await HubDB.getMeta('balancete:'+DRE_ANO+'-'+String(+k+1).padStart(2,'0'));}catch(e){}
     if(!bal||!bal.contas)continue;
-    var C=bal.contas,cods=Object.keys(C);
-    var saldo=function(code){
-      if(C[code])return +C[code].sf||0;
-      var fs=cods.filter(function(c){return c.length>code.length&&c.indexOf(code)===0;});
-      return fs.reduce(function(t,c){return fs.some(function(o){return o!==c&&o.indexOf(c)===0;})?t:t+(+C[c].sf||0);},0);
-    };
-    falta.forEach(function(s){b[s[1]]=Math.round(s[2].reduce(function(t,x){return t+saldo(x[0])*x[1];},0)*100)/100;});
+    var sal={};Object.keys(bal.contas).forEach(function(c){sal[c]=+bal.contas[c].sf||0;});
+    var dB=balDetDe(sal);falta.forEach(function(s){b[s[1]]=dB[s[1]];});
     n++;
   }
   return n;
@@ -1728,7 +1741,7 @@ function doImport(mIdx,codeMap,soMovimento){
   var rowvals=computeDREFromBalancete(codeMap);
   applyDVals(rowvals,mIdx);
   applyDTREEVals(DTREE,rowvals,mIdx);
-  var bal=computeBALFromBalancete(codeMap);
+  var bal=computeBALFromBalancete(codeMap),sfC=saldosPatrimoniais(codeMap);
   if(soMovimento&&BALHIST[mIdx-1]){
     // saldo final = saldo final do mês anterior + movimento do mês (todas as linhas são somas)
     var ant=BALHIST[mIdx-1];
@@ -1737,7 +1750,11 @@ function doImport(mIdx,codeMap,soMovimento){
       if(k.indexOf('d_')===0&&typeof ant[k]!=='number'){delete bal[k];return;}
       bal[k]=(ant[k]||0)+bal[k];
     });
+    // saldo de cada conta = saldo do mês anterior + movimento; com ele a abertura sai completa
+    if(ant._sf){var acum=Object.assign({},ant._sf);Object.keys(sfC).forEach(function(c){acum[c]=Math.round(((acum[c]||0)+sfC[c])*100)/100;});sfC=acum;Object.assign(bal,balDetDe(sfC));}
+    else sfC=null;
   }
+  if(sfC)bal._sf=sfC;
   BALHIST[mIdx]=bal;
   balSelMes=mIdx;
   rebuildMonthSelectors();
@@ -2000,7 +2017,7 @@ function openRelatorio(){
   relEl('relOverlay').style.display='block';
   document.body.classList.add('rel-open');
   buildRelatorio();
-  if(IS_ADMIN)completarAberturaBal().then(function(n){if(n){buildRelatorio();buildBal();}});
+  completarAberturaBal().then(function(n){if(n){buildRelatorio();buildBal();}});
 }
 function closeRelatorio(){relEl('relOverlay').style.display='none';document.body.classList.remove('rel-open');}
 function onRelPeriodo(){relSyncTri();relFillBal(true);buildRelatorio();}
@@ -2851,7 +2868,7 @@ window.HubAuthPronto.then(async function(){
     if(IS_ADMIN)loadSavedBase();
     rebuildMonthSelectors();rebuildAllViews();
     await loadRemoteBase();
-    if(IS_ADMIN&&await completarAberturaBal())buildBal();
+    if(await completarAberturaBal())buildBal();
     updSkpi();
   }finally{
     /* tira a tela de transição (o A da Audicon) quando o painel terminou de carregar */
