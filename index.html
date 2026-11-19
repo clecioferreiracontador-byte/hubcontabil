@@ -2060,9 +2060,19 @@ function importarVariosMeses(wb,abas,statusEl){
     if(conf.modo==='mov'&&!BALHIST[a.mes-1]){falhas.push(a.aba+' (só movimento, sem o mês anterior)');return;}
     doImport(a.mes,codeMap,conf.modo==='mov');feitos.push(M[a.mes]);
   });
-  statusEl.innerHTML=(feitos.length?'✅ Balancetes importados: <b>'+feitos.join(', ')+'</b> de '+DRE_ANO+'. DRE, balanço e LALUR atualizados. Revise e clique em "Salvar base" / "Publicar".':'')+
+  statusEl.innerHTML=(feitos.length?'✅ Balancetes importados: <b>'+feitos.join(', ')+'</b> de '+DRE_ANO+'. DRE, balanço e LALUR atualizados.':'')+
     (falhas.length?'<br>⚠ Não reconheci: '+falhas.join(', ')+'.':'');
   statusEl.style.color=feitos.length?'var(--green2)':'var(--red2)';
+  if(feitos.length)basePosImport(statusEl);
+}
+// Depois de importar: a base já fica salva neste navegador (não se perde ao recarregar a página) e os
+// botões de salvar/publicar aparecem; "Publicar para todos" leva a base para o Firebase.
+function basePosImport(statusEl){
+  var ok=false;try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));ok=true;}catch(e){}
+  statusEl.innerHTML+=ok?'<br>💾 Base salva neste navegador. Para os clientes verem, clique em <b>🌐 Publicar para todos</b>.'
+    :'<br>⚠ Não consegui salvar neste navegador (espaço cheio). Clique em <b>🌐 Publicar para todos</b> para não perder a importação.';
+  document.getElementById('impSaveBtn').style.display='inline-block';
+  document.getElementById('impPubBtn').style.display='inline-block';
 }
 function handleBalanceteFile(file){
   if(!file)return;
@@ -2097,8 +2107,7 @@ function handleBalanceteFile(file){
         :conf.modo==='calc'?'<br>ℹ A coluna lida como "Saldo atual" não fechava com Saldo anterior + Débito − Crédito em '+conf.erra+' conta(s); o saldo final foi recalculado a partir do saldo anterior. Confira o layout do balancete.':'';
       statusEl.innerHTML='✅ Balancete de '+MF[mIdx]+'/2026 importado com sucesso — '+Object.keys(codeMap).length+' contas processadas. DRE, índices e balanço (saldo final do mês) já foram atualizados. Revise os dados e clique em "Salvar base atual" para manter esta atualização na próxima vez que abrir o dashboard.'+aviso+msgContasNovas(inc,BALHIST[mIdx]);
       statusEl.style.color='var(--green2)';
-      document.getElementById('impSaveBtn').style.display='inline-block';
-      document.getElementById('impPubBtn').style.display='inline-block';
+      basePosImport(statusEl);
     }catch(err){
       statusEl.textContent='⚠ Erro ao processar o arquivo: '+err.message;
       statusEl.style.color='var(--red2)';
