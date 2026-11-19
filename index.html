@@ -1187,10 +1187,11 @@ function computeLALUR(uptoIdx){
       // retenções do ano: saldo da conta menos o saldo de anos anteriores que ainda não foi baixado
       // (o saldo de janeiro de 2025 só sai quando é compensado; até lá não entra na apuração do ano)
       var sal=function(c){var v=lalSaldo(i,c[0]);if(v===null)return 0;var sa0=(lalSaldo(0,c[0])||0)-lalMov(0,c[0],'dc');return v-Math.max(0,sa0-lalMov(i,c[0],'c'));};
-      var retIR=LC.retencoesIR.reduce(function(t,c){return t+sal(c);},0),retCS=LC.retencoesCS.reduce(function(t,c){return t+sal(c);},0);
+      var retD={};LC.retencoesIR.concat(LC.retencoesCS).forEach(function(c){retD[c[0]]=sal(c);});
+      var retIR=LC.retencoesIR.reduce(function(t,c){return t+retD[c[0]];},0),retCS=LC.retencoesCS.reduce(function(t,c){return t+retD[c[0]];},0);
       var dI=LC.diferido.ir,dC=LC.diferido.cs,sI=lalSaldo(i,dI.conta),sC=lalSaldo(i,dC.conta);
       var espI=prejTransp*dI.aliq,espC=prejTransp*dC.aliq;
-      ext={auto:auto,patGasto:patGasto,patInc:patInc,patLim:patLim,pat:pat,retIR:retIR,retCS:retCS,
+      ext={auto:auto,retD:retD,patGasto:patGasto,patInc:patInc,patLim:patLim,pat:pat,retIR:retIR,retCS:retCS,
         irRecolher:irApurado-pat-retIR,csRecolher:csApurado-retCS,
         difIRsaldo:sI,difIResp:espI,difIRdif:sI===null?null:espI-sI,difCSsaldo:sC,difCSesp:espC,difCSdif:sC===null?null:espC-sC,
         difIRres:lalMov(i,dI.resultado,'dc'),difCSres:lalMov(i,dC.resultado,'dc'),
@@ -1330,9 +1331,12 @@ function buildLalurTable(){
     h+=lalurRow('Provisão corrente no balancete (acum.)','Contas '+LC.correnteIR+' e '+LC.correnteCS+' (débito − crédito de janeiro até o mês).','rs',corr,24);
     h+=lalurRow('Diferença',null,'rs',calc.map(function(c,k){return c?apur[k]-corr[k]:undefined;}),24);
     h+=lalurRow('( − ) PAT — incentivo deduzido','15% do gasto com PAT ('+LC.pat.contas.join(' e ')+'), limitado a 4% do IRPJ a 15%.','rs',g('pat'),24);
-    h+=lalurRow('( − ) IRPJ/IRRF retidos no ano',LC.retencoesIR.map(function(c){return c[0]+' '+c[1];}).join(' · ')+'. Saldo da conta sem a parte de anos anteriores ainda não compensada.','rs',g('retIR'),24);
+    var gr=function(k){return calc.map(function(c){return c&&c.retD?c.retD[k]:undefined;});};
+    h+=lalurRow('( − ) IRPJ/IRRF retidos no ano','Saldo de cada conta sem a parte de anos anteriores ainda não compensada.','rs',g('retIR'),24);
+    LC.retencoesIR.forEach(function(c){h+=lalurRow(c[0]+' · '+c[1],null,'rs',gr(c[0]),40);});
     h+=lalurRow('IRPJ a recolher (− = saldo negativo)',null,'rt',g('irRecolher'));
-    h+=lalurRow('( − ) CSLL retida no ano',LC.retencoesCS.map(function(c){return c[0]+' '+c[1];}).join(' · ')+'. Saldo da conta sem a parte de anos anteriores ainda não compensada.','rs',g('retCS'),24);
+    h+=lalurRow('( − ) CSLL retida no ano','Saldo de cada conta sem a parte de anos anteriores ainda não compensada.','rs',g('retCS'),24);
+    LC.retencoesCS.forEach(function(c){h+=lalurRow(c[0]+' · '+c[1],null,'rs',gr(c[0]),40);});
     h+=lalurRow('CSLL a recolher (− = saldo negativo)',null,'rt',g('csRecolher'));
     h+=lalurRow('IRPJ/CSLL DIFERIDOS (prejuízo fiscal × alíquota)',null,'rst lal-dif lal-dif-h',calc.map(function(){return undefined;}));
     h+=lalurRow('Prejuízo fiscal / base negativa que sobra','Saldo inicial − compensação do ano (+ prejuízo do ano, se a base ficar negativa).','rs lal-dif',g('prejTransp'),24);
