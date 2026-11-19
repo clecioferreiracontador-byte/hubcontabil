@@ -1,4 +1,4 @@
-/* Acesso ao Hub Contábil (NHD Foods) — login por e-mail e senha no Firebase.
+/* Acesso ao Hub Contábil (NHD Foods, Landix e demais empresas da Audicon) — login por e-mail e senha no Firebase.
    Os dados do painel (base da DRE/balanço/LALUR, agenda e mapa de vendas) ficam no Firestore,
    coleção "dados", e só abrem para quem está na coleção "acessos" (documento = e-mail em minúsculas,
    campos papel: 'admin' | 'cliente' e nome). As regras do Firestore garantem isso no servidor:
@@ -27,10 +27,20 @@ const db = getFirestore(app);
 const LS_DADOS = ['nhdDashBase', 'nhdAgendaDraft', 'nhdMapaDraft', 'nhdLalurParams'];
 let USER = null, ACESSO = null, liberado = false;
 
+/* ---------------- empresa ativa (empresa.js) ----------------
+   NHD Foods continua nas coleções de sempre ("dados", "book"); as outras empresas ficam em
+   empresas/<id>/dados e empresas/<id>/book. O acesso de cada pessoa lista as empresas que ela vê
+   (campo "empresas"; sem o campo = só NHD). Admin vê todas. */
+const EMP = (window.HubEmpresa && HubEmpresa.id) || 'nhd';
+const TODAS_EMP = Object.keys((window.HubEmpresa && HubEmpresa.lista) || { nhd: 1 });
+const col = nome => EMP === 'nhd' ? [nome] : ['empresas', EMP, nome];
+const empresasDe = a => !a ? [] : a.papel === 'admin' ? TODAS_EMP.slice()
+  : (Array.isArray(a.empresas) && a.empresas.length ? a.empresas.filter(e => TODAS_EMP.includes(e)) : ['nhd']);
+
 /* ---------------- dados ---------------- */
 const emailDe = u => String((u && u.email) || '').toLowerCase();
 async function lerDoc(nome){
-  const s = await getDoc(doc(db, 'dados', nome));
+  const s = await getDoc(doc(db, ...col('dados'), nome));
   if (!s.exists()) return null;
   const d = s.data();
   try { return JSON.parse(d.json); } catch (e) { throw new Error('o documento "' + nome + '" está corrompido'); }
@@ -38,18 +48,24 @@ async function lerDoc(nome){
 async function gravarDoc(nome, obj){
   if (!ACESSO || ACESSO.papel !== 'admin') throw new Error('só o administrador publica');
   const savedAt = (obj && obj.savedAt) || new Date().toISOString();
-  await setDoc(doc(db, 'dados', nome), { json: JSON.stringify(obj), savedAt, por: emailDe(USER), em: serverTimestamp() });
+  await setDoc(doc(db, ...col('dados'), nome), { json: JSON.stringify(obj), savedAt, por: emailDe(USER), em: serverTimestamp() });
   return savedAt;
 }
 async function listarAcessos(){
   const q = await getDocs(collection(db, 'acessos'));
   return q.docs.map(d => Object.assign({ email: d.id }, d.data())).sort((a, b) => (a.papel === b.papel ? a.email.localeCompare(b.email) : a.papel === 'admin' ? -1 : 1));
 }
-async function salvarAcesso(email, papel, nome, book){
+async function salvarAcesso(email, papel, nome, book, empresas){
   email = String(email || '').trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('e-mail inválido');
   if (papel !== 'admin' && papel !== 'cliente') throw new Error('papel inválido');
-  await setDoc(doc(db, 'acessos', email), { papel, nome: String(nome || '').trim(), book: !!book, por: emailDe(USER), em: serverTimestamp() });
+  const d = { papel, nome: String(nome || '').trim(), book: !!book, por: emailDe(USER), em: serverTimestamp() };
+  if (Array.isArray(empresas)){
+    empresas = empresas.filter(e => TODAS_EMP.includes(e));
+    if (papel !== 'admin' && !empresas.length) throw new Error('marque pelo menos uma empresa');
+    d.empresas = empresas;
+  }
+  await setDoc(doc(db, 'acessos', email), d, { merge: true });
 }
 
 /* ---------------- Book de conciliação (coleção "book", um documento por mês) ----------------
@@ -72,12 +88,12 @@ async function gravarBook(mes, pac){
   if (!/^\d{4}-\d{2}$/.test(mes)) throw new Error('mês inválido');
   const z = await gz(JSON.stringify(pac));
   if (z.length > 1000000) throw new Error('o Book de ' + mes + ' ficou grande demais para o Firebase (' + Math.round(z.length / 1024) + ' KB compactado; limite de ~1.000 KB)');
-  await setDoc(doc(db, 'book', mes), { gz: z, salvoEm: pac.salvoEm || new Date().toISOString(), por: emailDe(USER), em: serverTimestamp() });
+  await setDoc(doc(db, ...col('book'), mes), { gz: z, salvoEm: pac.salvoEm || new Date().toISOString(), por: emailDe(USER), em: serverTimestamp() });
   return Math.round(z.length / 1024);
 }
 /* todos os meses salvos: {aaaa-mm: pacote} (os documentos do razão, aaaa-mm_razN, ficam de fora) */
 async function lerBooks(){
-  const q = await getDocs(collection(db, 'book')), out = {};
+  const q = await getDocs(collection(db, ...col('book'))), out = {};
   for (const d of q.docs){ if (!/^\d{4}-\d{2}$/.test(d.id)) continue; try { out[d.id] = JSON.parse(await gunzip(d.data().gz)); } catch (e) { console.warn('Book ' + d.id + ' ilegível', e); } }
   return out;
 }
@@ -97,22 +113,22 @@ async function gravarRazaoMes(mes, pac){
   }
   if (blocos.some(b => b.length > 950000)) throw new Error('o razão de ' + mes + ' ficou grande demais para o Firebase');
   let antes = 0;
-  try { const h = await getDoc(doc(db, 'book', mes + '_raz0')); if (h.exists()) antes = JSON.parse(await gunzip(h.data().gz)).partes || 0; } catch (e) {}
-  for (let i = 0; i < blocos.length; i++) await setDoc(doc(db, 'book', mes + '_raz' + (i + 1)), { gz: blocos[i], em: serverTimestamp() });
+  try { const h = await getDoc(doc(db, ...col('book'), mes + '_raz0')); if (h.exists()) antes = JSON.parse(await gunzip(h.data().gz)).partes || 0; } catch (e) {}
+  for (let i = 0; i < blocos.length; i++) await setDoc(doc(db, ...col('book'), mes + '_raz' + (i + 1)), { gz: blocos[i], em: serverTimestamp() });
   const cab = { assin: pac.assin, partes: blocos.length, linhas: L.length, saldoAnt: pac.saldoAnt || {}, desc: pac.desc || {}, salvoEm: new Date().toISOString() };
-  await setDoc(doc(db, 'book', mes + '_raz0'), { gz: await gz(JSON.stringify(cab)), por: emailDe(USER), em: serverTimestamp() });
-  for (let i = blocos.length + 1; i <= antes; i++) await deleteDoc(doc(db, 'book', mes + '_raz' + i));
+  await setDoc(doc(db, ...col('book'), mes + '_raz0'), { gz: await gz(JSON.stringify(cab)), por: emailDe(USER), em: serverTimestamp() });
+  for (let i = blocos.length + 1; i <= antes; i++) await deleteDoc(doc(db, ...col('book'), mes + '_raz' + i));
   return { partes: blocos.length, kb: Math.round(blocos.reduce((a, b) => a + b.length, 0) / 1024) };
 }
 /* lê o razão do mês; se a assinatura for a mesma que o navegador já tem, não baixa de novo */
 async function lerRazaoMes(mes, assinLocal){
-  const h = await getDoc(doc(db, 'book', mes + '_raz0'));
+  const h = await getDoc(doc(db, ...col('book'), mes + '_raz0'));
   if (!h.exists()) return null;
   const cab = JSON.parse(await gunzip(h.data().gz));
   if (assinLocal && cab.assin === assinLocal) return { cab, mesmo: true };
   let linhas = [];
   for (let i = 1; i <= cab.partes; i++){
-    const d = await getDoc(doc(db, 'book', mes + '_raz' + i));
+    const d = await getDoc(doc(db, ...col('book'), mes + '_raz' + i));
     if (!d.exists()) throw new Error('parte ' + i + ' do razão de ' + mes + ' não encontrada');
     linhas = linhas.concat(JSON.parse(await gunzip(d.data().gz)));
   }
@@ -125,12 +141,15 @@ async function removerAcesso(email){
 }
 async function sair(){
   LS_DADOS.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  /* cópias das outras empresas (chaves "emp:<id>:...") */
+  if (window.HubEmpresa) HubEmpresa.apagarTodas(LS_DADOS);
   try { sessionStorage.removeItem('nhdVerCliente'); } catch (e) {}
   await signOut(auth);
   location.reload();
 }
 window.HubAuth = { lerDoc, gravarDoc, listarAcessos, salvarAcesso, removerAcesso, sair, gravarBook, lerBooks, gravarRazaoMes, lerRazaoMes,
   get podeBook(){ return podeBook(); },
+  get empresa(){ return EMP; }, get empresas(){ return empresasDe(ACESSO); }, empresasDe, todasEmpresas: TODAS_EMP,
   get email(){ return emailDe(USER); }, get papel(){ return ACESSO && ACESSO.papel; }, get nome(){ return (ACESSO && ACESSO.nome) || ''; } };
 
 /* ---------------- mensagens de erro ---------------- */
@@ -158,7 +177,8 @@ const PONTOS = [
   ['M2 14h14M4 11V6h3v5M9 11V3h3v8', 'Balanço & Índices', 'Saldos finais, liquidez, endividamento e capital de giro.'],
   ['M4 2h7l3 3v11H4zM7 8h5M7 11h5', 'LALUR', 'Apuração acumulada de IRPJ e CSLL no Lucro Real.'],
   ['M3 4h12v11H3zM3 7h12M7 2v3M11 2v3', 'Agenda de fechamento', 'Tarefas do cliente e da contabilidade, com prazos e andamento.'],
-  ['M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2zM2 9h14M9 2c2 2 3 4.5 3 7s-1 5-3 7c-2-2-3-4.5-3-7s1-5 3-7z', 'Mercado e vendas', 'Comparação com o setor e mapa de vendas por estado e cidade.'],
+  EMP === 'nhd' ? ['M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2zM2 9h14M9 2c2 2 3 4.5 3 7s-1 5-3 7c-2-2-3-4.5-3-7s1-5 3-7z', 'Mercado e vendas', 'Comparação com o setor e mapa de vendas por estado e cidade.']
+    : ['M3 3h12v12H3zM6 7l2 2 4-4M6 12h6', 'Book de conciliação', 'Cada conta do balancete com o suporte e a conferência do mês.'],
   ['M4 2h10v14H4zM7 6h4M7 9h4M7 12h2', 'Relatório consolidado', 'DRE, balanço e indicadores em PDF e Excel para a diretoria.']
 ];
 const ic = d => '<svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="' + d + '" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -275,12 +295,13 @@ const raiz = document.createElement('div');
 raiz.id = 'hubLogin'; raiz.setAttribute('role', 'main');
 function logos(){
   const a = document.querySelector('.tb-logo'), b = document.querySelector('.tb-aud-logo');
-  return (a ? '<img src="' + a.src + '" alt="NHD Foods">' : '') + (a && b ? '<i></i>' : '') + (b ? '<img src="' + b.src + '" alt="Audicon Contadores">' : '');
+  const temA = a && a.style.display !== 'none', nomeEmp = (window.HubEmpresa && HubEmpresa.info.nome) || 'NHD Foods';
+  return (temA ? '<img src="' + a.src + '" alt="' + nomeEmp + '">' : '') + (temA && b ? '<i></i>' : '') + (b ? '<img src="' + b.src + '" alt="Audicon Contadores">' : '');
 }
 function montar(){
   raiz.innerHTML = '<section class="hl-side" aria-label="O que tem no Hub">' +
     '<div class="hl-logos">' + logos() + '</div>' +
-    '<div><div class="hl-kick">Hub Contábil · NHD Foods</div><h1>O fechamento do mês, <b>num lugar só</b>.</h1>' +
+    '<div><div class="hl-kick">Hub Contábil · ' + ((window.HubEmpresa && HubEmpresa.info.nome) || 'NHD Foods') + '</div><h1>O fechamento do mês, <b>num lugar só</b>.</h1>' +
     '<p class="hl-lead">Resultado, balanço, impostos e o andamento do fechamento, atualizados pela Audicon a cada balancete.</p></div>' +
     '<div class="hl-grid">' + PONTOS.map(p => '<div class="hl-pt">' + ic(p[0]) + '<div><b>' + p[1] + '</b><span>' + p[2] + '</span></div></div>').join('') + '</div>' +
     '<div class="hl-foot">Audicon Contadores · acesso restrito a usuários liberados</div></section>' +
@@ -362,6 +383,9 @@ async function verificar(forcar){
     const a = await getDoc(doc(db, 'acessos', emailDe(USER)));
     if (!a.exists()){ tela('semacesso'); if (forcar) msg('Ainda não foi liberado. Fale com a Audicon.', 'info'); return; }
     ACESSO = a.data();
+    const minhas = empresasDe(ACESSO);
+    if (!minhas.length){ tela('semacesso'); return; }
+    if (!minhas.includes(EMP)){ HubEmpresa.trocar(minhas[0]); return; }   // recarrega já na empresa liberada
     if (liberado) return;
     liberado = true;
     mostrarTrans('Carregando o seu painel');

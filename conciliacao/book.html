@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script src="../empresa.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Book de Conciliação Audicon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -284,7 +285,7 @@ table.bk td.mes-res{font-size:.62rem}
 .auto{font-size:.72rem;color:var(--aud-gray-500)}
 </style>
 <script src="vendor/sheetjs/xlsx.full.min.js"></script>
-<script src="hub-db.js?v=3"></script>
+<script src="hub-db.js?v=4"></script>
 <script src="recolher.js?v=1"></script>
 <script src="mes-hub.js?v=3"></script>
 </head>
@@ -292,7 +293,7 @@ table.bk td.mes-res{font-size:.62rem}
 <header class="top"><div class="wrap">
   <div class="eyebrow">Audicon Contadores · Controladoria</div>
   <h1>Book de Conciliação — Ativo, Passivo e PL</h1>
-  <p>NHD Foods · Todas as contas patrimoniais com saldo, suporte, diferença e status, ligadas aos lançamentos do razão</p>
+  <p><span id="nomeEmp">NHD Foods</span> · Todas as contas patrimoniais com saldo, suporte, diferença e status, ligadas aos lançamentos do razão</p>
 </div></header>
 <nav class="tabs" role="navigation" aria-label="Etapas"><div class="wrap">
   <span class="brand">Book de Conciliação</span>
@@ -457,7 +458,8 @@ function isoData(v){
   const m = String(v ?? '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0') : '';
 }
 function fmtConta(c){ const d = String(c ?? '').replace(/\D/g, ''); if (d.length === 8 && /^\d+$/.test(String(c).trim())) return d[0] + '.' + d[1] + '.' + d.slice(2, 4) + '.' + d.slice(4); return String(c ?? '').trim(); }
-const ehAnalitica = c => /^\d\.\d\.\d{2}\.\d{4}$/.test(c);
+// conta analítica: NHD 1.1.01.1001 · Landix 1.1.1.01.00001
+const ehAnalitica = c => /^\d\.\d\.\d{2}\.\d{4}$/.test(c) || /^\d\.\d\.\d\.\d{2}\.\d{5}$/.test(c);
 const ehPatrimonial = c => /^[12]\./.test(c) || c === '1' || c === '2';
 const ehResultado = c => /^[3-9]/.test(c); // 3 resultado, 4 apuração: aparecem no Book só para consulta
 
@@ -467,7 +469,7 @@ async function importarBalancete(f){
   try {
     const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true });
     let res = null;
-    if (wb.SheetNames.some(s => norm(s) === 'BOOK')){
+    if (wb.SheetNames.some(s => norm(s) === 'BOOK' || /^BOOK\b/.test(norm(s)))){
       res = lerBook(wb);
       // os saldos vêm da aba "Balancete" (exportação do sistema), quando o Book tem essa aba:
       // a aba Book tem fórmulas próprias nas linhas de total (ex.: grupo 3); dela vêm as observações
@@ -486,14 +488,19 @@ async function importarBalancete(f){
   } catch(e){ msg('Erro ao importar “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
 }
 function lerBook(wb){
-  const sn = wb.SheetNames.find(s => norm(s) === 'BOOK');
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: null });
+  // aba "BOOK" (NHD) ou "BOOK - <EMPRESA>" (Landix)
+  // (o arquivo pode ter mais de uma aba com "Book" no nome: vale a que tem o cabeçalho das contas)
+  const cab = r => r && /ANALITICA|^CONTA/.test(norm(r[0])) && /DESCRI|TITULO/.test(norm(r[2]));
+  const cands = wb.SheetNames.filter(s => norm(s) === 'BOOK').concat(wb.SheetNames.filter(s => norm(s) !== 'BOOK' && /^BOOK\b/.test(norm(s))));
+  let rows = [];
+  for (const nome of cands){ const rs = XLSX.utils.sheet_to_json(wb.Sheets[nome], { header: 1, raw: true, defval: null }); if (rs.slice(0, 15).some(cab)){ rows = rs; break; } }
   let mes = '';
-  rows.slice(0, 4).forEach(r => r.forEach((c, i) => { if (/DATA BASE/.test(norm(c))){ const d = isoData(r[i + 1]); if (d) mes = d.slice(0, 7); } }));
-  const hi = rows.findIndex(r => r && /ANALITICA/.test(norm(r[0])) && /DESCRI/.test(norm(r[2])));
+  // data-base: a primeira data depois do rótulo "DATA BASE" (NHD) ou "COMPETÊNCIA" (Landix), na mesma linha
+  rows.slice(0, 4).forEach(r => r.forEach((c, i) => { if (!mes && /DATA BASE|COMPETENCIA/.test(norm(c))){ for (let j = i + 1; j < r.length && !mes; j++){ const d = isoData(r[j]); if (d) mes = d.slice(0, 7); } } }));
+  const hi = rows.findIndex(cab);
   if (hi < 0) return null;
-  const H = rows[hi].map(norm); const ci = n => H.findIndex(h => h.indexOf(n) === 0);
-  const cSA = ci('SD ANTERIOR'), cD = ci('DEBITO'), cC = ci('CREDITO'), cSF = ci('SD FINAL'), cSt = ci('STATUS'), cObs = ci('OBSERVA'), cRef = ci('REFERENCIA');
+  const H = rows[hi].map(norm); const ci = (...ns) => H.findIndex(h => ns.some(n => h.indexOf(n) === 0));
+  const cSA = ci('SD ANTERIOR', 'SALDO ANT'), cD = ci('DEBITO'), cC = ci('CREDITO'), cSF = ci('SD FINAL', 'SALDO ATUAL', 'SALDO FINAL'), cSt = ci('STATUS'), cObs = ci('OBSERVA'), cRef = ci('REFERENCIA');
   const contas = {}, book = {}, red = {};
   const empresa = rows[0] && rows[0][0] ? String(rows[0][0]).trim() : '';
   for (let i = hi + 1; i < rows.length; i++){
@@ -512,17 +519,21 @@ function lerBook(wb){
 function lerBalanceteProtheus(wb){
   for (const sn of wb.SheetNames){
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: null });
-    const hi = rows.findIndex(r => r && norm(r[0]) === 'CONTA' && /DESCRI/.test(norm(r[1])));
+    // NHD: Conta | Descrição | ... · Landix: Conta Contábil | Red. | Título da Conta | ...
+    const hi = rows.findIndex(r => r && /^CONTA( CONTABIL)?$/.test(norm(r[0])) && (/DESCRI/.test(norm(r[1])) || /DESCRI|TITULO/.test(norm(r[2]))));
     if (hi < 0) continue;
     const contas = {};
     const H = rows[hi].map(norm), col = (re, d) => { const i = H.findIndex(h => re.test(h)); return i >= 0 ? i : d; };
+    const cDesc = col(/^(DESCRI|TITULO)/, 1);
     const cSA = col(/^SALDO ANT/, 2), cD = col(/^DEBITO/, 3), cC = col(/^CREDITO/, 4), cSF = col(/^SALDO (ATUAL|FINAL)/, 5);
     for (let i = hi + 1; i < rows.length; i++){
       const r = rows[i]; if (!r || r[0] === null) continue;
       const conta = fmtConta(r[0]); if (!/^\d(\.\d+)*$/.test(conta)) continue;
-      contas[conta] = { desc: String(r[1] ?? '').trim(), sa: num(r[cSA]) || 0, d: num(r[cD]) || 0, c: num(r[cC]) || 0, sf: num(r[cSF]) || 0 };
+      contas[conta] = { desc: String(r[cDesc] ?? '').trim(), sa: num(r[cSA]) || 0, d: num(r[cD]) || 0, c: num(r[cC]) || 0, sf: num(r[cSF]) || 0 };
     }
     let mes = ''; const m = sn.match(/(\d{2})[._/-](\d{4})/); if (m) mes = m[2] + '-' + m[1];
+    // "Período: 01/10/2026 a 31/10/2026" no cabeçalho do relatório
+    if (!mes) rows.slice(0, hi).forEach(r => (r || []).forEach(c => { const p = String(c ?? '').match(/(\d{2})\/(\d{2})\/(\d{4})\s*(?:A|À|a|à)\s*\d{2}\/(\d{2})\/(\d{4})/); if (p && !mes) mes = p[5] + '-' + p[4]; }));
     return { mes, contas, book: null };
   }
   return null;
@@ -1161,7 +1172,9 @@ async function carregarPortal(){
 // Mesmo padrão da planilha "Book NHD - mm.aaaa": logo, empresa e data-base no topo, contas
 // sintéticas em azul (um tom por nível) e analíticas em branco, números em formato contábil.
 const LOGO_AUD = 'data:image/png;base64,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';
-const EMPRESA_PADRAO = 'NHD FOODS INDUSTRIA, COM. E EXP. LTDA - 21.541.988/0001-76';
+const EMP_ATUAL = (window.HubEmpresa && HubEmpresa.id) || 'nhd';
+const EMPRESA_PADRAO = EMP_ATUAL === 'nhd' ? 'NHD FOODS INDUSTRIA, COM. E EXP. LTDA - 21.541.988/0001-76' : ((window.HubEmpresa && HubEmpresa.info.nome) || '').toUpperCase();
+document.addEventListener('DOMContentLoaded', () => { const e = document.getElementById('nomeEmp'); if (e && window.HubEmpresa) e.textContent = HubEmpresa.info.nome; });
 function carregarScript(src, global){
   return new Promise((ok, erro) => {
     if (window[global]) return ok();
@@ -1234,7 +1247,7 @@ async function exportarBook(){
   const buf = await wb.xlsx.writeBuffer();
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-  a.download = 'Book NHD - ' + mesAtual.slice(5, 7) + '.' + mesAtual.slice(0, 4) + ' (conciliado).xlsx';
+  a.download = 'Book ' + (EMP_ATUAL === 'nhd' ? 'NHD' : HubEmpresa.info.curto) + ' - ' + mesAtual.slice(5, 7) + '.' + mesAtual.slice(0, 4) + ' (conciliado).xlsx';
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 

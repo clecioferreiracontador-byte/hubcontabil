@@ -5,7 +5,7 @@
    meta: 'razao' -> {agg:{mes:{conta:{d,c,n}}}, saldoAnt:{mes:{conta:valor}}, desc:{conta:descr}, arquivos:[...]}
          'balancete:aaaa-mm' -> {contas:{conta:{desc,sa,d,c,sf}}, book:{conta:{obs,status,dif,ref}}, origem} */
 (function(){
-  const NOME = 'audicon-hub', VER = 1;
+  const NOME = 'audicon-hub' + ((window.HubEmpresa && HubEmpresa.sufixo) || ''), VER = 1;   // um banco por empresa
   let dbp = null;
   function db(){
     if (dbp) return dbp;

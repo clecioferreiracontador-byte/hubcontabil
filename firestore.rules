@@ -17,9 +17,13 @@ service cloud.firestore {
     function admin() {
       return liberado() && acesso().papel == 'admin';
     }
+    // Empresas que a pessoa vê (campo "empresas" do acesso; sem o campo = só NHD). Admin vê todas.
+    function temEmpresa(emp) {
+      return admin() || (liberado() && emp in acesso().get('empresas', ['nhd']));
+    }
     // Book de conciliação: admin, ou quem tem "book: true" no acesso (só leitura)
-    function podeBook() {
-      return admin() || (liberado() && acesso().get('book', false) == true);
+    function podeBook(emp) {
+      return admin() || (temEmpresa(emp) && acesso().get('book', false) == true);
     }
 
     // Lista de quem pode entrar (o documento é o e-mail, em minúsculas)
@@ -28,15 +32,25 @@ service cloud.firestore {
       allow write: if admin();
     }
 
-    // Dados do painel: base (DRE e balanço), agenda e mapa de vendas
+    // NHD Foods — dados do painel: base (DRE e balanço), agenda e mapa de vendas
     match /dados/{doc} {
-      allow read: if liberado();
+      allow read: if temEmpresa('nhd');
       allow write: if admin();
     }
 
-    // Book de conciliação, um documento por mês (aaaa-mm), compactado
+    // NHD Foods — Book de conciliação, um documento por mês (aaaa-mm), compactado
     match /book/{mes} {
-      allow read: if podeBook();
+      allow read: if podeBook('nhd');
+      allow write: if admin();
+    }
+
+    // Demais empresas (ex.: landix): empresas/<id>/dados/<doc> e empresas/<id>/book/<mes>
+    match /empresas/{emp}/dados/{doc} {
+      allow read: if temEmpresa(emp);
+      allow write: if admin();
+    }
+    match /empresas/{emp}/book/{mes} {
+      allow read: if podeBook(emp);
       allow write: if admin();
     }
 
