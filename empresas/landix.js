@@ -171,7 +171,7 @@
         ['2.1.3.02.00003', 'Provisão de contingências']
       ],
       naoTemporarias: [
-        ['4.1.8.20', 'Despesas indedutíveis']
+        ['4.1.8.20.00041', 'Despesas indedutíveis']   // as multas de trânsito (4.1.8.20.00020) não são adicionadas, como na planilha da Landix
       ],
       pat: { contas: ['4.1.1.40.00010', '5.1.1.40.00010'], incentivo: 0.15, limite: 0.04 },
       retencoesIR: [['1.1.2.07.00056', 'IRPJ retido na fonte'], ['1.1.2.07.00009', 'IRRF s/ aplicações']],
