@@ -258,6 +258,8 @@ body:not(.is-admin) .adm-only{display:none!important}
 #lalurTableWrap .dt tbody td:first-child{font-size:13.5px}
 #lalurTableWrap .dt thead th{font-size:13px;padding:7px 6px}
 #lalurTableWrap .lal-in{min-width:0;width:100%;font-size:12.5px;padding:3px 5px}
+#lalurTableWrap .lal-orig{font-size:9.5px;font-weight:500;color:var(--gray,#8a9aac);letter-spacing:.03em;text-transform:uppercase}
+#lalurTableWrap .lal-orig.pl{color:#E3B470}
 /* ===== Análise de Resultado (Landix) ===== */
 .ares{font-size:13px;width:100%}
 .ares td{white-space:nowrap;text-align:right;background:var(--n3)}
@@ -726,6 +728,12 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <div>
         <button class="fs" style="cursor:pointer;border-color:rgba(52,152,219,.5);color:var(--blue)" onclick="publishLalur()">🌐 Publicar para todos</button>
       </div>
+      <div id="lalurPlanBox" style="display:none">
+        <div class="fl" style="margin-bottom:5px">Planilhas do LALUR (meses fechados)</div>
+        <label class="fs" style="cursor:pointer;display:inline-block">📥 Importar planilha (LALUR ou diferido)<input type="file" id="lalurPlanFile" accept=".xls,.xlsx,.xlsm" style="display:none" onchange="importarPlanilhaLalur(this.files[0])"></label>
+        <button class="fs" style="cursor:pointer" onclick="removerPlanilhaLalur()">Tirar planilhas</button>
+        <div id="lalurPlanInfo" style="font-size:11.5px;color:var(--gray);margin-top:5px"></div>
+      </div>
     </div>
     <div id="lalurParamStatus" style="font-size:11.5px;color:var(--gray);margin-top:8px"></div>
   </div>
@@ -765,6 +773,9 @@ var balSelMes=6;
 var lalurAjusteExAnt=0;
 var lalurPrejFiscalIni=0;
 var lalurAdic=[0,0,0,0,0,0,0,0,0,0,0,0],lalurExcl=[0,0,0,0,0,0,0,0,0,0,0,0],lalurAt='';
+// LALUR das planilhas da empresa (meses fechados): {meses:{0..11:{campo:valor}}, arquivos:[...]}; os meses que
+// estão aqui mostram os valores da planilha; os seguintes são calculados pelo balancete
+var lalurPlan=null;
 const gc="rgba(201,168,76,.08)",tc="#6E7E8E";
 // Valores zerados no código público: os números reais chegam do Firebase depois do login.
 var D={
@@ -1151,6 +1162,119 @@ function lalAuto(i){
   LC.naoTemporarias.forEach(function(t){var a=lalMov(i,t[0],'dc');r.adicD['n'+t[0]]=a;r.adic+=a;});
   return r;
 }
+/* ---------- LALUR das planilhas (meses fechados) ----------
+   Lê a planilha "LALUR - <empresa> - aaaa" (apuração) e a "IRPJ E CSLL DIFERIDO" (controle do diferido).
+   Cada linha é achada pelo rótulo da coluna B; as colunas dos meses, pelas datas do cabeçalho
+   (as colunas de trimestre ficam de fora). */
+function lalPlanNorm(v){return String(v==null?'':v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();}
+function lerPlanilhaLalur(wb){
+  var out={meses:{},tipo:''};
+  wb.SheetNames.forEach(function(sn){
+    var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});
+    var hi=rows.findIndex(function(r){return r&&r.some(function(c){return /LUCRO REAL|^APURACAO/.test(lalPlanNorm(c));})&&r.filter(function(c){return typeof c==='number'&&c>40000&&c<60000||c instanceof Date;}).length>=3;});
+    if(hi<0)return;
+    var col={};
+    rows[hi].forEach(function(c,j){var d=c instanceof Date?c:(typeof c==='number'&&c>40000&&c<60000?new Date(Math.round((c-25569)*864e5)):null);
+      if(d&&String(d.getUTCFullYear())===DRE_ANO)col[j]=d.getUTCMonth();});
+    if(Object.keys(col).length<3)return;
+    var difer=rows.slice(0,hi+1).some(function(r){return (r||[]).some(function(c){return /DIFERIDO/.test(lalPlanNorm(c));});});
+    out.tipo=difer?'diferido':'apuracao';
+    var sec='',put=function(campo,r){Object.keys(col).forEach(function(j){var v=r[j];if(typeof v!=='number')return;var m=col[j];(out.meses[m]=out.meses[m]||{})[campo]=Math.round(v*100)/100;});};
+    for(var i=hi+1;i<rows.length;i++){
+      var r=rows[i];if(!r)continue;
+      var lb=lalPlanNorm(r[1]||r[0]);if(!lb)continue;
+      if(/^ADICOES$/.test(lb)&&!sec){sec='ad';if(!difer)put('adicAcum',r);continue;}
+      if(/^EXCLUSOES/.test(lb)&&sec==='ad'){sec='ex';if(!difer)put('exclAcum',r);continue;}
+      if(/^APURACAO - IRPJ/.test(lb)){sec='ir';continue;}
+      if(/^APURACAO - CSLL/.test(lb)){sec='cs';continue;}
+      if(/^CSLL DIFERIDA/.test(lb)){sec='dcs';continue;}
+      if(/^IRPJ DIFERIDO/.test(lb)){sec='dir';continue;}
+      if(difer){
+        if(sec==='dcs'&&/^SALDO FINAL/.test(lb))put('planDifCS',r);
+        if(sec==='dir'&&/^SALDO FINAL/.test(lb))put('planDifIR',r);
+        continue;
+      }
+      var cod=/^(\d\.\d\.\d\.\d{2}\.\d{4,5})\b/.exec(lb);
+      if(/^RESULTADO ACUMULADO/.test(lb))put('lucroAcum',r);
+      else if((sec==='ad'||sec==='ex')&&cod)put((sec==='ad'?'ad:':'ex:')+cod[1],r);
+      else if(sec==='ir'){
+        if(/^BASE CALCULO ANTES/.test(lb))put('baseAntes',r);
+        else if(/^BASE NEGATIVA COMPENSADA/.test(lb))put('prejComp',r);
+        else if(/^BASE DE CALCULO DO IMPOSTO/.test(lb))put('baseIR',r);
+        else if(/^IMPOSTO DE RENDA \(15%\)/.test(lb))put('ir15',r);
+        else if(/^ADICIONAL DO IMPOSTO/.test(lb))put('adicIR',r);
+        else if(/^IMPOSTO DE RENDA APURADO/.test(lb))put('irApurado',r);
+        else if(/^PROGRAMA ALIMENTACAO/.test(lb))put('pat',r);
+        else if(cod)put('ret:'+cod[1],r);
+        else if(/^IMPOSTO DE RENDA A RECOLHER/.test(lb))put('irRecolher',r);
+        else if(/^PREJUIZO FISCAL IRPJ ACUMULADO/.test(lb))put('prejTransp',r);
+      }else if(sec==='cs'){
+        if(/^CONTRIBUICAO SOCIAL APURADA/.test(lb))put('csApurado',r);
+        else if(/^CSLL RETID/.test(lb))put('retCSplan',r);
+        else if(/^CONTRIBUICAO SOCIAL A RECOLHER/.test(lb))put('csRecolher',r);
+      }
+    }
+  });
+  return Object.keys(out.meses).length?out:null;
+}
+// junta a planilha importada com o que já havia (a do diferido só traz o controle do diferido)
+function importarPlanilhaLalur(file){
+  if(!file)return;
+  var st=document.getElementById('lalurParamStatus');
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      var res=lerPlanilhaLalur(XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false}));
+      if(!res)throw new Error('não reconheci o LALUR (esperado o cabeçalho com os meses e as linhas Resultado Acumulado, Adições, Exclusões...)');
+      lalurPlan=lalurPlan||{meses:{},arquivos:[]};
+      Object.keys(res.meses).forEach(function(m){lalurPlan.meses[m]=Object.assign(lalurPlan.meses[m]||{},res.meses[m]);});
+      lalurPlan.arquivos=(lalurPlan.arquivos||[]).filter(function(a){return a.tipo!==res.tipo;}).concat([{nome:file.name,tipo:res.tipo,em:new Date().toISOString()}]);
+      saveLalurParams();buildLalur();
+      var ms=Object.keys(res.meses).map(Number).filter(function(m){var x=res.meses[m];return x.lucroAcum||x.planDifIR||x.planDifCS;}).sort(function(a,b){return a-b;});
+      st.textContent='✅ Planilha '+(res.tipo==='diferido'?'do IRPJ/CSLL diferido':'do LALUR')+' importada ('+(ms.length?M[ms[0]]+'–'+M[ms[ms.length-1]]:'sem meses')+'). Clique em "Publicar para todos" para valer para todos.';
+      st.style.color='var(--green2)';
+    }catch(err){st.textContent='⚠ '+err.message;st.style.color='var(--red2)';}
+    document.getElementById('lalurPlanFile').value='';
+  };
+  rd.readAsArrayBuffer(file);
+}
+function removerPlanilhaLalur(){
+  if(!lalurPlan||!confirm('Tirar os valores das planilhas do LALUR? Todos os meses passam a ser calculados pelo balancete.'))return;
+  lalurPlan=null;saveLalurParams();buildLalur();
+}
+// meses da planilha: os valores dela substituem o cálculo (o que a planilha não traz continua do balancete)
+function lalurAplicarPlan(out){
+  var P=lalurPlan.meses,LC=CFG.LALUR;
+  out.forEach(function(c,i){
+    var p=P[i];if(!c||!p||p.lucroAcum===undefined)return;
+    ['lucroAcum','adicAcum','exclAcum','baseAntes','prejComp','baseIR','ir15','adicIR','irApurado','pat','irRecolher','csApurado','csRecolher','prejTransp'].forEach(function(k){if(p[k]!==undefined)c[k]=p[k];});
+    if(c.auto){
+      var a={adic:c.auto.adic,excl:c.auto.excl,adicD:Object.assign({},c.auto.adicD),exclD:Object.assign({},c.auto.exclD)};
+      LC.temporarias.forEach(function(t){if(p['ad:'+t[0]]!==undefined)a.adicD[t[0]]=p['ad:'+t[0]];if(p['ex:'+t[0]]!==undefined)a.exclD[t[0]]=p['ex:'+t[0]];});
+      LC.naoTemporarias.forEach(function(t){if(p['ad:'+t[0]]!==undefined)a.adicD['n'+t[0]]=p['ad:'+t[0]];});
+      a.adic=Object.keys(a.adicD).reduce(function(s,k){return s+(a.adicD[k]||0);},0);
+      a.excl=Object.keys(a.exclD).reduce(function(s,k){return s+(a.exclD[k]||0);},0);
+      c.auto=a;
+    }
+    if(c.retD){
+      var rd=Object.assign({},c.retD);
+      LC.retencoesIR.forEach(function(t){if(p['ret:'+t[0]]!==undefined)rd[t[0]]=p['ret:'+t[0]];});
+      if(p.retCSplan!==undefined&&LC.retencoesCS.length)rd[LC.retencoesCS[0][0]]=p.retCSplan;
+      c.retD=rd;
+      c.retIR=LC.retencoesIR.reduce(function(s,t){return s+(rd[t[0]]||0);},0);
+      c.retCS=LC.retencoesCS.reduce(function(s,t){return s+(rd[t[0]]||0);},0);
+    }
+    // diferido: o cálculo (prejuízo × alíquota) continua; a planilha aparece ao lado para conferência
+    if(p.planDifIR!==undefined)c.planDifIR=p.planDifIR;
+    if(p.planDifCS!==undefined)c.planDifCS=p.planDifCS;
+    c.difIResp=c.prejTransp*LC.diferido.ir.aliq;c.difCSesp=c.prejTransp*LC.diferido.cs.aliq;
+    if(c.difIRsaldo!==null)c.difIRdif=c.difIResp-c.difIRsaldo;
+    if(c.difCSsaldo!==null)c.difCSdif=c.difCSesp-c.difCSsaldo;
+    c.plan=true;
+  });
+  // IRPJ/CSLL do mês = acumulado do mês − acumulado do mês anterior
+  var pi=0,pc=0;out.forEach(function(c){if(!c)return;c.irMes=c.irApurado-pi;c.csMes=c.csApurado-pc;pi=c.irApurado;pc=c.csApurado;});
+}
 function computeLALUR(uptoIdx){
   var out=[];
   var LC=CFG&&CFG.LALUR;
@@ -1200,6 +1324,7 @@ function computeLALUR(uptoIdx){
     out.push(Object.assign(ext,{adicMes:lalurAdic[i]||0,exclMes:lalurExcl[i]||0,exclManAcum:exclManAcum,lucroAcum:lucroAcum,adicAcum:adicAcum,subvAcum:subvAcum,exclAcum:exclAcum,baseAntes:baseAntes,limite30:limite30,prejComp:prejComp,baseIR:baseIR,ir15:ir15,adicIR:adicIR,irApurado:irApurado,irMes:irMes,csApurado:csApurado,csMes:csMes,prejTransp:prejTransp}));
 
   }
+  if(LC&&lalurPlan&&lalurPlan.meses)lalurAplicarPlan(out);
   for(var j=lastReal+1;j<=uptoIdx;j++)out.push(null);
   return out;
 }
@@ -1211,7 +1336,7 @@ function parseBR(v){
 function fmtBR(v){return v.toFixed(2).replace('.',',');}
 function saveLalurParams(keepAt){
   if(!keepAt)lalurAt=new Date().toISOString();
-  try{localStorage.setItem('nhdLalurParams',JSON.stringify({v:2,prejIni:lalurPrejFiscalIni,adic:lalurAdic,excl:lalurExcl,at:lalurAt}));return true;}catch(e){return false;}
+  try{localStorage.setItem('nhdLalurParams',JSON.stringify({v:2,prejIni:lalurPrejFiscalIni,adic:lalurAdic,excl:lalurExcl,plan:lalurPlan,at:lalurAt}));return true;}catch(e){return false;}
 }
 function lalurSetArrays(st){
   if(st&&Array.isArray(st.adic))for(var i=0;i<12;i++)lalurAdic[i]=+st.adic[i]||0;
@@ -1222,6 +1347,7 @@ function applyLalurState(l){
   if(l.at&&lalurAt&&l.at<=lalurAt)return;
   lalurSetArrays(l);
   if(l.prejIni!==undefined)lalurPrejFiscalIni=l.prejIni;
+  if(l.plan!==undefined)lalurPlan=l.plan;
   lalurAt=l.at||lalurAt;
   saveLalurParams(true);
 }
@@ -1269,6 +1395,7 @@ function loadLalurParams(){
   var st=null;
   try{st=JSON.parse(localStorage.getItem('nhdLalurParams')||'null');}catch(e){}
   if(st&&st.prejIni!==undefined)lalurPrejFiscalIni=st.prejIni;
+  if(st&&st.plan)lalurPlan=st.plan;
   if(st&&Array.isArray(st.excl)){lalurSetArrays(st);lalurAt=st.at||'';}
   else lalurExcl[0]=(st&&st.ajuste!==undefined)?st.ajuste:lalurAjusteExAnt; // migração: o ajuste fixo de exercícios anteriores vira exclusão de janeiro (efeito acumulado idêntico)
 }
@@ -1297,7 +1424,7 @@ function buildLalurTable(){
   }
   var g=function(k){return calc.map(function(c){return c?c[k]:undefined;});};
   var h='<table class="dt"><thead><tr><th>Conta</th>';
-  ci.forEach(function(i){h+='<th>'+M[i]+'</th>';});
+  ci.forEach(function(i){var pl=calc[i]&&calc[i].plan;h+='<th'+(pl?' title="Valores da planilha do LALUR importada"':calc[i]?' title="Calculado pelo balancete"':'')+'>'+M[i]+(calc[i]?'<div class="lal-orig'+(pl?' pl':'')+'">'+(pl?'planilha':'balancete')+'</div>':'')+'</th>';});
   h+='</tr></thead><tbody>';
   h+=lalurRow('Lucro Líquido Acumulado','Resultado acumulado do exercício antes de IRPJ/CSLL, apurado na DRE.','rst',g('lucroAcum'));
   h+=lalurInRow('( + ) Adições do período','Adições do mês (multas, despesas indedutíveis etc.). O cálculo acumula de janeiro até cada mês.','adic',calc);
@@ -1341,9 +1468,11 @@ function buildLalurTable(){
     h+=lalurRow('IRPJ/CSLL DIFERIDOS (prejuízo fiscal × alíquota)',null,'rst lal-dif lal-dif-h',calc.map(function(){return undefined;}));
     h+=lalurRow('Prejuízo fiscal / base negativa que sobra','Saldo inicial − compensação do ano (+ prejuízo do ano, se a base ficar negativa).','rs lal-dif',g('prejTransp'),24);
     h+=lalurRow('IRPJ diferido esperado (25%)',null,'rs lal-dif',g('difIResp'),24);
+    if(lalurPlan)h+=lalurRow('Saldo final na planilha do diferido','Saldo final do IRPJ diferido na planilha "IRPJ E CSLL DIFERIDO" importada.','rs lal-dif',g('planDifIR'),40);
     h+=lalurRow('Saldo no balancete · '+LC.diferido.ir.conta,null,'rs lal-dif',g('difIRsaldo'),24);
     h+=lalurRow('Ajuste a contabilizar (IRPJ)','Positivo: constituir (D '+LC.diferido.ir.conta+' / C '+LC.diferido.ir.resultado+'). Negativo: reverter (D '+LC.diferido.ir.resultado+' / C '+LC.diferido.ir.conta+').','rt lal-dif',g('difIRdif'));
     h+=lalurRow('CSLL diferida esperada (9%)',null,'rs lal-dif',g('difCSesp'),24);
+    if(lalurPlan)h+=lalurRow('Saldo final na planilha do diferido','Saldo final da CSLL diferida na planilha "IRPJ E CSLL DIFERIDO" importada.','rs lal-dif',g('planDifCS'),40);
     h+=lalurRow('Saldo no balancete · '+LC.diferido.cs.conta,null,'rs lal-dif',g('difCSsaldo'),24);
     h+=lalurRow('Ajuste a contabilizar (CSLL)','Positivo: constituir (D '+LC.diferido.cs.conta+' / C '+LC.diferido.cs.resultado+'). Negativo: reverter (D '+LC.diferido.cs.resultado+' / C '+LC.diferido.cs.conta+').','rt lal-dif',g('difCSdif'));
   }else{
@@ -1383,6 +1512,9 @@ function buildLalur(){
   showLalurAviso();
   // O LALUR mostra só a tabela anual: cada coluna já é o acumulado de janeiro até o mês.
   document.getElementById('lalurPrejIniInput').value=fmtBR(lalurPrejFiscalIni);
+  var pb=document.getElementById('lalurPlanBox');
+  if(pb){pb.style.display=CFG&&CFG.LALUR?'':'none';
+    document.getElementById('lalurPlanInfo').textContent=lalurPlan&&lalurPlan.arquivos&&lalurPlan.arquivos.length?'Importadas: '+lalurPlan.arquivos.map(function(a){return a.nome;}).join(' · ')+'. Os meses delas mostram os valores da planilha; os seguintes são calculados pelo balancete.':'Sem planilha: todos os meses são calculados pelo balancete.';}
   document.getElementById('lalurTableWrap').style.display='block';
   document.getElementById('lalurSub').textContent='Livro de Apuração do Lucro Real · Ano completo (Jan–Dez 2026) · valores em R$';
   buildLalurTable();
@@ -1988,7 +2120,7 @@ function saveCurrentBase(){
   }
 }
 function buildBaseState(){
-  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,at:lalurAt},savedAt:new Date().toISOString()};
+  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,plan:lalurPlan,at:lalurAt},savedAt:new Date().toISOString()};
 }
 // Base publicada no Firebase (dados/base). Só o admin grava; as regras do banco garantem isso.
 var BASE_REMOTA_EM=null;
