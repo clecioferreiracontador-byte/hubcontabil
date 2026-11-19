@@ -6,7 +6,7 @@
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=1"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=2"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=3"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -234,6 +234,23 @@ body:not(.is-admin) .adm-only{display:none!important}
   .page:not(.active){display:none!important}
   button,select,.fs,input{display:none!important}
 }
+/* ===== Análise de Resultado (Landix) ===== */
+.ares{font-size:12px}
+.ares td{white-space:nowrap;text-align:right}
+.ares td:first-child,.ares td.ares-t{text-align:left}
+.ares td.ares-t{white-space:nowrap}
+.ares th{text-align:right;white-space:nowrap}.ares th:nth-child(-n+2){text-align:left}
+.ares tr.ares-n1 td{font-weight:700;background:rgba(41,128,185,.28)}
+.ares tr.ares-n2 td{font-weight:700;background:rgba(41,128,185,.18)}
+.ares tr.ares-n3 td{font-weight:600;background:rgba(41,128,185,.10)}
+.ares tr.ares-n4 td{font-weight:600;background:rgba(255,255,255,.03)}
+.ares td.ares-m,.ares td.ares-ma{background:rgba(201,168,76,.07)}
+.ares tr.ares-al td{background:rgba(192,57,43,.14)}
+.ares td.ares-v{color:#E74C3C;font-weight:700}
+.ares-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.ares-k{background:var(--card,#132235);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.ares-k span{font-size:11px;color:var(--gray,#8a9aac)}.ares-k b{font-size:18px}.ares-k i{font-style:normal;font-size:11px;color:var(--gray,#8a9aac)}
+.ares-k.al{border-color:rgba(231,76,60,.5)}.ares-k.al b{color:#E74C3C}
 /* ===== Relatório consolidado ===== */
 body.rel-open{overflow:hidden}
 #relOverlay{display:none;position:fixed;inset:0;z-index:5000;background:#17212F;overflow:auto}
@@ -789,6 +806,7 @@ var BAL_GRUPOS={ac:['1.1'],anc:['1.2'],pc:['2.1'],pnc:['2.2'],pl:['2.3']};
 var RES_CONTAS=/^3/;
 var ROT={};
 function rot(t){return ROT[t]||t;}
+var CONTA_NOMES={};   // conta → título, do último balancete importado (empresa com CFG.guardarMov)
 const cols=m=>m==='all'?Array.from({length:numMeses},(_,i)=>i):[parseInt(m)];
 var FULLVALS=false;try{FULLVALS=localStorage.getItem('nhdFullVals')==='1';}catch(e){}
 const fmt=v=>{v=(typeof v==='number'&&isFinite(v))?v:0;const a=Math.abs(v),n=v<0;if(FULLVALS){const t='R$ '+a.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});return n?'-'+t:t;}let s=a>=1e6?'R$ '+(a/1e6).toFixed(2)+'M':a>=1e3?'R$ '+(a/1e3).toFixed(0)+'K':'R$ '+Math.round(a).toLocaleString('pt-BR');return n?'-'+s:s;};
@@ -1839,6 +1857,7 @@ function doImport(mIdx,codeMap,soMovimento){
     var mv={},cods=Object.keys(codeMap);
     cods.forEach(function(c){var m=codeMap[c];if((!m.d&&!m.c)||cods.some(function(o){return o!==c&&o.indexOf(c)===0;}))return;mv[c]=[Math.round(m.d*100)/100,Math.round(m.c*100)/100];});
     bal._mov=mv;
+    cods.forEach(function(c){var n=codeMap[c].n;if(n&&/^[3-9]/.test(c))CONTA_NOMES[c]=n;});
   }
   BALHIST[mIdx]=bal;
   balSelMes=mIdx;
@@ -1930,7 +1949,7 @@ function saveCurrentBase(){
   }
 }
 function buildBaseState(){
-  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,at:lalurAt},savedAt:new Date().toISOString()};
+  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,at:lalurAt},savedAt:new Date().toISOString()};
 }
 // Base publicada no Firebase (dados/base). Só o admin grava; as regras do banco garantem isso.
 var BASE_REMOTA_EM=null;
@@ -2006,6 +2025,7 @@ function applyBaseState(state){
     });
     balSelMes=(state.balSelMes!==undefined)?state.balSelMes:numMeses-1;
   }
+  if(state.nomes)CONTA_NOMES=state.nomes;
 }
 async function loadRemoteBase(){
   try{
@@ -2037,6 +2057,7 @@ function loadSavedBase(){
         BALHIST[k]=Object.assign({},BALHIST[k]||{},state.BALHIST[k]);
       });
       balSelMes=(state.balSelMes!==undefined)?state.balSelMes:numMeses-1;
+      if(state.nomes)CONTA_NOMES=state.nomes;
     }else if(state.BAL){
       var legacyMes=(state.BALMES!==undefined)?state.BALMES:numMeses-1;
       BALHIST[legacyMes]=state.BAL;
@@ -2966,6 +2987,7 @@ function setPage(n,el){
   document.getElementById('page-'+n).classList.add('active');
   if(n==='bal')buildBal();
   if(n==='lalur')buildLalur();
+  if(n==='ares')buildARes();
   if(n==='mercado'&&window.Mercado)Mercado.render();
   if(n==='mapa'&&window.Mapa)Mapa.render();
   if(n==='agenda'&&window.Agenda)Agenda.render();
@@ -2980,6 +3002,104 @@ function toggleSkpi(){
   list.style.display=collapsing?'none':'';
   chev.style.transform=collapsing?'rotate(-90deg)':'rotate(0deg)';
   try{localStorage.setItem('nhdSkpiCollapsed',collapsing?'1':'0');}catch(e){}
+}
+/* ---------- Análise de Resultado (empresa com CFG.analiseResultado) ----------
+   Mesmo modelo da aba "Análise Resultado" do Book: cada conta de resultado com o saldo acumulado até o mês
+   anterior, débitos e créditos do mês, saldo atual, o movimento do mês anterior e do mês, a média mensal
+   dos meses anteriores e as variações (mês × média e mês × mês anterior). Valores em débito − crédito
+   (receita negativa), como no balancete. Vem do movimento por conta guardado em cada mês importado (_mov). */
+var ARES={mes:null,nivel:'all',soMov:true};
+function aresMeses(){return Object.keys(BALHIST).map(Number).filter(function(i){return BALHIST[i]&&BALHIST[i]._mov;}).sort(function(a,b){return a-b;});}
+function aresPais(c){var p=c.split('.'),o=[];for(var i=1;i<p.length;i++)o.push(p.slice(0,i).join('.'));return o;}
+function aresDados(cur){
+  var meses=aresMeses().filter(function(i){return i<=cur;}),R={};
+  var add=function(c,k,v){var r=R[c]=R[c]||{sa:0,d:0,c:0,ant:0,mov:0};r[k]+=v;};
+  meses.forEach(function(m){
+    var mv=BALHIST[m]._mov;
+    Object.keys(mv).forEach(function(c){
+      if(!/^[3-8]/.test(c))return;
+      var x=mv[c],v=x[0]-x[1];
+      [c].concat(aresPais(c)).forEach(function(k){
+        if(m<cur)add(k,'sa',v);
+        if(m===cur){add(k,'d',x[0]);add(k,'c',x[1]);add(k,'mov',v);}
+        if(m===cur-1)add(k,'ant',v);
+      });
+    });
+  });
+  var nAnt=meses.filter(function(i){return i<cur;}).length;
+  Object.keys(R).forEach(function(c){var r=R[c];r.sf=r.sa+r.mov;r.media=nAnt?r.sa/nAnt:0;});
+  return {R:R,nAnt:nAnt,temAnt:meses.indexOf(cur-1)>=0};
+}
+function aresOrdem(a,b){var x=a.split('.'),y=b.split('.');for(var i=0;i<Math.max(x.length,y.length);i++){if(x[i]===undefined)return -1;if(y[i]===undefined)return 1;if(x[i]!==y[i])return x[i]<y[i]?-1:1;}return 0;}
+function aresN(v){return Math.abs(v)<0.005?'–':v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function aresP(v){return v===null||!isFinite(v)?'–':(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';}
+// variação em módulo: receita (crédito) e despesa (débito) crescem para "mais"
+function aresVar(a,b){return Math.abs(b)<0.005?null:Math.abs(a)/Math.abs(b)-1;}
+function aresLinhas(){
+  var ms=aresMeses();if(!ms.length)return null;
+  var cur=ARES.mes!==null&&ms.indexOf(ARES.mes)>=0?ARES.mes:ms[ms.length-1];ARES.mes=cur;
+  var d=aresDados(cur),R=d.R,rl=R['3.1']?Math.abs(R['3.1'].mov):0,lim=Math.max(5000,rl*0.01);
+  var cods=Object.keys(R).sort(aresOrdem).filter(function(c){
+    var r=R[c],nv=c.split('.').length;
+    if(ARES.nivel!=='all'&&nv>+ARES.nivel)return false;
+    return !ARES.soMov||[r.sa,r.mov,r.ant].some(function(v){return Math.abs(v)>=0.005;});
+  });
+  return {cur:cur,d:d,cods:cods,rl:rl,lim:lim};
+}
+function buildARes(){
+  var box=document.getElementById('aresBox');if(!box)return;
+  var ms=aresMeses(),sel=document.getElementById('aresMes');
+  if(!ms.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano (Balanço &amp; Índices › importar) para montar a análise. Meses importados antes desta tela precisam ser reimportados.</p>';return;}
+  var L=aresLinhas(),cur=L.cur,R=L.d.R;
+  sel.innerHTML=ms.map(function(i){return '<option value="'+i+'"'+(i===cur?' selected':'')+'>'+MF[i]+'/'+DRE_ANO+'</option>';}).join('');
+  document.getElementById('aresSub').textContent='Data-base '+MF[cur]+'/'+DRE_ANO+' · média mensal de '+L.d.nAnt+' mês(es) anterior(es) · valores em débito − crédito (receitas negativas), como no balancete'+(L.d.temAnt?'':' · sem o mês anterior importado');
+  var mA=cur>0?M[cur-1]:'—',h='<table class="dt ares"><thead><tr><th>Conta contábil</th><th>Título da conta</th><th>Saldo ant.</th><th>Débitos</th><th>Créditos</th><th>Saldo atual</th>'+
+    '<th>Mov. '+mA+'</th><th>Mov. '+M[cur]+'</th><th>Média mensal</th><th>Mês × média</th><th>Var. mês × média</th><th>Var. '+mA+' × '+M[cur]+'</th><th>AV '+M[cur]+'</th></tr></thead><tbody>';
+  var nAlerta=0;
+  L.cods.forEach(function(c){
+    var r=R[c],nv=c.split('.').length,anal=nv>=5,vm=aresVar(r.mov,r.media),va=aresVar(r.mov,r.ant);
+    var dif=Math.abs(r.mov)-Math.abs(r.ant),alerta=anal&&Math.abs(dif)>=L.lim&&(va===null||Math.abs(va)>=0.2);
+    if(alerta)nAlerta++;
+    var cls='ares-n'+Math.min(nv,5)+(alerta?' ares-al':'');
+    h+='<tr class="'+cls+'"'+(alerta?' title="Variação relevante contra o mês anterior: confira se há lançamento fora do mês, em duplicidade ou na conta errada"':'')+'><td>'+c+'</td><td class="ares-t">'+relEsc(CONTA_NOMES[c]||'')+'</td>'+
+      '<td>'+aresN(r.sa)+'</td><td>'+aresN(r.d)+'</td><td>'+aresN(r.c)+'</td><td>'+aresN(r.sf)+'</td><td class="ares-ma">'+aresN(r.ant)+'</td><td class="ares-m">'+aresN(r.mov)+'</td>'+
+      '<td>'+aresN(r.media)+'</td><td>'+aresN(Math.abs(r.mov)-Math.abs(r.media))+'</td><td>'+aresP(vm)+'</td><td'+(alerta?' class="ares-v"':'')+'>'+aresP(va)+'</td><td>'+(L.rl?aresP(Math.abs(r.mov)/L.rl).replace('+',''):'–')+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  var res=R['3']||{mov:0},resT=['3','4','5','6','7','8'].reduce(function(t,g){return t+(R[g]?R[g].mov:0);},0),resA=['3','4','5','6','7','8'].reduce(function(t,g){return t+(R[g]?R[g].ant:0);},0);
+  document.getElementById('aresKpi').innerHTML=
+    '<div class="ares-k"><span>Resultado do mês</span><b>'+aresN(-resT)+'</b><i>'+(resT<=0?'lucro':'prejuízo')+' · '+M[cur]+'</i></div>'+
+    '<div class="ares-k"><span>Resultado do mês anterior</span><b>'+aresN(-resA)+'</b><i>'+mA+'</i></div>'+
+    '<div class="ares-k"><span>Receita líquida do mês</span><b>'+aresN(L.rl)+'</b><i>'+aresP(aresVar(R['3.1']?R['3.1'].mov:0,R['3.1']?R['3.1'].ant:0))+' sobre '+mA+'</i></div>'+
+    '<div class="ares-k'+(nAlerta?' al':'')+'"><span>Contas com variação relevante</span><b>'+nAlerta+'</b><i>acima de '+aresN(L.lim)+' e 20% sobre '+mA+'</i></div>';
+  box.innerHTML='<div class="tw">'+h+'</div>';
+}
+function aresFiltro(){
+  ARES.mes=+document.getElementById('aresMes').value;ARES.nivel=document.getElementById('aresNivel').value;ARES.soMov=document.getElementById('aresSoMov').checked;buildARes();
+}
+function aresExcel(){
+  var L=aresLinhas();if(!L||!window.XLSX)return;var cur=L.cur,R=L.d.R,mA=cur>0?M[cur-1]:'';
+  var rows=[[EMP_NOME+' — Análise de Resultado — '+MF[cur]+'/'+DRE_ANO],[],['Conta contábil','Título da conta','Saldo ant.','Débitos','Créditos','Saldo atual','Mov. '+mA,'Mov. '+M[cur],'Média mensal','Mês × média','Var. mês × média','Var. '+mA+' × '+M[cur],'AV '+M[cur]]];
+  L.cods.forEach(function(c){var r=R[c],vm=aresVar(r.mov,r.media),va=aresVar(r.mov,r.ant);
+    rows.push([c,CONTA_NOMES[c]||'',r.sa,r.d,r.c,r.sf,r.ant,r.mov,r.media,Math.abs(r.mov)-Math.abs(r.media),vm===null?'':vm,va===null?'':va,L.rl?Math.abs(r.mov)/L.rl:'']);});
+  var ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
+  ws['!cols']=[{wch:16},{wch:44}].concat(Array(11).fill({wch:15}));
+  XLSX.utils.book_append_sheet(wb,ws,'Análise Resultado');
+  XLSX.writeFile(wb,EMP_NOME+' - Análise de Resultado - '+String(cur+1).padStart(2,'0')+'.'+DRE_ANO+'.xlsx');
+}
+function montarPaginaARes(){
+  var dre=document.querySelector('.nav-item[onclick*="setPage(\'dre\'"]');if(!dre||document.getElementById('page-ares'))return;
+  var nav=document.createElement('div');nav.className='nav-item';nav.setAttribute('onclick',"setPage('ares',this)");
+  nav.innerHTML='<svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M2 13l4-4 3 3 5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 6h4v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Análise de Resultado';
+  dre.parentNode.insertBefore(nav,dre.nextSibling);
+  var sec=document.createElement('section');sec.id='page-ares';sec.className='page';
+  sec.innerHTML='<div class="fbar"><span class="fl">Mês:</span><select class="fs" id="aresMes" onchange="aresFiltro()"></select>'+
+    '<span class="fl">Nível:</span><select class="fs" id="aresNivel" onchange="aresFiltro()"><option value="all">Todas as contas</option><option value="4">Até o 4º nível (grupos)</option><option value="3">Até o 3º nível</option></select>'+
+    '<label class="fl" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="aresSoMov" checked onchange="aresFiltro()">Só contas com valor</label>'+
+    '<button class="fs" onclick="aresExcel()">📊 Exportar Excel</button></div>'+
+    '<div style="margin:18px 0 12px"><div class="ptitle">Análise de Resultado</div><div class="psub" id="aresSub"></div></div>'+
+    '<div class="ares-kpis" id="aresKpi"></div><div id="aresBox"></div>';
+  var ref=document.getElementById('page-dre');ref.parentNode.insertBefore(sec,ref.nextSibling);
 }
 function aplicarCfgEmpresa(){
   var info=window.HubEmpresa?HubEmpresa.info:null;
@@ -2997,6 +3117,7 @@ function aplicarCfgEmpresa(){
   if(lg&&CFG.logo){lg.src=CFG.logo;lg.alt=CFG.titulo;if(CFG.logoAltura)lg.style.height=CFG.logoAltura+'px';}
   else if(lg&&CFG.semLogo)lg.style.display='none';
   document.querySelectorAll('[data-rot]').forEach(function(el){el.textContent=rot(el.getAttribute('data-rot'));});
+  if(CFG.analiseResultado)montarPaginaARes();
   // páginas que a empresa não usa (ex.: mercado e mapa de vendas)
   (CFG.ocultarPaginas||[]).forEach(function(pg){
     document.querySelectorAll('.nav-item[onclick*="setPage(\''+pg+'\'"]').forEach(function(el){el.style.display='none';});
