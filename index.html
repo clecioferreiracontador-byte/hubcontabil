@@ -251,7 +251,13 @@ body:not(.is-admin) .adm-only{display:none!important}
 .dt tr.lal-dif-h td{background:#2A2620!important;color:#E3B470;font-weight:700;letter-spacing:.02em}
 .dt tr.lal-dif.rt td{background:#252520!important;font-weight:700;color:#EBC386}
 /* coluna das contas do LALUR mais estreita: o rótulo longo quebra em duas linhas */
-#lalurTableWrap .dt tbody td:first-child,#lalurTableWrap .dt thead th:first-child{min-width:300px;width:390px;max-width:390px;white-space:normal;line-height:1.25}
+#lalurTableWrap .dt tbody td:first-child,#lalurTableWrap .dt thead th:first-child{min-width:210px;width:240px;max-width:240px;white-space:normal;line-height:1.2}
+/* LALUR compacto: Jan a Dez na mesma tela (valores em R$, sem o símbolo) */
+#lalurTableWrap .dt{width:100%}
+#lalurTableWrap .dt tbody td{font-size:13px;padding:5px 6px;min-width:0}
+#lalurTableWrap .dt tbody td:first-child{font-size:13.5px}
+#lalurTableWrap .dt thead th{font-size:13px;padding:7px 6px}
+#lalurTableWrap .lal-in{min-width:0;width:100%;font-size:12.5px;padding:3px 5px}
 /* ===== Análise de Resultado (Landix) ===== */
 .ares{font-size:13px;width:100%}
 .ares td{white-space:nowrap;text-align:right;background:var(--n3)}
@@ -1270,7 +1276,7 @@ function lalurRow(lbl,tip,cls,vals,pad){
   h+='</td>';
   vals.forEach(function(v){
     if(v===undefined||v===null){h+='<td class="dre-blank">—</td>';return;}
-    h+='<td'+(v<0?' class="vn"':'')+'>'+fmt(v)+'</td>';
+    h+='<td'+(v<0?' class="vn"':'')+'>'+fmt(v).replace('R$ ','')+'</td>';   // sem "R$" para caber Jan–Dez
   });
   h+='</tr>';
   return h;
@@ -1372,7 +1378,7 @@ function buildLalur(){
   // O LALUR mostra só a tabela anual: cada coluna já é o acumulado de janeiro até o mês.
   document.getElementById('lalurPrejIniInput').value=fmtBR(lalurPrejFiscalIni);
   document.getElementById('lalurTableWrap').style.display='block';
-  document.getElementById('lalurSub').textContent='Livro de Apuração do Lucro Real · Ano completo (Jan–Dez 2026)';
+  document.getElementById('lalurSub').textContent='Livro de Apuração do Lucro Real · Ano completo (Jan–Dez 2026) · valores em R$';
   buildLalurTable();
 }
 function mkIdxCard(cls,lbl,val,ref,sub,pct,tip,big){
