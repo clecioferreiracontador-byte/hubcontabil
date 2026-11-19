@@ -2993,7 +2993,9 @@ function aplicarCfgEmpresa(){
   var t=document.getElementById('tbTitle');if(t)t.innerHTML=relEsc(CFG.titulo)+' &middot; Hub Contábil';
   var sb=document.getElementById('tbSub');if(sb)sb.textContent=CFG.sub||'';
   var ft=document.getElementById('ftEmp');if(ft)ft.textContent=CFG.rodape||CFG.titulo;
-  if(CFG.semLogo){var lg=document.querySelector('.tb-logo');if(lg)lg.style.display='none';}
+  var lg=document.querySelector('.tb-logo');
+  if(lg&&CFG.logo){lg.src=CFG.logo;lg.alt=CFG.titulo;if(CFG.logoAltura)lg.style.height=CFG.logoAltura+'px';}
+  else if(lg&&CFG.semLogo)lg.style.display='none';
   document.querySelectorAll('[data-rot]').forEach(function(el){el.textContent=rot(el.getAttribute('data-rot'));});
   // páginas que a empresa não usa (ex.: mercado e mapa de vendas)
   (CFG.ocultarPaginas||[]).forEach(function(pg){
@@ -3083,9 +3085,9 @@ window.HubAuthPronto.then(async function(){
 <script src="mapa/brasil-uf.js?v=1"></script>
 <script src="mapa/mapa.js?v=1"></script>
 <script>
-/* o logo da Audicon no topo é vetor (nítido em qualquer tela); para o Excel, que não aceita SVG, gera um PNG em alta */
-(function(){
-  var im=document.querySelector('.tb-aud-logo');if(!im||!/^data:image\/svg/.test(im.src))return;
+/* os logos do topo em vetor (Audicon e, na Landix, o do cliente) são nítidos em qualquer tela (nítido em qualquer tela); para o Excel, que não aceita SVG, gera um PNG em alta */
+['.tb-aud-logo','.tb-logo'].forEach(function(q){
+  var im=document.querySelector(q);if(!im||!/^data:image\/svg/.test(im.src))return;
   function gerar(){
     try{
       var w=im.naturalWidth||150,h=im.naturalHeight||54,k=Math.max(1,Math.ceil(1200/w));
@@ -3094,7 +3096,7 @@ window.HubAuthPronto.then(async function(){
     }catch(e){}
   }
   if(im.complete&&im.naturalWidth)gerar();else im.addEventListener('load',gerar,{once:true});
-})();
+});
 </script>
 </body>
 </html>
