@@ -167,11 +167,11 @@
         ['2.1.3.02.00002', 'Provisão de despesas incorridas'],
         ['1.1.2.01.99999', 'Receitas a faturar (CPC 47)'],
         ['2.1.3.03.00001', 'Receitas diferidas (CPC 47)'],
-        ['2.1.3.03.0005', '(−) PIS/COFINS/INSS/ISS diferidos'],
-        ['2.1.3.02.00003', 'Provisões (contingências)']
+        ['2.1.3.03.0005', 'Tributos diferidos (PIS/COFINS/INSS/ISS)'],
+        ['2.1.3.02.00003', 'Provisão de contingências']
       ],
       naoTemporarias: [
-        ['4.1.8.20', 'Outras despesas indedutíveis (multas, brindes, despesas indedutíveis)']
+        ['4.1.8.20', 'Despesas indedutíveis']
       ],
       pat: { contas: ['4.1.1.40.00010', '5.1.1.40.00010'], incentivo: 0.15, limite: 0.04 },
       retencoesIR: [['1.1.2.07.00056', 'IRPJ retido na fonte'], ['1.1.2.07.00009', 'IRRF s/ aplicações']],
