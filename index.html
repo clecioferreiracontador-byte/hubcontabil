@@ -245,12 +245,14 @@ body:not(.is-admin) .adm-only{display:none!important}
   button,select,.fs,input{display:none!important}
 }
 /* ===== Análise de Resultado (Landix) ===== */
-.ares{font-size:12px}
+.ares{font-size:13px;width:100%}
 .ares td{white-space:nowrap;text-align:right;background:var(--n3)}
-.ares th{text-align:right;white-space:nowrap}
+.dt.ares tbody td{font-size:13.5px;padding:5px 7px;min-width:0}
+.dt.ares thead th{font-size:12.5px;padding:7px 7px;white-space:normal;line-height:1.15;vertical-align:bottom}
+.ares th{text-align:right}
 /* conta e título ficam fixos ao rolar para o lado (fundo sólido para o resto não aparecer por baixo) */
-.ares th:first-child,.ares td:first-child{text-align:left;min-width:132px;width:132px;max-width:132px;left:0}
-.ares th:nth-child(2),.ares td.ares-t{text-align:left;position:sticky;left:132px;z-index:1;white-space:nowrap;box-shadow:6px 0 8px -6px rgba(0,0,0,.6)}
+.dt.ares th:first-child,.dt.ares td:first-child{text-align:left;min-width:118px;width:118px;max-width:118px;left:0;font-size:13px}
+.dt.ares th:nth-child(2),.dt.ares td.ares-t{text-align:left;position:sticky;left:118px;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:200px;max-width:250px;box-shadow:6px 0 8px -6px rgba(0,0,0,.6)}
 .ares thead th:nth-child(2){z-index:3;background:var(--n2)}
 .ares tr.ares-n1 td{font-weight:700;background:#163B5A}
 .ares tr.ares-n2 td{font-weight:700;background:#14314D}
@@ -3034,7 +3036,7 @@ function aresDados(cur){
   meses.forEach(function(m){
     var mv=BALHIST[m]._mov;
     Object.keys(mv).forEach(function(c){
-      if(!/^[3-8]/.test(c))return;
+      if(!/^[3-9]/.test(c))return;   // 3 a 8 resultado, 9 apuração do resultado
       var x=mv[c],v=x[0]-x[1];
       [c].concat(aresPais(c)).forEach(function(k){
         if(m<cur)add(k,'sa',v);
@@ -3048,7 +3050,8 @@ function aresDados(cur){
   return {R:R,nAnt:nAnt,temAnt:meses.indexOf(cur-1)>=0};
 }
 function aresOrdem(a,b){var x=a.split('.'),y=b.split('.');for(var i=0;i<Math.max(x.length,y.length);i++){if(x[i]===undefined)return -1;if(y[i]===undefined)return 1;if(x[i]!==y[i])return x[i]<y[i]?-1:1;}return 0;}
-function aresN(v){return Math.abs(v)<0.005?'–':v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function aresN(v,dec){dec=dec===undefined?2:dec;return Math.abs(v)<(dec?0.005:0.5)?'–':v.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+function aresI(v){return aresN(v,0);}
 function aresP(v){return v===null||!isFinite(v)?'–':(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';}
 // variação em módulo: receita (crédito) e despesa (débito) crescem para "mais"
 function aresVar(a,b){return Math.abs(b)<0.005?null:Math.abs(a)/Math.abs(b)-1;}
@@ -3069,18 +3072,18 @@ function buildARes(){
   if(!ms.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano (Balanço &amp; Índices › importar) para montar a análise. Meses importados antes desta tela precisam ser reimportados.</p>';return;}
   var L=aresLinhas(),cur=L.cur,R=L.d.R;
   sel.innerHTML=ms.map(function(i){return '<option value="'+i+'"'+(i===cur?' selected':'')+'>'+MF[i]+'/'+DRE_ANO+'</option>';}).join('');
-  document.getElementById('aresSub').textContent='Data-base '+MF[cur]+'/'+DRE_ANO+' · média mensal de '+L.d.nAnt+' mês(es) anterior(es) · valores em débito − crédito (receitas negativas), como no balancete'+(L.d.temAnt?'':' · sem o mês anterior importado');
+  document.getElementById('aresSub').textContent='Data-base '+MF[cur]+'/'+DRE_ANO+' · média mensal de '+L.d.nAnt+' mês(es) anterior(es) · valores em R$, sem centavos (o Excel sai com centavos), em débito − crédito (receitas negativas), como no balancete'+(L.d.temAnt?'':' · sem o mês anterior importado');
   var mA=cur>0?M[cur-1]:'—',h='<table class="dt ares"><thead><tr><th>Conta contábil</th><th>Título da conta</th><th>Saldo ant.</th><th>Débitos</th><th>Créditos</th><th>Saldo atual</th>'+
-    '<th class="ares-mh">Mov. '+mA+'</th><th class="ares-mh">Mov. '+M[cur]+'</th><th>Média mensal</th><th>Mês × média</th><th>Var. mês × média</th><th>Var. '+mA+' × '+M[cur]+'</th><th>AV '+M[cur]+'</th></tr></thead><tbody>';
+    '<th class="ares-mh">Mov. '+mA+'</th><th class="ares-mh">Mov. '+M[cur]+'</th><th>Média mensal</th><th>Mês × média</th><th>Var. mês × média</th><th>Var. '+mA+' × '+M[cur]+'</th></tr></thead><tbody>';
   var nAlerta=0;
   L.cods.forEach(function(c){
     var r=R[c],nv=c.split('.').length,anal=nv>=5,vm=aresVar(r.mov,r.media),va=aresVar(r.mov,r.ant);
-    var dif=Math.abs(r.mov)-Math.abs(r.ant),alerta=anal&&Math.abs(dif)>=L.lim&&(va===null||Math.abs(va)>=0.2);
+    var dif=Math.abs(r.mov)-Math.abs(r.ant),alerta=anal&&c.charAt(0)!=='9'&&Math.abs(dif)>=L.lim&&(va===null||Math.abs(va)>=0.2);
     if(alerta)nAlerta++;
     var cls='ares-n'+Math.min(nv,5)+(alerta?' ares-al':'');
-    h+='<tr class="'+cls+'"'+(alerta?' title="Variação relevante contra o mês anterior: confira se há lançamento fora do mês, em duplicidade ou na conta errada"':'')+'><td>'+c+'</td><td class="ares-t">'+relEsc(CONTA_NOMES[c]||'')+'</td>'+
-      '<td>'+aresN(r.sa)+'</td><td>'+aresN(r.d)+'</td><td>'+aresN(r.c)+'</td><td>'+aresN(r.sf)+'</td><td class="ares-ma">'+aresN(r.ant)+'</td><td class="ares-m">'+aresN(r.mov)+'</td>'+
-      '<td>'+aresN(r.media)+'</td><td>'+aresN(Math.abs(r.mov)-Math.abs(r.media))+'</td><td>'+aresP(vm)+'</td><td'+(alerta?' class="ares-v"':'')+'>'+aresP(va)+'</td><td>'+(L.rl?aresP(Math.abs(r.mov)/L.rl).replace('+',''):'–')+'</td></tr>';
+    h+='<tr class="'+cls+'"'+(alerta?' title="Variação relevante contra o mês anterior: confira se há lançamento fora do mês, em duplicidade ou na conta errada"':'')+'><td>'+c+'</td><td class="ares-t" title="'+relEsc(CONTA_NOMES[c]||'')+'">'+relEsc(CONTA_NOMES[c]||'')+'</td>'+
+      '<td>'+aresI(r.sa)+'</td><td>'+aresI(r.d)+'</td><td>'+aresI(r.c)+'</td><td>'+aresI(r.sf)+'</td><td class="ares-ma">'+aresI(r.ant)+'</td><td class="ares-m">'+aresI(r.mov)+'</td>'+
+      '<td>'+aresI(r.media)+'</td><td>'+aresI(Math.abs(r.mov)-Math.abs(r.media))+'</td><td>'+aresP(vm)+'</td><td'+(alerta?' class="ares-v"':'')+'>'+aresP(va)+'</td></tr>';
   });
   h+='</tbody></table>';
   var res=R['3']||{mov:0},resT=['3','4','5','6','7','8'].reduce(function(t,g){return t+(R[g]?R[g].mov:0);},0),resA=['3','4','5','6','7','8'].reduce(function(t,g){return t+(R[g]?R[g].ant:0);},0);
@@ -3102,11 +3105,11 @@ function aresFiltro(){
 }
 function aresExcel(){
   var L=aresLinhas();if(!L||!window.XLSX)return;var cur=L.cur,R=L.d.R,mA=cur>0?M[cur-1]:'';
-  var rows=[[EMP_NOME+' — Análise de Resultado — '+MF[cur]+'/'+DRE_ANO],[],['Conta contábil','Título da conta','Saldo ant.','Débitos','Créditos','Saldo atual','Mov. '+mA,'Mov. '+M[cur],'Média mensal','Mês × média','Var. mês × média','Var. '+mA+' × '+M[cur],'AV '+M[cur]]];
+  var rows=[[EMP_NOME+' — Análise de Resultado — '+MF[cur]+'/'+DRE_ANO],[],['Conta contábil','Título da conta','Saldo ant.','Débitos','Créditos','Saldo atual','Mov. '+mA,'Mov. '+M[cur],'Média mensal','Mês × média','Var. mês × média','Var. '+mA+' × '+M[cur]]];
   L.cods.forEach(function(c){var r=R[c],vm=aresVar(r.mov,r.media),va=aresVar(r.mov,r.ant);
-    rows.push([c,CONTA_NOMES[c]||'',r.sa,r.d,r.c,r.sf,r.ant,r.mov,r.media,Math.abs(r.mov)-Math.abs(r.media),vm===null?'':vm,va===null?'':va,L.rl?Math.abs(r.mov)/L.rl:'']);});
+    rows.push([c,CONTA_NOMES[c]||'',r.sa,r.d,r.c,r.sf,r.ant,r.mov,r.media,Math.abs(r.mov)-Math.abs(r.media),vm===null?'':vm,va===null?'':va]);});
   var ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();
-  ws['!cols']=[{wch:16},{wch:44}].concat(Array(11).fill({wch:15}));
+  ws['!cols']=[{wch:16},{wch:44}].concat(Array(10).fill({wch:15}));
   XLSX.utils.book_append_sheet(wb,ws,'Análise Resultado');
   XLSX.writeFile(wb,EMP_NOME+' - Análise de Resultado - '+String(cur+1).padStart(2,'0')+'.'+DRE_ANO+'.xlsx');
 }
