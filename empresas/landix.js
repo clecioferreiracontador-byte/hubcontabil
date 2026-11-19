@@ -100,6 +100,12 @@
     paineis: ['book'],
     // tela "Análise de Resultado" (mês × mês anterior × média), como a aba do Book da Landix
     analiseResultado: true,
+    // cartões da Análise de Resultado: receita do mês por natureza, já com o ajuste do CPC 47
+    // (como as notas "Recorrência no mês" e "Serviços no mês" da aba do Book)
+    aresCards: [
+      { nome: 'Recorrência no mês', fat: ['3.1.1.01.00004', '3.1.1.01.00005'], cpc: ['3.1.1.01.00050', '3.1.1.01.00051'] },
+      { nome: 'Serviços no mês', fat: ['3.1.1.01.00001', '3.1.1.01.00002', '3.1.1.01.00003'], cpc: ['3.1.1.01.00052', '3.1.1.01.00053'] }
+    ],
     // contas de resultado (para incluir contas novas na DRE); o grupo 9 (apuração) fica de fora
     resultado: /^[3-8]/,
     DTREE: DTREE,

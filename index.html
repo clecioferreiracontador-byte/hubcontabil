@@ -6,7 +6,7 @@
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=1"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=3"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=4"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -246,21 +246,28 @@ body:not(.is-admin) .adm-only{display:none!important}
 }
 /* ===== Análise de Resultado (Landix) ===== */
 .ares{font-size:12px}
-.ares td{white-space:nowrap;text-align:right}
-.ares td:first-child,.ares td.ares-t{text-align:left}
-.ares td.ares-t{white-space:nowrap}
-.ares th{text-align:right;white-space:nowrap}.ares th:nth-child(-n+2){text-align:left}
-.ares tr.ares-n1 td{font-weight:700;background:rgba(41,128,185,.28)}
-.ares tr.ares-n2 td{font-weight:700;background:rgba(41,128,185,.18)}
-.ares tr.ares-n3 td{font-weight:600;background:rgba(41,128,185,.10)}
-.ares tr.ares-n4 td{font-weight:600;background:rgba(255,255,255,.03)}
-.ares td.ares-m,.ares td.ares-ma{background:rgba(201,168,76,.07)}
-.ares tr.ares-al td{background:rgba(192,57,43,.14)}
+.ares td{white-space:nowrap;text-align:right;background:var(--n3)}
+.ares th{text-align:right;white-space:nowrap}
+/* conta e título ficam fixos ao rolar para o lado (fundo sólido para o resto não aparecer por baixo) */
+.ares th:first-child,.ares td:first-child{text-align:left;min-width:132px;width:132px;max-width:132px;left:0}
+.ares th:nth-child(2),.ares td.ares-t{text-align:left;position:sticky;left:132px;z-index:1;white-space:nowrap;box-shadow:6px 0 8px -6px rgba(0,0,0,.6)}
+.ares thead th:nth-child(2){z-index:3;background:var(--n2)}
+.ares tr.ares-n1 td{font-weight:700;background:#163B5A}
+.ares tr.ares-n2 td{font-weight:700;background:#14314D}
+.ares tr.ares-n3 td{font-weight:600;background:#122A42}
+.ares tr.ares-n4 td{font-weight:600;background:#16273B}
+.ares tr.ares-al td{background:#2B2433}
+/* movimento do mês anterior e do mês: as colunas da análise, em destaque */
+.ares thead th.ares-mh{background:#C9A84C;color:#0F2035;font-weight:700}
+.ares td.ares-m,.ares td.ares-ma{box-shadow:inset 0 0 0 999px rgba(201,168,76,.16);font-weight:700;color:#F3E2A9}
+.ares td.ares-ma{border-left:2px solid rgba(201,168,76,.7)}
+.ares td.ares-m{border-right:2px solid rgba(201,168,76,.7)}
 .ares td.ares-v{color:#E74C3C;font-weight:700}
 .ares-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .ares-k{background:var(--card,#132235);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
 .ares-k span{font-size:11px;color:var(--gray,#8a9aac)}.ares-k b{font-size:18px}.ares-k i{font-style:normal;font-size:11px;color:var(--gray,#8a9aac)}
 .ares-k.al{border-color:rgba(231,76,60,.5)}.ares-k.al b{color:#E74C3C}
+.ares-k.rec{border-color:rgba(201,168,76,.45)}.ares-k.rec b{color:#E8C96A}
 /* ===== Relatório consolidado ===== */
 body.rel-open{overflow:hidden}
 #relOverlay{display:none;position:fixed;inset:0;z-index:5000;background:#17212F;overflow:auto}
@@ -3064,7 +3071,7 @@ function buildARes(){
   sel.innerHTML=ms.map(function(i){return '<option value="'+i+'"'+(i===cur?' selected':'')+'>'+MF[i]+'/'+DRE_ANO+'</option>';}).join('');
   document.getElementById('aresSub').textContent='Data-base '+MF[cur]+'/'+DRE_ANO+' · média mensal de '+L.d.nAnt+' mês(es) anterior(es) · valores em débito − crédito (receitas negativas), como no balancete'+(L.d.temAnt?'':' · sem o mês anterior importado');
   var mA=cur>0?M[cur-1]:'—',h='<table class="dt ares"><thead><tr><th>Conta contábil</th><th>Título da conta</th><th>Saldo ant.</th><th>Débitos</th><th>Créditos</th><th>Saldo atual</th>'+
-    '<th>Mov. '+mA+'</th><th>Mov. '+M[cur]+'</th><th>Média mensal</th><th>Mês × média</th><th>Var. mês × média</th><th>Var. '+mA+' × '+M[cur]+'</th><th>AV '+M[cur]+'</th></tr></thead><tbody>';
+    '<th class="ares-mh">Mov. '+mA+'</th><th class="ares-mh">Mov. '+M[cur]+'</th><th>Média mensal</th><th>Mês × média</th><th>Var. mês × média</th><th>Var. '+mA+' × '+M[cur]+'</th><th>AV '+M[cur]+'</th></tr></thead><tbody>';
   var nAlerta=0;
   L.cods.forEach(function(c){
     var r=R[c],nv=c.split('.').length,anal=nv>=5,vm=aresVar(r.mov,r.media),va=aresVar(r.mov,r.ant);
@@ -3081,6 +3088,12 @@ function buildARes(){
     '<div class="ares-k"><span>Resultado do mês</span><b>'+aresN(-resT)+'</b><i>'+(resT<=0?'lucro':'prejuízo')+' · '+M[cur]+'</i></div>'+
     '<div class="ares-k"><span>Resultado do mês anterior</span><b>'+aresN(-resA)+'</b><i>'+mA+'</i></div>'+
     '<div class="ares-k"><span>Receita líquida do mês</span><b>'+aresN(L.rl)+'</b><i>'+aresP(aresVar(R['3.1']?R['3.1'].mov:0,R['3.1']?R['3.1'].ant:0))+' sobre '+mA+'</i></div>'+
+    (CFG.aresCards||[]).map(function(k){
+      // receita (crédito) em positivo: soma das contas faturadas + ajuste do CPC 47
+      var soma=function(cs,campo){return cs.reduce(function(t,c){return t-(R[c]?R[c][campo]:0);},0);};
+      var fat=soma(k.fat,'mov'),cpc=soma(k.cpc||[],'mov'),liq=fat+cpc,ant=soma(k.fat,'ant')+soma(k.cpc||[],'ant');
+      return '<div class="ares-k rec"><span>'+relEsc(k.nome)+'</span><b>'+aresN(liq)+'</b><i>faturado '+aresN(fat)+(k.cpc?' · CPC 47 '+aresN(cpc):'')+'</i><i>'+mA+': '+aresN(ant)+' · '+aresP(aresVar(liq,ant))+'</i></div>';
+    }).join('')+
     '<div class="ares-k'+(nAlerta?' al':'')+'"><span>Contas com variação relevante</span><b>'+nAlerta+'</b><i>acima de '+aresN(L.lim)+' e 20% sobre '+mA+'</i></div>';
   box.innerHTML='<div class="tw">'+h+'</div>';
 }
