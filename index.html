@@ -3122,6 +3122,34 @@ async function buildDREWorkbook(){
       if(n.c)walk(n.c,depth+1,anc.concat([n.r]));
     });
   })(DTREE,0,[]);
+  // bloco "Ajuste realizado" (mesmas linhas do fim da DRE na tela)
+  if(CFG&&CFG.dreAjuste){
+    var AJ=CFG.dreAjuste,RA=ci.map(dreAjMes);
+    var soma=function(k){var t=0,tem=false;RA.forEach(function(x){if(x){t+=x[k];tem=true;}});return tem?t:null;};
+    var sr=ws.getRow(r);sr.height=18.75;
+    for(var c2=1;c2<=NC;c2++){var sc=sr.getCell(c2);sc.fill=fill('1A3A6B');sc.border={top:{style:'medium',color:C('C9A84C')}};}
+    sr.getCell(2).value='AJUSTE REALIZADO';sr.getCell(2).font={name:'Calibri',size:9,bold:true,color:C('E8C96A')};sr.getCell(2).alignment={vertical:'middle'};
+    r++;
+    var linAj=function(code,lbl,k,key,pct){
+      var S=ST[key],row=ws.getRow(r);row.height=S.h;
+      var put=function(c,v,font,al,nf){var cell=row.getCell(c);cell.value=v;cell.font=Object.assign({name:'Calibri'},font);cell.fill=fill(c===1?S.fa:S.fb);
+        cell.alignment={horizontal:al,vertical:'middle'};if(nf)cell.numFmt=nf;if(c>1)cell.border={bottom:{style:'thin',color:C('1E3A5F')}};};
+      put(1,code,{size:8,bold:key==='tot',color:C(key==='tot'?'0D1B2E':'78909C')},'left');
+      put(2,(key==='tot'?'':'    ')+lbl,{size:9,bold:S.b,color:C(S.lb)},'left');
+      RA.forEach(function(x,j){var c0=3+j*3,v=x?(pct?(x.base?x[k]/x.base:null):x[k]):null;
+        put(c0,v,{size:pct?8:9,bold:S.b,color:C(pct?'F4A021':S.v)},'right',pct?'0.00%':NF);put(c0+1,null,{size:8},'center');put(c0+2,null,{size:8},'center');});
+      var t=soma(k),b=soma('base');
+      put(NC-1,pct?(t!==null&&b?t/b:null):t,{size:pct?8:9,bold:true,color:C(pct?'F4A021':'2ECC71')},'right',pct?'0.00%':NF);put(NC,null,{size:8},'center');
+      r++;};
+    if(AJ.pdd)linAj(AJ.pdd[0],AJ.pdd[1],'pdd','det');
+    linAj('','RESULTADO ANTES IRPJ/CSLL — ANTES DO AJUSTE PDD','antes','tot');
+    linAj('','Resultado antes IRPJ/CSLL (em %)','antes','det',true);
+    linAj('','Amortização empréstimos (vr principal)','am','det');
+    linAj('','Parcelamentos tributários (vr principal)','pa','det');
+    linAj('','Juros s/ empréstimos/parcelamentos','ju','det');
+    linAj('','RESULTADO AJUSTADO','aj','tot');
+    linAj('','Margem operacional','aj','det',true);
+  }
   ws.properties.outlineLevelRow=maxDepth;
   var ft=((document.querySelector('#page-ov .footer')||{}).textContent||'').trim();
   var fr=ws.getRow(r+1);
