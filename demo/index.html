@@ -1320,7 +1320,7 @@ async function publicar(){
   if(!token){alert('Entre no Acesso admin com o token do GitHub para publicar.');return;}
   msg('Publicando o mapa…');
   try{
-    var repo=window.GH_REPO||'clecioferreiracontador-byte/nhdfoods-dashboard',br=window.GH_BRANCH||'main';
+    var repo=window.GH_REPO||'clecioferreiracontador-byte/hubcontabil',br=window.GH_BRANCH||'main';
     var api='https://api.github.com/repos/'+repo+'/contents/'+FILE,hdr={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'};
     var sha,g=await fetch(api+'?ref='+br+'&t='+Date.now(),{headers:hdr,cache:'no-store'});
     if(g.status===200){var cur=await g.json();sha=cur.sha;
