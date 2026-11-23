@@ -461,6 +461,9 @@ body.rel-open{overflow:hidden}
   canvas{max-width:100%}
 }
 @media(max-width:360px){.krow,.avc,.idx-grid{grid-template-columns:minmax(0,1fr)}}
+.tb-logo.emp-logo-troca{cursor:pointer}
+/* celular: topo só com as logos (o nome e o CNPJ saem; a troca de empresa fica na logo) */
+@media(max-width:860px){#tbTitle,#tbSub,.topbar>.tb-div{display:none!important}.tb-logo{height:22px!important;max-width:110px}.tb-aud-logo{height:24px}}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* Celular: números e textos menores e enquadrados nos cards */
 @media(max-width:860px){
@@ -4619,8 +4622,13 @@ function montarSeletorEmpresa(){
     return '<button type="button" role="menuitem" data-emp="'+id+'"'+(at?' class="atual" aria-current="true"':'')+'>'+relEsc(e?e.nome:id)+(at?'<small>atual</small>':'')+'</button>';}).join('');
   document.body.appendChild(menu);
   var fechar=function(){menu.style.display='none';t.setAttribute('aria-expanded','false');};
-  var abrir=function(){var r=t.getBoundingClientRect();menu.style.left=r.left+'px';menu.style.top=(r.bottom+6)+'px';menu.style.display='block';t.setAttribute('aria-expanded','true');var b=menu.querySelector('button');if(b)b.focus();};
+  var abrir=function(el){var a=el||t,r=a.getBoundingClientRect();menu.style.left=Math.max(8,r.left)+'px';menu.style.top=(r.bottom+6)+'px';menu.style.display='block';t.setAttribute('aria-expanded','true');var b=menu.querySelector('button');if(b)b.focus();};
   t.addEventListener('click',function(e){e.stopPropagation();menu.style.display==='block'?fechar():abrir();});
+  // a logo da empresa também abre a troca (no celular o nome fica escondido)
+  var lg=document.querySelector('.tb-logo');
+  if(lg){lg.classList.add('emp-logo-troca');lg.setAttribute('role','button');lg.setAttribute('tabindex','0');lg.title='Trocar de empresa';
+    lg.addEventListener('click',function(e){e.stopPropagation();menu.style.display==='block'?fechar():abrir(lg);});
+    lg.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();abrir(lg);}});}
   t.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '||e.key==='ArrowDown'){e.preventDefault();abrir();}});
   menu.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.emp===HubEmpresa.id){fechar();return;}HubEmpresa.trocar(b.dataset.emp);});
   menu.addEventListener('keydown',function(e){var bs=[].slice.call(menu.querySelectorAll('button')),i=bs.indexOf(document.activeElement);
