@@ -255,6 +255,7 @@ body:not(.is-admin) .adm-only{display:none!important}
 .lal-opc{font-weight:700;letter-spacing:.02em}
 .flx-k{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
 .flx-k .kval.pos{color:var(--green2)}.flx-k .kval.neg{color:var(--red2)}
+.dt td.flx-ok{color:var(--green2);font-weight:700}.dt td.flx-dif{color:var(--red2);font-weight:700}
 .dre-oz{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
 .dre-oz input{width:15px;height:15px;accent-color:#C9A84C;cursor:pointer}
 /* ---------- modo claro (botão no topo; escolha salva no navegador) ----------
@@ -4357,7 +4358,12 @@ function hubTemaTrocar(){
    aparece em "outras variações patrimoniais", para o caixa final bater com o balancete.
    PE: margem de contribuição = receita líquida − custos variáveis (custos + despesas comerciais + contas
    variáveis da empresa em CFG.pe.contasVariaveis); fixos = demais despesas operacionais. */
-var FLX={aba:'dfc'};
+var FLX={aba:'dfc',modo:'all',de:0,ate:null};
+function flxPerChange(){
+  var v=document.getElementById('flxPerSel').value;
+  if(v==='all'){FLX.modo='all';FLX.de=0;FLX.ate=null;}else if(v==='range'){FLX.modo='range';}else{FLX.modo='m';FLX.de=FLX.ate=+v;}
+  buildFluxo();
+}
 function flxMeses(){return Object.keys(BALHIST).map(Number).filter(function(i){return BALHIST[i];}).sort(function(a,b){return a-b;});}
 function flxAbertura(){
   var b=BALHIST[0];if(!b||!b._sf||!b._mov)return null;
@@ -4426,6 +4432,7 @@ function flxTab(cab,linhas,ms,acum){
     if(L.sec){h+='<tr class="lal-sec"><td colspan="'+(ms.length+2)+'">'+L.sec+'</td></tr>';return;}
     h+='<tr class="'+(L.cls||'rs')+'"><td style="padding-left:'+(L.pad||12)+'px">'+(L.tip?'<span class="dlbl" data-tip="'+L.tip.replace(/"/g,'&quot;')+'">'+L.l+'</span>':L.l)+'</td>';
     L.v.concat([L.t]).forEach(function(v){
+      if(L.txt){h+='<td'+(v&&v.c?' class="'+v.c+'"':'')+'>'+(v?v.t:'—')+'</td>';return;}
       if(v===null||v===undefined||(typeof v==='number'&&!isFinite(v))){h+='<td class="dre-blank">—</td>';return;}
       h+=L.pct?'<td><span class="vpc" style="display:inline">'+(v*100).toFixed(1).replace('.',',')+'%</span></td>':'<td'+(v<0?' class="vn"':'')+'>'+fmt(v)+'</td>';});
     h+='</tr>';});
@@ -4436,17 +4443,38 @@ function flxVer(a){FLX.aba=a;buildFluxo();}
 function buildFluxo(){
   var box=document.getElementById('flxBox');if(!box)return;
   [].forEach.call(document.querySelectorAll('#flxTabs button'),function(b){b.classList.toggle('on',b.getAttribute('data-v')===FLX.aba);});
-  var ms=flxMeses();
-  if(!ms.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Balanço &amp; Índices.</p>';return;}
+  var todos=flxMeses();
+  if(!todos.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Balanço &amp; Índices.</p>';return;}
+  // período: acumulado (jan–último), escolher (de–até) ou um mês
+  var ult=todos[todos.length-1];
+  if(FLX.modo==='all'){FLX.de=todos[0];FLX.ate=ult;}
+  if(FLX.ate===null||todos.indexOf(FLX.ate)<0)FLX.ate=ult;if(todos.indexOf(FLX.de)<0||FLX.de>FLX.ate)FLX.de=todos[0];
+  var sp=document.getElementById('flxPerSel');
+  if(sp){sp.innerHTML='<option value="all">Acumulado (Jan–'+M[ult]+')</option><option value="range">Escolher período…</option>'+todos.map(function(i){return '<option value="'+i+'">'+MF[i]+'</option>';}).join('');
+    sp.value=FLX.modo==='m'?String(FLX.ate):FLX.modo;}
+  var wr=document.getElementById('flxRange');if(wr)wr.style.display=FLX.modo==='range'?'inline-flex':'none';
+  var sd=document.getElementById('flxDe'),sa=document.getElementById('flxAte');
+  if(sd)sd.innerHTML=todos.filter(function(i){return i<=FLX.ate;}).map(function(i){return '<option value="'+i+'"'+(i===FLX.de?' selected':'')+'>'+M[i]+'</option>';}).join('');
+  if(sa)sa.innerHTML=todos.filter(function(i){return i>=FLX.de;}).map(function(i){return '<option value="'+i+'"'+(i===FLX.ate?' selected':'')+'>'+M[i]+'</option>';}).join('');
+  var ms=todos.filter(function(i){return i>=FLX.de&&i<=FLX.ate;});
+  var accLbl=ms.length>1?(FLX.modo==='all'?'Acumulado':'Período'):'Mês';
   var h='';
   if(FLX.aba==='dfc'){
     var F=flxDFC(),mv=ms.filter(function(i){return F[i];}),v=function(k){return mv.map(function(i){return F[i][k];});},t=function(k){return flxSoma(F,mv,k);};
     if(!mv.length){box.innerHTML='<p class="muted" style="padding:16px">Falta o saldo de abertura (saldo anterior de janeiro) para montar o fluxo.</p>';return;}
     var cxI=F[mv[0]].cxIni,cxF=F[mv[mv.length-1]].cxFim;
-    document.getElementById('flxSub').textContent='Demonstração do fluxo de caixa pelo método indireto · '+M[mv[0]]+'–'+M[mv[mv.length-1]]+' '+DRE_ANO+' · saldos dos balancetes importados';
+    // conferência: caixa final calculado pela DFC (sem a linha de arredondamento) × disponibilidades do balancete
+    mv.forEach(function(i){var x=F[i];x.cxDFC=x.cxIni+(x.fco-x.outras)+x.fci+x.fcf;x.difCx=Math.round((x.cxFim-x.cxDFC)*100)/100||0;});
+    var cxDFCp=cxI+mv.reduce(function(a,i){return a+(F[i].fco-F[i].outras)+F[i].fci+F[i].fcf;},0),difP=Math.round((cxF-cxDFCp)*100)/100||0;
+    var st=function(d){return Math.abs(d)<1?{t:'✓ bate',c:'flx-ok'}:{t:'⚠︎ '+fmt(d),c:'flx-dif'};};
+    var detCx=(BAL_DET&&BAL_DET.caixa)||[];
+    var linCx=detCx.map(function(d){var vv=mv.map(function(i){var b=BALHIST[i];return b&&typeof b[d[1]]==='number'?b[d[1]]:null;});
+      var bl=BALHIST[mv[mv.length-1]];return {l:d[0],v:vv,t:bl&&typeof bl[d[1]]==='number'?bl[d[1]]:null,pad:40};});
+    document.getElementById('flxSub').textContent='Demonstração do fluxo de caixa pelo método indireto · '+(mv.length>1?M[mv[0]]+'–'+M[mv[mv.length-1]]:MF[mv[0]])+' '+DRE_ANO+' · saldos dos balancetes importados';
     h+='<div class="kgrid flx-k">'+flxCard('Caixa inicial ('+M[mv[0]]+')',fmt(cxI),'disponibilidades')+flxCard('Operacional',fmt(t('fco')),'caixa gerado pela operação',t('fco')<0?'neg':'pos')+
       flxCard('Investimento',fmt(t('fci')),'imobilizado e intangível',t('fci')<0?'neg':'pos')+flxCard('Financiamento',fmt(t('fcf')),'empréstimos e sócios',t('fcf')<0?'neg':'pos')+
-      flxCard('Caixa final ('+M[mv[mv.length-1]]+')',fmt(cxF),'variação '+fmt(cxF-cxI),cxF-cxI<0?'neg':'pos')+'</div>';
+      flxCard('Caixa final ('+M[mv[mv.length-1]]+')',fmt(cxF),'variação '+fmt(cxF-cxI),cxF-cxI<0?'neg':'pos')+
+      flxCard('Conferência com o fechamento',Math.abs(difP)<1?'✓ Bate':'⚠︎ '+fmt(difP),Math.abs(difP)<1?'DFC = balancete':'diferença DFC × balancete',Math.abs(difP)<1?'pos':'neg')+'</div>';
     h+='<div class="cc" style="margin:14px 0"><div class="ctop"><div><div class="ctitle">Geração de caixa por atividade</div><div class="cdesc">Barras: caixa de cada atividade no mês · linha: saldo de caixa no fim do mês</div></div></div><div style="position:relative;height:260px"><canvas id="cFlx"></canvas></div></div>';
     // contas fora das linhas do balanço: as que mexeram ≥ R$ 1 mil em algum mês viram linha própria
     var cF={};mv.forEach(function(i){Object.keys(F[i].det).forEach(function(c){if(Math.abs(F[i].det[c])>=1000)cF[c]=1;});});
@@ -4479,8 +4507,14 @@ function buildFluxo(){
       {sec:'Caixa'},
       {l:'Variação do caixa',cls:'rt',v:v('dcx'),t:t('dcx')},
       {l:'Caixa no início do mês',v:v('cxIni'),t:cxI,pad:24},
-      {l:'Caixa no fim do mês',cls:'rst',v:v('cxFim'),t:cxF}
-    ]),mv,'Acumulado');
+      {l:'Caixa no fim do mês',cls:'rst',v:v('cxFim'),t:cxF},
+      {sec:'Conferência com o fechamento'},
+      {l:'Caixa final pela DFC',tip:'Caixa no início + fluxos operacional, de investimento e de financiamento (sem a linha de arredondamento).',v:v('cxDFC'),t:cxDFCp,pad:24},
+      {l:'Disponibilidades no balancete do fechamento',tip:'Saldo de caixa, bancos e aplicações no balancete do mês.',cls:'rst',v:v('cxFim'),t:cxF}
+    ].concat(linCx,[
+      {l:'Diferença (balancete − DFC)',v:v('difCx'),t:difP,pad:24},
+      {l:'Conferência',txt:true,cls:'rst',v:mv.map(function(i){return st(F[i].difCx);}),t:st(difP)}
+    ])),mv,accLbl);
     box.innerHTML=h;
     var lab=mv.map(function(i){return M[i];}),o=bopt('val');o.plugins.legend={display:true,position:'top',align:'end',labels:{boxWidth:10,font:{size:11}}};
     mkC('cFlx','bar',lab,[
@@ -4493,8 +4527,8 @@ function buildFluxo(){
     var RL=pt('rl'),CV=pt('cv'),MC=RL-CV,MCP=RL?MC/RL:null,CF=pt('cf'),DA=pt('da'),FIN=pt('fin'),RB=pt('rb');
     var PE=function(f){return MCP&&MCP>0?f/MCP:null;},PEC=PE(CF),MS=PEC!==null&&RL?(RL-PEC)/RL:null;
     var cvx=(CFG&&CFG.pe&&CFG.pe.contasVariaveis)||[];
-    document.getElementById('flxSub').textContent='Ponto de equilíbrio pela margem de contribuição · '+M[ms[0]]+'–'+M[ms[ms.length-1]]+' '+DRE_ANO+' · valores da DRE dos balancetes';
-    h+='<div class="kgrid flx-k">'+flxCard('Receita líquida',fmt(RL),M[ms[0]]+'–'+M[ms[ms.length-1]])+flxCard('Margem de contribuição',MCP===null?'–':(MCP*100).toFixed(1).replace('.',',')+'%',fmt(MC))+
+    document.getElementById('flxSub').textContent='Ponto de equilíbrio pela margem de contribuição · '+(ms.length>1?M[ms[0]]+'–'+M[ms[ms.length-1]]:MF[ms[0]])+' '+DRE_ANO+' · valores da DRE dos balancetes';
+    h+='<div class="kgrid flx-k">'+flxCard('Receita líquida',fmt(RL),ms.length>1?M[ms[0]]+'–'+M[ms[ms.length-1]]:MF[ms[0]])+flxCard('Margem de contribuição',MCP===null?'–':(MCP*100).toFixed(1).replace('.',',')+'%',fmt(MC))+
       flxCard('Ponto de equilíbrio contábil',PEC===null?'–':fmt(PEC),'receita líquida necessária')+
       flxCard('Margem de segurança',MS===null?'–':(MS*100).toFixed(1).replace('.',',')+'%',MS!==null&&MS<0?'abaixo do equilíbrio':'acima do equilíbrio',MS!==null&&MS<0?'neg':'pos')+'</div>';
     h+='<div class="cc" style="margin:14px 0"><div class="ctop"><div><div class="ctitle">Receita × ponto de equilíbrio</div><div class="cdesc">Barras: receita líquida do mês · linha: receita necessária para empatar (PE contábil)</div></div></div><div style="position:relative;height:260px"><canvas id="cPE"></canvas></div></div>';
@@ -4516,7 +4550,7 @@ function buildFluxo(){
       {l:'Com o resultado financeiro',tip:'Fixos + despesa financeira líquida.',v:pv('pefin'),t:PE(CF+FIN),pad:24},
       {l:'Contábil em faturamento bruto',tip:'O mesmo ponto em faturamento bruto (antes de devoluções e tributos).',v:pv('peb'),t:PEC!==null&&RL?PEC*RB/RL:null,pad:24},
       {l:'Margem de segurança',tip:'Quanto a receita está acima (ou abaixo, se negativo) do ponto de equilíbrio contábil.',pct:true,cls:'rt',v:pv('ms'),t:MS}]);
-    h+=flxTab('Ponto de equilíbrio',lin,ms,'Acumulado');
+    h+=flxTab('Ponto de equilíbrio',lin,ms,accLbl);
     h+='<div class="cdesc" style="margin-top:8px">Custos variáveis: custos das mercadorias e operações, despesas comerciais'+(cvx.length?' e '+cvx.map(function(c){return c[1].toLowerCase();}).join(', '):'')+'. Os demais gastos operacionais são tratados como fixos.</div>';
     box.innerHTML=h;
     var o2=bopt('val');o2.plugins.legend={display:true,position:'top',align:'end',labels:{boxWidth:10,font:{size:11}}};
@@ -4533,7 +4567,9 @@ function montarPaginaFluxo(){
   nav.innerHTML='<svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M2 5h9M8 2l3 3-3 3M14 11H5M8 8l-3 3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Fluxo de Caixa e PE';
   ref.parentNode.insertBefore(nav,ref.nextSibling);
   var sec=document.createElement('section');sec.id='page-fluxo';sec.className='page';
-  sec.innerHTML='<div class="fbar"><span class="finfo"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h4M6.5 11.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>Passe o mouse sobre uma linha para ver o que ela considera</span></div>'+
+  sec.innerHTML='<div class="fbar"><span class="fl">Período:</span><select class="fs" id="flxPerSel" onchange="flxPerChange()"></select>'+
+    '<span id="flxRange" style="display:none;align-items:center;gap:6px"><span class="fl">de:</span><select class="fs" id="flxDe" onchange="FLX.de=+this.value;buildFluxo()"></select><span class="fl">até:</span><select class="fs" id="flxAte" onchange="FLX.ate=+this.value;buildFluxo()"></select></span>'+
+    '<span class="finfo"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h4M6.5 11.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>Passe o mouse sobre uma linha para ver o que ela considera</span></div>'+
     '<div style="margin:18px 0 12px"><div class="ptitle">Fluxo de Caixa e Ponto de Equilíbrio</div><div class="psub" id="flxSub"></div></div>'+
     '<div id="flxTabs" class="lal-tabs"><button class="fs on" data-v="dfc" onclick="flxVer(\'dfc\')">Fluxo de caixa (DFC)</button><button class="fs" data-v="pe" onclick="flxVer(\'pe\')">Ponto de equilíbrio</button></div>'+
     '<div id="flxBox"></div>';
