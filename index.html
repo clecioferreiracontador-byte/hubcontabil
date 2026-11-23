@@ -3405,7 +3405,14 @@ function montarPaginaARes(){
    DRE acumulada ano × ano anterior, tendência de 14 meses, os 10 indicadores do relatório da diretoria
    (saudável / atenção / risco) e o ranking das naturezas de gasto com o peso sobre a receita bruta.
    O ano anterior vem da planilha "DRE CONTÁBIL" (aba "DRE aaaa", uma coluna por mês, valores com sinal da DRE). */
-var COMP={mes:null,de:0,todas:false,aj:false};
+var COMP={mes:null,de:0,modo:'all',todas:false,aj:false};
+function compPerChange(){
+  var v=document.getElementById('compPerSel').value;
+  if(v==='all'){COMP.modo='all';COMP.de=0;COMP.mes=null;}
+  else if(v==='range'){COMP.modo='range';}
+  else{COMP.modo='m';COMP.de=COMP.mes=+v;}
+  buildComp();
+}
 // rótulo do período escolhido (de–até); um mês só vira o nome do mês
 function compPer(ate){var de=Math.min(COMP.de||0,ate);return de===ate?M[ate].toLowerCase():M[de].toLowerCase()+'–'+M[ate].toLowerCase();}
 // efeito dos ajustes nas linhas da DRE (ano, meses de..até): linhas de conta pela receita, as de cálculo pela DRE_ORDER
@@ -3548,11 +3555,18 @@ function buildComp(){
   var meses=Object.keys(BALHIST).map(Number).sort(function(a,b){return a-b;});
   var sel=document.getElementById('compMes');
   if(!meses.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Balanço &amp; Índices.</p>';return;}
-  var ate=COMP.mes!==null&&meses.indexOf(COMP.mes)>=0?COMP.mes:meses[meses.length-1];COMP.mes=ate;
+  var ult=meses[meses.length-1];
+  if(COMP.modo==='all'){COMP.de=0;COMP.mes=ult;}
+  var ate=COMP.mes!==null&&meses.indexOf(COMP.mes)>=0?COMP.mes:ult;COMP.mes=ate;
   if(!(COMP.de>=0&&COMP.de<=ate))COMP.de=0;
+  var selP=document.getElementById('compPerSel');
+  if(selP){selP.innerHTML='<option value="all">Acumulado (Jan–'+M[ult]+')</option><option value="range">Escolher período…</option>'+
+      meses.map(function(i){return '<option value="'+i+'">'+MF[i]+'</option>';}).join('');
+    selP.value=COMP.modo==='m'?String(ate):COMP.modo;}
+  var wrap=document.getElementById('compRangeWrap');if(wrap)wrap.style.display=COMP.modo==='range'?'inline-flex':'none';
   var selDe=document.getElementById('compDe');
-  if(selDe)selDe.innerHTML=meses.filter(function(i){return i<=ate;}).map(function(i){return '<option value="'+i+'"'+(i===COMP.de?' selected':'')+'>'+M[i]+'/'+DRE_ANO+'</option>';}).join('');
-  sel.innerHTML=meses.filter(function(i){return i>=COMP.de;}).map(function(i){return '<option value="'+i+'"'+(i===ate?' selected':'')+'>'+M[i]+'/'+DRE_ANO+'</option>';}).join('');
+  if(selDe)selDe.innerHTML=meses.filter(function(i){return i<=ate;}).map(function(i){return '<option value="'+i+'"'+(i===COMP.de?' selected':'')+'>'+M[i]+'</option>';}).join('');
+  sel.innerHTML=meses.filter(function(i){return i>=COMP.de;}).map(function(i){return '<option value="'+i+'"'+(i===ate?' selected':'')+'>'+M[i]+'</option>';}).join('');
   var ano=DRE_ANO,anoA=String(+DRE_ANO-1),per=compPer(ate);
   document.getElementById('compSub').textContent=(COMP.de?'Período ':'Acumulado ')+per+' · '+ano+' × '+anoA+' · visão '+(COMP.aj?'COM ajuste ('+AJUSTES.length+' ajuste(s))':'sem ajuste')+(ANT?' · ano anterior: '+ANT.arquivo:' · importe a DRE de '+anoA+' para comparar')+' · alterações (ajustes, recomendações, meta) ficam neste navegador até publicar em Balanço & Índices';
   var N=function(v){return v===null?'–':relN(v/1000,1);};
@@ -3873,7 +3887,8 @@ function montarPaginaComp(){
   nav.innerHTML='<svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M3 13V7M8 13V3M13 13V9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Comparativo';
   ares.parentNode.insertBefore(nav,ares.nextSibling);
   var sec=document.createElement('section');sec.id='page-comp';sec.className='page';
-  sec.innerHTML='<div class="fbar"><span class="fl">Período: de</span><select class="fs" id="compDe" onchange="COMP.de=+this.value;buildComp()"></select><span class="fl">até</span><select class="fs" id="compMes" onchange="COMP.mes=+this.value;buildComp()"></select>'+
+  sec.innerHTML='<div class="fbar"><span class="fl">Período:</span><select class="fs" id="compPerSel" onchange="compPerChange()"></select>'+
+    '<span id="compRangeWrap" style="display:none;align-items:center;gap:6px"><span class="fl">de:</span><select class="fs" id="compDe" onchange="COMP.de=+this.value;buildComp()"></select><span class="fl">até:</span><select class="fs" id="compMes" onchange="COMP.mes=+this.value;buildComp()"></select></span>'+
     '<span class="fl">Visão:</span><select class="fs" id="compVisao" onchange="COMP.aj=this.value===\'com\';buildComp()"><option value="sem">Sem ajuste</option><option value="com">Com ajuste</option></select>'+
     '<button class="fs" onclick="abrirRelDiretoria()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4"/></svg>Relatório à diretoria (PDF)</button><button class="fs" onclick="excelRelDiretoria()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Excel</button>'+
     '<label class="fs adm-only" style="cursor:pointer"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3"/></svg>Importar DRE do ano anterior<input type="file" id="compFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREAnterior(this.files[0])"></label><label class="fs adm-only" style="cursor:pointer"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3"/></svg>Importar balancetes do ano anterior<input type="file" id="compBalFile" accept=".xls,.xlsx" style="display:none" onchange="importarBalAnterior(this.files[0])"></label>'+
