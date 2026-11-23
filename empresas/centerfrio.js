@@ -185,12 +185,12 @@
       { p: 'RLO / FLO (em %)', k: 'rlo' },
       { g: '3.1.3.05.001', l: 'RECEITAS FINANCEIRAS' },
       { g: '3.1.3.05.002', l: 'DESPESAS FINANCEIRAS' },
-      // 3.3 aparece com o movimento, mas por enquanto não entra no resultado (pedido do usuário em 2026-11-23)
-      { g: '3.3', l: 'OUTRAS RECEITAS / DESPESAS DESCONTINUADAS (não soma no resultado)' },
+      // 3.3 fica fora do resultado antes do IR/CS e entra no resultado após IR/CS, como na planilha DRE CONTÁBIL
+      { g: '3.3', l: 'OUTRAS RECEITAS / DESPESAS DESCONTINUADAS (fora do resultado antes do IR/CS)' },
       { t: 'RESULTADO ANTES IR/CS (REAL CONTÁBIL)', code: '3.1', f: ['rlo', '3.1.3.05.001', '3.1.3.05.002'], key: 'rai' },
       { p: 'RESULTADO ANTES IRPJ/CSLL (em %)', k: 'rai' },
       { g: '3.5.1', l: 'TRIBUTOS S/ RESULTADO (IRPJ/CSLL)' },
-      { t: 'RESULTADO APÓS IR/CS', code: '3', f: ['rai', '3.5.1'], key: 'rf' },
+      { t: 'RESULTADO APÓS IR/CS', code: '3', f: ['rai', '3.5.1', '3.3'], key: 'rf' },
       { p: 'RESULTADO (em %)', k: 'rf' }
     ],
     // bloco "Ajuste realizado" no fim da DRE (como na planilha DRE CONTÁBIL do cliente)

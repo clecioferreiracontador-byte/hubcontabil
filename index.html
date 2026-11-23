@@ -6,7 +6,7 @@
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=2"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=17"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=18"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -609,6 +609,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <button class="fs dre-tbtn" id="dreXlsBtn" onclick="exportDREXlsx()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4.8 7L8 10.2 11.2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 11.5v1.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span id="dreXlsLbl">Exportar DRE (.xlsx)</span></button>
     <button class="fs dre-tbtn" id="dreEdBtn" style="display:none" onclick="dreToggleEdit()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L6 12.5 2.8 13.2 3.5 10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span id="dreEdLbl">Editar valores</span></button>
     <button class="fs dre-tbtn" id="dreRstBtn" style="display:none" onclick="dreVoltarPadrao()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M5 3.5L2 6.5l3 3M2 6.5h7.5a3.5 3.5 0 0 1 0 7H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="dreRstLbl">Voltar ao padrão</span></button>
+    <label class="fs dre-tbtn adm-only" id="dreOfBtn" style="display:none;cursor:pointer" title="Importa a aba &quot;DRE aaaa&quot; da planilha DRE CONTÁBIL: os meses dela passam a mostrar esses valores"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Importar DRE contábil<input type="file" id="dreOfFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREOficial(this.files[0])"></label>
+    <span id="dreOfStatus" class="fl" style="font-size:12px"></span>
     <span class="finfo"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h4M6.5 11.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>Passe o mouse sobre a conta para ver a descrição</span>
   </div>
   <div style="margin:18px 0 14px"><div class="ptitle">DRE</div><div class="psub" id="dSub">Demonstrativo completo · consulte por mês ou período</div></div>
@@ -1115,17 +1117,59 @@ function onDMesChange(){
    Os valores podem ser editados (simulação neste navegador) e voltar ao padrão. A árvore DTREE continua sendo a
    base das outras telas (Visão Geral, Comparativo, LALUR...). */
 var DRE_LX={},DRE_EDIT=null,DRE_EDITMODE=false,DRE_LC=null;
+// DRE contábil oficial dos meses fechados (aba "DRE aaaa" da planilha do cliente): {ano,arquivo,em,meses:{i:{conta:valor}}}
+var DRE_OF=null;
+function dreOfMes(i){return DRE_OF&&String(DRE_OF.ano)===String(DRE_ANO)&&DRE_OF.meses&&DRE_OF.meses[i]?DRE_OF.meses[i]:null;}
+function importarDREOficial(file){
+  if(!file)return;
+  var st=document.getElementById('dreOfStatus');
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
+      var sn=wb.SheetNames.find(function(n){return normCab(n)==='dre '+DRE_ANO;});
+      if(!sn)throw new Error('não achei a aba "DRE '+DRE_ANO+'" no arquivo');
+      var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});
+      var hi=rows.findIndex(function(r){return r&&/^analitica$/.test(normCab(r[0]));});
+      if(hi<0)throw new Error('não achei o cabeçalho ANALÍTICA | DESCRIÇÃO | JAN ... DEZ');
+      var MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],col={};
+      rows[hi].forEach(function(c,j){var k=MESES.indexOf(normCab(c));if(k>=0&&col[k]===undefined)col[k]=j;});
+      // contas analíticas (sem filhas na aba); linha repetida vale a primeira
+      var lin=[],vistos={};
+      for(var i=hi+1;i<rows.length;i++){var r=rows[i];if(!r||r[0]==null)continue;var c=String(r[0]).trim();
+        if(!/^\d(\.\d+)+$/.test(c)||/%/.test(String(r[1]||''))||vistos[c])continue;vistos[c]=1;lin.push({c:c,n:String(r[1]||'').trim(),r:r});}
+      var cods=lin.map(function(x){return x.c;});
+      var folhas=lin.filter(function(x){return !cods.some(function(o){return o.indexOf(x.c+'.')===0;});});
+      var O={ano:DRE_ANO,arquivo:file.name,em:new Date().toISOString(),meses:{}};
+      Object.keys(col).forEach(function(k){
+        var m={},tem=false;
+        folhas.forEach(function(x){var v=x.r[col[k]];v=typeof v==='number'?Math.round(v*100)/100:0;if(v)tem=true;m[x.c]=v;if(x.n&&!CONTA_NOMES[x.c])CONTA_NOMES[x.c]=x.n;});
+        if(tem)O.meses[k]=m;
+      });
+      var ms=Object.keys(O.meses).map(Number).sort(function(a,b){return a-b;});
+      if(!ms.length)throw new Error('a aba "DRE '+DRE_ANO+'" não tem valores');
+      DRE_OF=O;try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(x){}
+      st.textContent='✓ DRE contábil importada ('+M[ms[0]]+'–'+M[ms[ms.length-1]]+'). Publique em Balanço & Índices para valer para todos.';
+      st.style.color='var(--green2)';buildDRE();
+    }catch(err){st.textContent='⚠︎ '+err.message;st.style.color='var(--red2)';}
+    document.getElementById('dreOfFile').value='';
+  };
+  rd.readAsArrayBuffer(file);
+}
 function dreEditLoad(){if(DRE_EDIT)return;try{DRE_EDIT=JSON.parse(localStorage.getItem('dreEdit')||'{}')||{};}catch(e){DRE_EDIT={};}}
 function dreEditSave(){try{localStorage.setItem('dreEdit',JSON.stringify(DRE_EDIT));}catch(e){}}
 function dreEditCount(){dreEditLoad();return Object.keys(DRE_EDIT).reduce(function(t,c){return t+Object.keys(DRE_EDIT[c]).length;},0);}
 function dreLayoutCalc(){
   var LY=CFG.dreLayout;dreEditLoad();
-  var tem=function(i){return !!(BALHIST[i]&&BALHIST[i]._mov);},M12=[0,1,2,3,4,5,6,7,8,9,10,11];
+  var tem=function(i){return !!(dreOfMes(i)||(BALHIST[i]&&BALHIST[i]._mov));},M12=[0,1,2,3,4,5,6,7,8,9,10,11];
   var all={};Object.keys(CONTA_NOMES).forEach(function(c){if(/^3/.test(c))all[c]=1;});
-  M12.forEach(function(i){if(tem(i))Object.keys(BALHIST[i]._mov).forEach(function(c){if(/^3/.test(c))all[c]=1;});});
+  M12.forEach(function(i){var of=dreOfMes(i);if(of)Object.keys(of).forEach(function(c){if(/^3/.test(c))all[c]=1;});
+    if(BALHIST[i]&&BALHIST[i]._mov)Object.keys(BALHIST[i]._mov).forEach(function(c){if(/^3/.test(c))all[c]=1;});});
   var codes=Object.keys(all);
   var folha=function(c){return !codes.some(function(o){return o!==c&&o.indexOf(c+'.')===0;});};
-  var lv=function(c,i){if(!tem(i))return undefined;var e=DRE_EDIT[c];if(e&&e[i]!==undefined)return e[i];var x=BALHIST[i]._mov[c];return x?Math.round((x[1]-x[0])*100)/100:0;};
+  var lv=function(c,i){if(!tem(i))return undefined;var e=DRE_EDIT[c];if(e&&e[i]!==undefined)return e[i];
+    var of=dreOfMes(i);if(of)return of[c]||0;   // mês fechado: valor da DRE contábil da planilha
+    var x=BALHIST[i]._mov[c];return x?Math.round((x[1]-x[0])*100)/100:0;};
   var vals={},rows=[];
   LY.forEach(function(it){
     if(it.g){
@@ -1160,6 +1204,7 @@ function dreVoltarPadrao(){if(!dreEditCount())return;if(!confirm('Voltar todos o
 function dreLayoutBtns(){
   var on=!!(CFG&&CFG.dreLayout),eb=document.getElementById('dreEdBtn'),rb=document.getElementById('dreRstBtn'),n=on?dreEditCount():0;
   if(eb){eb.style.display=on?'':'none';eb.classList.toggle('on',DRE_EDITMODE);var l=document.getElementById('dreEdLbl');if(l)l.textContent=DRE_EDITMODE?'Concluir edição':'Editar valores';}
+  var ob=document.getElementById('dreOfBtn');if(ob)ob.style.display=on?'':'none';
   if(rb){rb.style.display=on&&n?'':'none';var l2=document.getElementById('dreRstLbl');if(l2)l2.textContent='Voltar ao padrão ('+n+')';}
 }
 function buildDRELayout(ci,view){
@@ -1257,9 +1302,9 @@ function buildDRE(){
   else if(m==='range')mnLbl=(ci.length===1?MF[ci[0]]:MF[ci[0]]+'–'+MF[ci[ci.length-1]])+' 2026';
   else mnLbl=MF[parseInt(m)]+' 2026';
   var subEl=document.getElementById('dSub');
-  if(subEl)subEl.textContent='Demonstrativo completo · '+mnLbl+(CFG&&CFG.dreLayout?' · layout da empresa: crédito positivo, débito negativo · % sobre o faturamento líquido':'');
+  if(subEl)subEl.textContent='Demonstrativo completo · '+mnLbl+(CFG&&CFG.dreLayout?' · layout da empresa: crédito positivo, débito negativo · % sobre o faturamento líquido'+(DRE_OF&&String(DRE_OF.ano)===String(DRE_ANO)?' · meses "planilha": valores da DRE contábil importada; os demais, do balancete':''):'');
   var h='<table class="dt"><thead><tr><th>Conta</th>';
-  ci.forEach(function(i){h+='<th>'+M[i]+'</th>';});
+  ci.forEach(function(i){var pl=CFG&&CFG.dreLayout&&dreOfMes(i);h+='<th'+(pl?' title="Valores da DRE contábil importada ('+relEsc(DRE_OF.arquivo||'')+')"':'')+'>'+M[i]+(pl?'<div class="lal-orig pl">planilha</div>':'')+'</th>';});
   if(ci.length>1)h+='<th>ANUAL</th>';
   h+='</tr></thead><tbody>';
   var LYT=!!(CFG&&CFG.dreLayout);
@@ -2488,7 +2533,7 @@ function saveCurrentBase(){
   }
 }
 function buildBaseState(){
-  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,ant:ANT,ajustes:AJUSTES,recs:REC_TXT,icvMeta:ICV_META,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,plan:lalurPlan,at:lalurAt},savedAt:new Date().toISOString()};
+  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,ant:ANT,ajustes:AJUSTES,dreOf:DRE_OF,recs:REC_TXT,icvMeta:ICV_META,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,plan:lalurPlan,at:lalurAt},savedAt:new Date().toISOString()};
 }
 // Base publicada no Firebase (dados/base). Só o admin grava; as regras do banco garantem isso.
 var BASE_REMOTA_EM=null;
@@ -2566,7 +2611,7 @@ function applyBaseState(state){
   }
   if(state.nomes)CONTA_NOMES=state.nomes;
   if(state.ant)ANT=state.ant;
-  if(state.ajustes)AJUSTES=state.ajustes;if(state.recs)REC_TXT=state.recs;if(state.icvMeta!==undefined)ICV_META=state.icvMeta;
+  if(state.ajustes)AJUSTES=state.ajustes;if(state.dreOf!==undefined)DRE_OF=state.dreOf;if(state.recs)REC_TXT=state.recs;if(state.icvMeta!==undefined)ICV_META=state.icvMeta;
 }
 async function loadRemoteBase(){
   try{
@@ -2600,7 +2645,7 @@ function loadSavedBase(){
       balSelMes=(state.balSelMes!==undefined)?state.balSelMes:numMeses-1;
       if(state.nomes)CONTA_NOMES=state.nomes;
       if(state.ant)ANT=state.ant;
-      if(state.ajustes)AJUSTES=state.ajustes;if(state.recs)REC_TXT=state.recs;if(state.icvMeta!==undefined)ICV_META=state.icvMeta;
+      if(state.ajustes)AJUSTES=state.ajustes;if(state.dreOf!==undefined)DRE_OF=state.dreOf;if(state.recs)REC_TXT=state.recs;if(state.icvMeta!==undefined)ICV_META=state.icvMeta;
     }else if(state.BAL){
       var legacyMes=(state.BALMES!==undefined)?state.BALMES:numMeses-1;
       BALHIST[legacyMes]=state.BAL;
