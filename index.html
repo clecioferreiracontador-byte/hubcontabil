@@ -106,7 +106,10 @@ html,body{height:100%;background:var(--navy);color:var(--white);font-family:Cali
 .dt thead th:first-child{text-align:left;min-width:200px;position:sticky;left:0;top:0;background:var(--n2);z-index:3;transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;backface-visibility:hidden}
 .dt tbody td{padding:6px 10px;text-align:right;border-bottom:1px solid rgba(201,168,76,.05);white-space:nowrap;font-family:Calibri,"Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums;font-size:16px;min-width:92px}
 .dt tbody td:first-child{text-align:left;font-family:Calibri,"Segoe UI",Arial,sans-serif;font-size:16.5px;position:sticky;left:0;z-index:1;background:var(--n3);min-width:200px;transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;backface-visibility:hidden}
-.dt tr:hover td{background:rgba(201,168,76,.04)!important}
+.dt tr:hover td:not(:first-child):not(.ares-t){background:rgba(201,168,76,.04)!important}
+/* colunas fixas (rolagem lateral): o fundo continua opaco no hover, senão os valores passam por baixo e aparecem */
+.dt tr:hover td:first-child,.dt tr:hover td.ares-t{box-shadow:inset 0 0 0 999px rgba(201,168,76,.04)}
+.dt tbody td:first-child,.dt td.ares-t{background-clip:padding-box}
 .rt td{background:rgba(41,128,185,.1)!important;font-family:Calibri,"Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums;font-weight:700;color:var(--blue);font-size:16.5px}
 .rt td:first-child{background:#122a42!important;font-family:Calibri,"Segoe UI",Arial,sans-serif;font-weight:700;font-size:17px}
 .rst td:first-child{font-weight:700;color:var(--white);padding-left:10px;background:var(--n3)!important}
@@ -1260,11 +1263,14 @@ function buildDRE(){
   h+=LYT?buildDRELayout(ci,view):renderTreeRows(DTREE,ci,view,base,bk,0);
   h+=dreAjusteRows(ci);
   h+='</tbody></table>';
-  if(LYT){var ne=dreEditCount();
-    if(ne||DRE_EDITMODE)h='<div class="dre-edbar">'+(DRE_EDITMODE?'<b>Modo de edição:</b> clique em um valor das contas analíticas para alterar; os totais e percentuais recalculam na hora. ':'')+
+  // aviso do modo de edição fora da área que rola para o lado
+  var dt=document.getElementById('dTable'),bar=document.getElementById('dreEdBar');
+  if(!bar){bar=document.createElement('div');bar.id='dreEdBar';dt.parentNode.insertBefore(bar,dt);}
+  var ne=LYT?dreEditCount():0;
+  bar.innerHTML=LYT&&(ne||DRE_EDITMODE)?'<div class="dre-edbar">'+(DRE_EDITMODE?'<b>Modo de edição:</b> clique em um valor das contas analíticas para alterar; os totais e percentuais recalculam na hora. ':'')+
       (ne?'<b>'+ne+' valor(es) editado(s)</b> (destacados) — simulação só neste navegador; os balancetes não mudam. ':'')+
-      (ne?'<button class="fs" onclick="dreVoltarPadrao()">Voltar ao padrão</button>':'')+'</div>'+h;}
-  document.getElementById('dTable').innerHTML=h;
+      (ne?'<button class="fs" onclick="dreVoltarPadrao()">Voltar ao padrão</button>':'')+'</div>':'';
+  dt.innerHTML=h;
   dreLayoutBtns();DRE_LC=null;
   DRE_CI=ci;
   refreshDreAllBtn();
