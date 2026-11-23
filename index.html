@@ -6,7 +6,7 @@
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=2"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=14"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=15"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -249,6 +249,14 @@ body:not(.is-admin) .adm-only{display:none!important}
 .dt tr.lal-dif td{background:#1C2129!important;color:#E9E1D3}
 .lal-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.lal-tabs .fs{cursor:pointer}.lal-tabs .fs.on{border-color:var(--gold);color:var(--gold)}
 .lal-opc{font-weight:700;letter-spacing:.02em}
+.dre-cod{color:var(--gray);font-size:11px;font-weight:400;margin-right:7px;font-variant-numeric:tabular-nums}
+.dt tbody tr.dre-lp td{font-style:italic}
+.dt td.dre-ed{cursor:pointer;outline:1px dashed rgba(201,168,76,.4);outline-offset:-3px}
+.dt td.dre-edv{background:rgba(201,168,76,.18)!important;box-shadow:inset 0 -2px 0 var(--gold)}
+.dre-edin{width:100%;min-width:96px;background:#0D1B2E;color:#fff;border:1px solid var(--gold);border-radius:4px;padding:3px 5px;text-align:right;font:inherit}
+.dre-edbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 10px;padding:9px 12px;border:1px solid rgba(201,168,76,.35);border-radius:8px;background:rgba(201,168,76,.07);font-size:12.5px;color:var(--white)}
+.dre-edbar .fs{cursor:pointer}
+#dreEdBtn.on{border-color:var(--gold);color:var(--gold)}
 .dt tbody tr.dre-aj-sec td{background:rgba(201,168,76,.10);color:var(--gold);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding-top:10px;padding-bottom:10px;border-top:2px solid rgba(201,168,76,.35)}
 .dt tbody tr.lal-sec td{background:rgba(201,168,76,.10);color:var(--gold);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding-top:9px;padding-bottom:9px}
 .dt tbody tr.lal-dif td:first-child{border-left:3px solid rgba(230,126,34,.55)}
@@ -596,6 +604,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="fdiv"></div>
     <button class="fs dre-tbtn" id="dreAllBtn" onclick="toggleDreAll()"><svg class="niv" id="dreAllIco" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path id="dreAllPath" d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span id="dreAllLbl">Expandir contas</span></button>
     <button class="fs dre-tbtn" id="dreXlsBtn" onclick="exportDREXlsx()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4.8 7L8 10.2 11.2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 11.5v1.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span id="dreXlsLbl">Exportar DRE (.xlsx)</span></button>
+    <button class="fs dre-tbtn" id="dreEdBtn" style="display:none" onclick="dreToggleEdit()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L6 12.5 2.8 13.2 3.5 10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span id="dreEdLbl">Editar valores</span></button>
+    <button class="fs dre-tbtn" id="dreRstBtn" style="display:none" onclick="dreVoltarPadrao()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M5 3.5L2 6.5l3 3M2 6.5h7.5a3.5 3.5 0 0 1 0 7H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="dreRstLbl">Voltar ao padrão</span></button>
     <span class="finfo"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h4M6.5 11.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>Passe o mouse sobre a conta para ver a descrição</span>
   </div>
   <div style="margin:18px 0 14px"><div class="ptitle">DRE</div><div class="psub" id="dSub">Demonstrativo completo · consulte por mês ou período</div></div>
@@ -1096,6 +1106,95 @@ function onDMesChange(){
   document.getElementById('dRangeWrap').style.display=(m==='range')?'inline-flex':'none';
   buildDRE();
 }
+/* ---------- DRE no layout da empresa (CFG.dreLayout) ----------
+   Como a aba "DRE aaaa" da planilha do cliente: grupos com todas as contas analíticas, subtotais e % sobre o
+   faturamento líquido. Sinal da planilha: natureza credora positiva, devedora negativa (crédito − débito do mês).
+   Os valores podem ser editados (simulação neste navegador) e voltar ao padrão. A árvore DTREE continua sendo a
+   base das outras telas (Visão Geral, Comparativo, LALUR...). */
+var DRE_LX={},DRE_EDIT=null,DRE_EDITMODE=false,DRE_LC=null;
+function dreEditLoad(){if(DRE_EDIT)return;try{DRE_EDIT=JSON.parse(localStorage.getItem('dreEdit')||'{}')||{};}catch(e){DRE_EDIT={};}}
+function dreEditSave(){try{localStorage.setItem('dreEdit',JSON.stringify(DRE_EDIT));}catch(e){}}
+function dreEditCount(){dreEditLoad();return Object.keys(DRE_EDIT).reduce(function(t,c){return t+Object.keys(DRE_EDIT[c]).length;},0);}
+function dreLayoutCalc(){
+  var LY=CFG.dreLayout;dreEditLoad();
+  var tem=function(i){return !!(BALHIST[i]&&BALHIST[i]._mov);},M12=[0,1,2,3,4,5,6,7,8,9,10,11];
+  var all={};Object.keys(CONTA_NOMES).forEach(function(c){if(/^3/.test(c))all[c]=1;});
+  M12.forEach(function(i){if(tem(i))Object.keys(BALHIST[i]._mov).forEach(function(c){if(/^3/.test(c))all[c]=1;});});
+  var codes=Object.keys(all);
+  var folha=function(c){return !codes.some(function(o){return o!==c&&o.indexOf(c+'.')===0;});};
+  var lv=function(c,i){if(!tem(i))return undefined;var e=DRE_EDIT[c];if(e&&e[i]!==undefined)return e[i];var x=BALHIST[i]._mov[c];return x?Math.round((x[1]-x[0])*100)/100:0;};
+  var vals={},rows=[];
+  LY.forEach(function(it){
+    if(it.g){
+      var fl=codes.filter(function(c){return (c===it.g||c.indexOf(it.g+'.')===0)&&folha(c);}).sort(function(a,b){return a.localeCompare(b,'pt',{numeric:true});});
+      var kids=fl.map(function(c){return {code:c,l:CONTA_NOMES[c]||c,v:M12.map(function(i){return lv(c,i);}),ed:M12.map(function(i){return !!(DRE_EDIT[c]&&DRE_EDIT[c][i]!==undefined);})};});
+      var gv=M12.map(function(i){return tem(i)?kids.reduce(function(a,k){return a+k.v[i];},0):undefined;});
+      vals[it.g]=gv;rows.push({tipo:'g',code:it.g,l:it.l,v:gv,kids:kids});
+    }else if(it.t){
+      var v=M12.map(function(i){return tem(i)?it.f.reduce(function(a,k){var x=vals[k];return a+(x&&x[i]?x[i]:0);},0):undefined;});
+      if(it.key)vals[it.key]=v;rows.push({tipo:'t',code:it.code||'',l:it.t,v:v});
+    }else if(it.p){rows.push({tipo:'p',l:it.p,k:it.k,abs:!!it.abs});}
+  });
+  return {rows:rows,vals:vals,base:vals[CFG.dreLayoutBase||'flo']||[]};
+}
+function dreParseBR(t){t=String(t||'').replace(/R\$|\s/g,'');if(!t)return null;var neg=/^\(.*\)$/.test(t);t=t.replace(/[()]/g,'');
+  if(t.indexOf(',')>=0)t=t.replace(/\./g,'').replace(',','.');var v=Number(t);return isFinite(v)?(neg?-v:v):NaN;}
+function dreEditCell(td,code,i){
+  if(td.querySelector('input'))return;
+  dreEditLoad();var R=DRE_LC||dreLayoutCalc(),cur=0;
+  R.rows.forEach(function(r){(r.kids||[]).forEach(function(k){if(k.code===code)cur=k.v[i];});});
+  td.innerHTML='<input class="dre-edin" value="'+(cur||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'">';
+  var inp=td.querySelector('input'),feito=false;inp.focus();inp.select();
+  var ok=function(){if(feito)return;feito=true;var v=dreParseBR(inp.value);
+    if(v===null){if(DRE_EDIT[code]){delete DRE_EDIT[code][i];if(!Object.keys(DRE_EDIT[code]).length)delete DRE_EDIT[code];}}
+    else if(!isNaN(v)){DRE_EDIT[code]=DRE_EDIT[code]||{};DRE_EDIT[code][i]=Math.round(v*100)/100;}
+    dreEditSave();buildDRE();};
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();ok();}else if(e.key==='Escape'){feito=true;buildDRE();}});
+  inp.addEventListener('blur',ok);
+}
+function dreToggleEdit(){DRE_EDITMODE=!DRE_EDITMODE;buildDRE();}
+function dreVoltarPadrao(){if(!dreEditCount())return;if(!confirm('Voltar todos os valores editados ao padrão (os do balancete)?'))return;DRE_EDIT={};dreEditSave();buildDRE();}
+function dreLayoutBtns(){
+  var on=!!(CFG&&CFG.dreLayout),eb=document.getElementById('dreEdBtn'),rb=document.getElementById('dreRstBtn'),n=on?dreEditCount():0;
+  if(eb){eb.style.display=on?'':'none';eb.classList.toggle('on',DRE_EDITMODE);var l=document.getElementById('dreEdLbl');if(l)l.textContent=DRE_EDITMODE?'Concluir edição':'Editar valores';}
+  if(rb){rb.style.display=on&&n?'':'none';var l2=document.getElementById('dreRstLbl');if(l2)l2.textContent='Voltar ao padrão ('+n+')';}
+}
+function buildDRELayout(ci,view){
+  var R=dreLayoutCalc(),B=R.base;DRE_LC=R;
+  var multi=ci.length>1,soma=function(v){var t=0,tem=false;ci.forEach(function(i){if(v[i]!==undefined){t+=v[i];tem=true;}});return tem?t:undefined;};
+  var bA=soma(B);
+  var pc=function(v,b){return b?(v/b*100).toFixed(1).replace('.',',')+'%':'–';};
+  var cel=function(v,b,extra,attr){
+    if(v===undefined)return '<td class="dre-blank">—</td>';
+    var c=(v<0?'vn ':'')+(extra||'');
+    if(view==='val')return '<td class="'+c+'"'+(attr||'')+'>'+fmt(v)+'</td>';
+    if(view==='pct')return '<td class="'+c+'"'+(attr||'')+'><span class="vpc" style="display:inline">'+pc(v,b)+'</span></td>';
+    return '<td class="'+c+'"'+(attr||'')+'>'+fmt(v)+'<span class="vpc">'+pc(v,b)+'</span></td>';};
+  var h='';
+  R.rows.forEach(function(r){
+    if(r.tipo==='p'){var v=R.vals[r.k]||[];
+      h+='<tr class="rs dre-lp"><td style="padding-left:24px">'+r.l+'</td>';
+      ci.forEach(function(i){var x=v[i];h+=x===undefined||!B[i]?'<td class="dre-blank">—</td>':'<td><span class="vpc" style="display:inline">'+pc(r.abs?Math.abs(x):x,B[i])+'</span></td>';});
+      if(multi){var t=soma(v);h+=t===undefined||!bA?'<td class="dre-blank">—</td>':'<td><span class="vpc" style="display:inline">'+pc(r.abs?Math.abs(t):t,bA)+'</span></td>';}
+      h+='</tr>';return;}
+    var tot=r.tipo==='t',solo=r.tipo==='g'&&r.kids.length===1&&r.kids[0].code===r.code,aberto=r.tipo==='g'&&!solo&&!DRE_LX[r.code];
+    var bg=tot?'background:rgba(201,168,76,.08)':'background:rgba(255,255,255,.02)';
+    h+='<tr class="'+(tot?'rt':'rst')+'"><td style="'+bg+';padding-left:12px">';
+    if(r.tipo==='g'&&!solo)h+='<span class="dre-toggle" onclick="DRE_LX[\''+r.code+'\']=!DRE_LX[\''+r.code+'\'];buildDRE()">'+(aberto?'▾':'▸')+'</span> ';
+    h+=(r.code?'<span class="dre-cod">'+r.code+'</span>':'')+r.l+'</td>';
+    var edSolo=solo&&DRE_EDITMODE;
+    ci.forEach(function(i){var e=solo&&r.kids[0].ed[i];h+=cel(r.v[i],B[i],(edSolo&&r.v[i]!==undefined?'dre-ed ':'')+(e?'dre-edv':''),edSolo&&r.v[i]!==undefined?' onclick="dreEditCell(this,\''+r.code+'\','+i+')"':'');});
+    if(multi)h+=cel(soma(r.v),bA,'dre-anual');
+    h+='</tr>';
+    if(aberto)r.kids.forEach(function(k){
+      h+='<tr class="rs"><td style="padding-left:40px"><span class="dre-cod">'+k.code+'</span>'+relEsc(k.l)+'</td>';
+      ci.forEach(function(i){var pode=DRE_EDITMODE&&k.v[i]!==undefined;
+        h+=cel(k.v[i],B[i],(pode?'dre-ed ':'')+(k.ed[i]?'dre-edv':''),pode?' onclick="dreEditCell(this,\''+k.code+'\','+i+')"':'');});
+      if(multi)h+=cel(soma(k.v),bA,'dre-anual');
+      h+='</tr>';});
+  });
+  return h;
+}
 /* ---------- Ajuste realizado (CFG.dreAjuste) ----------
    Bloco no fim da DRE, como na planilha "DRE CONTÁBIL" do cliente: resultado antes do IR sem o ajuste da PDD,
    mais o principal pago de empréstimos e parcelamentos e os juros, chegando ao resultado ajustado. */
@@ -1105,6 +1204,7 @@ function dreAjMes(i){
   // principal pago = débitos do curto prazo, menos os juros lançados direto nele (créditos do CP que não vieram do LP)
   var princ=function(x){return S(x.cp,'d')-Math.max(0,S(x.cp,'c')-S(x.lp,'d'));};
   var no=acharNo(DTREE,85),ai=no&&no.v[i]!==undefined?no.v[i]:0;
+  if(CFG.dreLayout){var LCx=DRE_LC||dreLayoutCalc(),rx=LCx.vals[CFG.dreLayoutResultado||'rai'];if(rx&&rx[i]!==undefined)ai=rx[i];}
   var pdd=A.pdd?-lalMovMes(i,A.pdd[0],'dc'):0,antes=ai+pdd;
   var am=princ(A.amortizacao),pa=princ(A.parcelamentos),ju=S(A.juros,'dc'),aj=antes+am+pa+ju,base=-S(A.base,'dc');
   return {pdd:pdd,antes:antes,am:am,pa:pa,ju:ju,aj:aj,base:base};
@@ -1151,15 +1251,21 @@ function buildDRE(){
   else if(m==='range')mnLbl=(ci.length===1?MF[ci[0]]:MF[ci[0]]+'–'+MF[ci[ci.length-1]])+' 2026';
   else mnLbl=MF[parseInt(m)]+' 2026';
   var subEl=document.getElementById('dSub');
-  if(subEl)subEl.textContent='Demonstrativo completo · '+mnLbl;
+  if(subEl)subEl.textContent='Demonstrativo completo · '+mnLbl+(CFG&&CFG.dreLayout?' · layout da empresa: crédito positivo, débito negativo · % sobre o faturamento líquido':'');
   var h='<table class="dt"><thead><tr><th>Conta</th>';
   ci.forEach(function(i){h+='<th>'+M[i]+'</th>';});
   if(ci.length>1)h+='<th>ANUAL</th>';
   h+='</tr></thead><tbody>';
-  h+=renderTreeRows(DTREE,ci,view,base,bk,0);
+  var LYT=!!(CFG&&CFG.dreLayout);
+  h+=LYT?buildDRELayout(ci,view):renderTreeRows(DTREE,ci,view,base,bk,0);
   h+=dreAjusteRows(ci);
   h+='</tbody></table>';
+  if(LYT){var ne=dreEditCount();
+    if(ne||DRE_EDITMODE)h='<div class="dre-edbar">'+(DRE_EDITMODE?'<b>Modo de edição:</b> clique em um valor das contas analíticas para alterar; os totais e percentuais recalculam na hora. ':'')+
+      (ne?'<b>'+ne+' valor(es) editado(s)</b> (destacados) — simulação só neste navegador; os balancetes não mudam. ':'')+
+      (ne?'<button class="fs" onclick="dreVoltarPadrao()">Voltar ao padrão</button>':'')+'</div>'+h;}
   document.getElementById('dTable').innerHTML=h;
+  dreLayoutBtns();DRE_LC=null;
   DRE_CI=ci;
   refreshDreAllBtn();
 }
@@ -2988,12 +3094,14 @@ function exportRelatorioExcel(){
 
 /* ---------- DRE: expandir/recolher tudo e exportação .xlsx no modelo DRE Gerencial ---------- */
 function dreAllExpanded(){
+  if(CFG&&CFG.dreLayout)return !CFG.dreLayout.some(function(it){return it.g&&DRE_LX[it.g];});
   var all=true;
   (function w(ns){ns.forEach(function(n){if(n.c){if(!dreExpanded[n.r])all=false;w(n.c);}});})(DTREE);
   return all;
 }
 function toggleDreAll(){
   var exp=!dreAllExpanded();
+  if(CFG&&CFG.dreLayout){CFG.dreLayout.forEach(function(it){if(it.g)DRE_LX[it.g]=!exp;});buildDRE();return;}
   (function w(ns){ns.forEach(function(n){if(n.c){dreExpanded[n.r]=exp;w(n.c);}});})(DTREE);
   buildDRE();
 }
@@ -3083,6 +3191,31 @@ async function buildDREWorkbook(){
           det:{fa:'122540',fb:'122540',lb:'FFFFFF',v:'4FC3F7',b:false,h:15},
           det2:{fa:'122540',fb:'122540',lb:'D5DCE4',v:'D5DCE4',b:false,h:15}};
   var r=6;
+  if(CFG&&CFG.dreLayout){
+    var LR=dreLayoutCalc();DRE_LC=LR;var LB=LR.base,sm=function(v){var t=0,tem=false;ci.forEach(function(i){if(v[i]!==undefined){t+=v[i];tem=true;}});return tem?t:null;},LBA=sm(LB);
+    var lput=function(row,S,c,v,font,al,nf){var cell=row.getCell(c);cell.value=v;cell.font=Object.assign({name:'Calibri'},font);cell.fill=fill(c===1?S.fa:S.fb);
+      cell.alignment={horizontal:al,vertical:'middle'};if(nf)cell.numFmt=nf;if(c>1)cell.border={bottom:{style:'thin',color:C('1E3A5F')}};};
+    var lrow=function(code,lbl,v,key,depth,hid,pct,abs,edit){
+      var S=ST[key],row=ws.getRow(r);row.height=S.h;
+      if(depth){row.outlineLevel=1;maxDepth=1;if(hid)row.hidden=true;}
+      lput(row,S,1,code,{size:8,bold:key==='tot',color:C(key==='tot'?'0D1B2E':'78909C')},'left');
+      lput(row,S,2,(key==='tot'?'':key==='sub'?'  ':'      ')+lbl,{size:9,bold:S.b,color:C(S.lb)},'left');
+      ci.forEach(function(i,k){var c0=3+k*3,x=v[i],has=x!==undefined&&x!==null;
+        if(pct){lput(row,S,c0,has&&LB[i]?(abs?Math.abs(x):x)/LB[i]:null,{size:8,bold:S.b,color:C('F4A021')},'right','0.0%');lput(row,S,c0+1,null,{size:8},'center');}
+        else{lput(row,S,c0,has?x:null,{size:9,bold:S.b,color:C(edit&&edit[i]?'FFD54F':S.v)},'right',NF);lput(row,S,c0+1,has&&LB[i]?x/LB[i]:null,{size:8,bold:S.b,color:C('F4A021')},'center','0.0%');}
+        lput(row,S,c0+2,null,{size:8},'center');});
+      var t=sm(v);
+      if(pct){lput(row,S,NC-1,t!==null&&LBA?(abs?Math.abs(t):t)/LBA:null,{size:8,bold:true,color:C('F4A021')},'right','0.0%');lput(row,S,NC,null,{size:8},'center');}
+      else{lput(row,S,NC-1,t,{size:9,bold:true,color:C('2ECC71')},'right',NF);lput(row,S,NC,t!==null&&LBA?t/LBA:null,{size:8,bold:S.b,color:C('F4A021')},'center','0.0%');}
+      r++;};
+    LR.rows.forEach(function(x){
+      if(x.tipo==='p'){lrow('',x.l,LR.vals[x.k]||[],'det',0,false,true,x.abs);return;}
+      if(x.tipo==='t'){lrow(x.code,x.l,x.v,'tot',0);return;}
+      var solo=x.kids.length===1&&x.kids[0].code===x.code;
+      lrow(x.code,x.l,x.v,'sub',0,false,false,false,solo?x.kids[0].ed:null);
+      if(!solo)x.kids.forEach(function(k){lrow(k.code,k.l,k.v,'det2',1,!!DRE_LX[x.code],false,false,k.ed);});
+    });
+  }else
   (function walk(nodes,depth,anc){
     nodes.forEach(function(n){
       var up=n.l===n.l.toUpperCase();
@@ -3150,6 +3283,7 @@ async function buildDREWorkbook(){
     linAj('','RESULTADO AJUSTADO','aj','tot');
     linAj('','Margem operacional','aj','det',true);
   }
+  DRE_LC=null;
   ws.properties.outlineLevelRow=maxDepth;
   var ft=((document.querySelector('#page-ov .footer')||{}).textContent||'').trim();
   var fr=ws.getRow(r+1);

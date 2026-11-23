@@ -154,6 +154,43 @@
     guardarMov: true,
     // Indicadores do relatório da diretoria (modelo enviado pela Centerfrio): faixas de saudável / atenção / risco.
     // bom: 'alto' = quanto maior melhor; 'baixo' = quanto menor melhor. [limite saudável, limite atenção]
+    // tela da DRE no layout da planilha "DRE CONTÁBIL" do cliente (todas as analíticas; crédito +, débito −)
+    dreLayoutBase: 'flo',
+    dreLayout: [
+      { g: '3.1.1.01.001', l: 'FATURAMENTO BRUTO OPERACIONAL' },
+      { g: '3.1.1.01.009', l: '(-) DEVOLUÇÕES E CANCELAMENTOS' },
+      { t: 'FATURAMENTO LÍQUIDO OPERACIONAL', code: '', f: ['3.1.1.01.001', '3.1.1.01.009'], key: 'flo' },
+      { g: '3.1.1.01.010', l: '(-) TRIBUTOS S/ RECEITA' },
+      { t: 'RECEITA LÍQUIDA OPERACIONAL', code: '3.1.1.01', f: ['flo', '3.1.1.01.010'], key: 'rlq' },
+      { g: '3.1.1.03.001', l: 'CUSTOS DAS MERCADORIAS VENDIDAS' },
+      { g: '3.1.1.03.003', l: 'OUTRAS OPERAÇÕES S/ CUSTO' },
+      { t: 'RESULTADO BRUTO OPERACIONAL', code: '3.1.1', f: ['rlq', '3.1.1.03.001', '3.1.1.03.003'], key: 'rbo' },
+      { p: 'ROB / FLO (em %) c/ demais custos', k: 'rbo' },
+      { g: '3.1.3.01.001', l: 'DESPESAS C/ PESSOAL' },
+      { g: '3.1.3.01.005', l: 'DESPESAS COMERCIAIS' },
+      { g: '3.1.3.01.010', l: 'DESPESAS C/ SERVIÇOS PROFISSIONAIS' },
+      { g: '3.1.3.01.015', l: 'DESPESAS C/ MANUTENÇÃO' },
+      { g: '3.1.3.01.020', l: 'DESPESAS C/ OCUPAÇÃO' },
+      { g: '3.1.3.01.025', l: 'DESPESAS C/ VEÍCULOS' },
+      { g: '3.1.3.01.045', l: 'DESPESAS GERAIS' },
+      { g: '3.1.3.01.050', l: 'DESPESAS TRIBUTÁRIAS' },
+      { g: '3.1.3.01.055', l: 'DESPESAS INDEDUTÍVEIS' },
+      { g: '3.1.3.01.060', l: 'DEPRECIAÇÕES E AMORTIZAÇÕES' },
+      { t: '( = ) TOTAL DAS DESPESAS OPERACIONAIS', code: '3.1.3.01', key: 'tdo',
+        f: ['3.1.3.01.001', '3.1.3.01.005', '3.1.3.01.010', '3.1.3.01.015', '3.1.3.01.020', '3.1.3.01.025', '3.1.3.01.045', '3.1.3.01.050', '3.1.3.01.055', '3.1.3.01.060'] },
+      { p: 'TDO / FLO (em %)', k: 'tdo', abs: true },
+      { g: '3.1.3.03.001', l: 'OUTRAS RECEITAS OPERACIONAIS' },
+      { t: 'RESULTADO LÍQUIDO OPERACIONAL', code: '3.1.3.04.999', f: ['rbo', 'tdo', '3.1.3.03.001'], key: 'rlo' },
+      { p: 'RLO / FLO (em %)', k: 'rlo' },
+      { g: '3.1.3.05.001', l: 'RECEITAS FINANCEIRAS' },
+      { g: '3.1.3.05.002', l: 'DESPESAS FINANCEIRAS' },
+      { g: '3.3', l: 'OUTRAS RECEITAS / DESPESAS DESCONTINUADAS' },
+      { t: 'RESULTADO ANTES IR/CS (REAL CONTÁBIL)', code: '3.1', f: ['rlo', '3.1.3.05.001', '3.1.3.05.002', '3.3'], key: 'rai' },
+      { p: 'RESULTADO ANTES IRPJ/CSLL (em %)', k: 'rai' },
+      { g: '3.5.1', l: 'TRIBUTOS S/ RESULTADO (IRPJ/CSLL)' },
+      { t: 'RESULTADO APÓS IR/CS', code: '3', f: ['rai', '3.5.1'], key: 'rf' },
+      { p: 'RESULTADO (em %)', k: 'rf' }
+    ],
     // bloco "Ajuste realizado" no fim da DRE (como na planilha DRE CONTÁBIL do cliente)
     dreAjuste: {
       pdd: ['3.1.3.01.045.00018', 'Perdas cred. liq. duvidosa'],
