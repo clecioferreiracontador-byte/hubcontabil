@@ -3716,7 +3716,17 @@ function cfImg(type,labels,ds,opts,w,h){
   if(!host){host=document.createElement('div');host.id='cfImgHost';host.style.cssText='position:fixed;left:-10000px;top:0;width:'+w+'px;height:'+h+'px';document.body.appendChild(host);}
   var cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.style.width=w+'px';cv.style.height=h+'px';host.appendChild(cv);
   opts=Object.assign({},opts,{animation:false,responsive:false,maintainAspectRatio:false,devicePixelRatio:2});
-  var url='';try{var ch=new Chart(cv,{type:type,data:{labels:labels,datasets:ds},options:opts});url=ch.toBase64Image('image/png',1);ch.destroy();}catch(e){console.warn('gráfico do relatório',e);}
+  // linhas: o valor do último mês escrito ao lado do ponto (ex.: 8,9 ou 3,9%)
+  var plug=[];
+  if(type==='line'){
+    opts.layout=Object.assign({},opts.layout,{padding:{right:52}});
+    plug.push({id:'ultimoValor',afterDatasetsDraw:function(c){var x=c.ctx;
+      c.data.datasets.forEach(function(d,di){var meta=c.getDatasetMeta(di);if(meta.hidden)return;
+        for(var k=d.data.length-1;k>=0;k--){var v=d.data[k];if(v===null||v===undefined)continue;var pt=meta.data[k];if(!pt)break;
+          var t=v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+(/%/.test(d.label||'')?'%':'');
+          x.save();x.font='bold 12px Arial';x.fillStyle=d.borderColor||'#111';x.textAlign='left';x.textBaseline='middle';x.fillText(t,pt.x+7,pt.y);x.restore();break;}});}});
+  }
+  var url='';try{var ch=new Chart(cv,{type:type,data:{labels:labels,datasets:ds},options:opts,plugins:plug});url=ch.toBase64Image('image/png',1);ch.destroy();}catch(e){console.warn('gráfico do relatório',e);}
   host.removeChild(cv);return url;
 }
 function relDirDados(){
