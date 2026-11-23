@@ -3604,6 +3604,188 @@ function compAddAjuste(){
 function compTirarAjuste(k){if(!confirm('Tirar este ajuste?'))return;AJUSTES.splice(k,1);compSalvarBase();buildComp();}
 function compSalvarRec(chave){var t=(document.getElementById('recTxt').value||'').trim();if(t)REC_TXT[chave]=t;else delete REC_TXT[chave];compSalvarBase();buildComp();}
 function compSalvarMeta(){var v=(document.getElementById('icvMetaIn').value||'').trim();ICV_META=v?parseBR(v)/100:null;compSalvarBase();buildComp();}
+/* ---------- Relatório à diretoria (empresa com CFG.comparativo): o layout do modelo enviado pela Centerfrio ----------
+   Abre numa janela própria, em páginas A4 (Imprimir › Salvar como PDF), e exporta o mesmo conteúdo em Excel.
+   Usa a visão escolhida no Comparativo (sem ou com ajuste) e o período selecionado. */
+function compNatAll(ate){
+  var NIV=CFG.naturezaNivel||0,nat={};
+  var soma=function(mv,k){Object.keys(mv).forEach(function(c){if(!/^3/.test(c)||/^3\.1\.1\.01\.001/.test(c)||(NIV&&c.split('.').length!==NIV))return;var x=mv[c];(nat[c]=nat[c]||{a:0,b:0})[k]+=x[0]-x[1];});};
+  for(var i=0;i<=ate;i++){if(BALHIST[i]&&BALHIST[i]._mov)soma(BALHIST[i]._mov,'a');if(ANT&&ANT.mov[i])soma(ANT.mov[i],'b');}
+  var adA=compAdjNat(DRE_ANO,ate),adB=ANT?compAdjNat(ANT.ano,ate):{};
+  Object.keys(adA).forEach(function(c){(nat[c]=nat[c]||{a:0,b:0}).a+=adA[c];});Object.keys(adB).forEach(function(c){(nat[c]=nat[c]||{a:0,b:0}).b+=adB[c];});
+  return nat;
+}
+// grupo da natureza: o nome da conta-mãe (5 níveis) ou a linha da DRE
+function compGrupoNat(c){var p=c.split('.').slice(0,5).join('.');return CONTA_NOMES[p]||'';}
+function cfImg(type,labels,ds,opts,w,h){
+  var host=document.getElementById('cfImgHost');
+  if(!host){host=document.createElement('div');host.id='cfImgHost';host.style.cssText='position:fixed;left:-10000px;top:0;width:'+w+'px;height:'+h+'px';document.body.appendChild(host);}
+  var cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.style.width=w+'px';cv.style.height=h+'px';host.appendChild(cv);
+  opts=Object.assign({},opts,{animation:false,responsive:false,maintainAspectRatio:false,devicePixelRatio:2});
+  var url='';try{var ch=new Chart(cv,{type:type,data:{labels:labels,datasets:ds},options:opts});url=ch.toBase64Image('image/png',1);ch.destroy();}catch(e){console.warn('gráfico do relatório',e);}
+  host.removeChild(cv);return url;
+}
+function relDirDados(){
+  var meses=Object.keys(BALHIST).map(Number).sort(function(a,b){return a-b;});
+  var ate=COMP.mes!==null&&meses.indexOf(COMP.mes)>=0?COMP.mes:meses[meses.length-1];
+  var ano=DRE_ANO,anoA=String(+DRE_ANO-1),a=function(r){return compAtual(r,ate);},p=function(r){return compAnt(r,ate);};
+  var nat=compNatAll(ate),rb=a(6),rbA=p(6);
+  var lista=Object.keys(nat).map(function(c){return {c:c,n:CONTA_NOMES[c]||c,g:compGrupoNat(c),a:nat[c].a,b:nat[c].b};}).filter(function(x){return x.a>0.5||x.b>0.5;}).sort(function(x,y){return y.a-x.a;});
+  var IC=CFG.icv,icv=null;
+  if(IC){var ta=0,tb=0,li=IC.contas.map(function(c){var x=nat[c]||{a:0,b:0};ta+=x.a;tb+=x.b;return {c:c,n:CONTA_NOMES[c]||c,g:compGrupoNat(c),a:x.a,b:x.b};}).sort(function(x,y){return y.a-x.a;});
+    icv={lin:li,ta:ta,tb:tb,a:rb?ta/rb:null,b:rbA?tb/rbA:null,meta:ICV_META};}
+  return {ate:ate,ano:ano,anoA:anoA,per:'jan–'+M[ate].toLowerCase(),perC:'jan–'+M[ate].toLowerCase()+'/'+String(ano).slice(2),a:a,p:p,rb:rb,rbA:rbA,nat:nat,lista:lista,icv:icv,
+    ind:compIndicadores(ate),aj:COMP.aj,rec:REC_TXT[ano+'-'+String(ate+1).padStart(2,'0')]||''};
+}
+function abrirRelDiretoria(){
+  if(!CFG||!CFG.comparativo)return;
+  if(!Object.keys(BALHIST).length){alert('Importe os balancetes do ano antes de gerar o relatório.');return;}
+  var R=relDirDados(),ano=R.ano,anoA=R.anoA,E=relEsc;
+  var mil=function(v){return v===null||v===undefined||!isFinite(v)?'–':(Math.abs(v/1000)<0.05?'0,0':(v/1000).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}));};
+  var pct=function(v,d){return v===null||!isFinite(v)?'–':(v>=0?'+':'')+(v*100).toFixed(d===undefined?1:d).replace('.',',')+'%';};
+  var pc=function(v,b){return v===null||!b?'–':(v/b*100).toFixed(1).replace('.',',')+'%';};
+  var mi=function(v){return v===null?'–':'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' mi';};
+  var titulo='Resultado e gastos '+R.per+' '+ano+' × '+anoA,pags=[],np=0;
+  var nome=(CFG.rodape||CFG.titulo),rod=function(){np++;return '<div class="rd-f"><span>'+E(CFG.titulo)+' · Relatório Financeiro '+R.perC+(R.aj?' · com ajuste':'')+'</span><span>'+np+'</span></div>';};
+  var pg=function(kick,tit,corpo){pags.push('<section class="rd-p"><div class="rd-h"><div><div class="rd-k">'+E(kick)+'</div><h2>'+tit+'</h2></div>'+(CFG.logoCor?'<img src="'+CFG.logoCor+'" alt="">':'<span class="rd-lg">'+E(CFG.titulo)+'</span>')+'</div><div class="rd-b">'+corpo+'</div>'+rod()+'</section>');};
+  // capa
+  np++;
+  pags.push('<section class="rd-p rd-capa"><div class="rd-cb">'+(CFG.logo?'<img src="'+CFG.logo+'" alt="'+E(CFG.titulo)+'">':'')+'</div><div class="rd-ct"><div class="rd-k">Relatório à diretoria</div><h1>'+E(titulo)+'</h1>'+
+    '<p>DRE, indicadores de desempenho, ICV dos gestores, todas as naturezas de gasto e glossário'+(R.aj?' · <b>visão com ajuste</b>':'')+'.</p><hr><p class="rd-s">Base: DRE contábil e balancetes de '+E(anoA)+' e '+E(ano)+'<br>Valores em R$ mil, acumulado '+R.per+' · Audicon Contadores · '+new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'})+'</p></div><div class="rd-cf"></div></section>');
+  // indicadores por chave
+  var I={};R.ind.forEach(function(x){I[x[0]]=x;});
+  var cls=function(k,v){return compClasse(k,v);},nomeCls={ok:'Saudável',at:'Atenção',rs:'Risco'};
+  var rbV=R.rb,llV=R.a(89),ebV=R.a(90),mb=I.mb;
+  // resumo executivo (mensagens a partir dos números)
+  var cmvV=R.a(703)||R.a(15),cmvA=R.p(703)!==null?R.p(703):R.p(15),dtV=R.a(61),dtA=R.p(61),dfV=R.a(84),dfA=R.p(84);
+  var msgs=[];
+  if(R.rbA!==null&&cmvA)msgs.push(['Vendemos '+(rbV>=R.rbA?'mais':'menos')+', '+(mb[5]<mb[4]?'ganhamos menos':'com margem maior')+'.','A receita bruta '+(rbV>=R.rbA?'cresceu ':'caiu ')+pct(rbV/R.rbA-1)+', o CMV '+(cmvV>=cmvA?'subiu ':'caiu ')+pct(cmvV/cmvA-1)+'. A margem bruta foi de '+compFmtInd(mb[4],'%')+' para '+compFmtInd(mb[5],'%')+'.']);
+  if(I.ebitda[4]!==null)msgs.push(['A operação gera '+(ebV>=R.p(90)?'mais':'menos')+' caixa.','O EBITDA foi de '+mi(R.p(90))+' para '+mi(ebV)+' ('+pct(ebV/R.p(90)-1)+'); margem EBITDA de '+compFmtInd(I.ebitda[4],'%')+' para '+compFmtInd(I.ebitda[5],'%')+'.']);
+  if(dtA)msgs.push(['A estrutura '+(dtV/dtA-1>rbV/R.rbA-1?'cresceu mais que a venda':'cresceu menos que a venda')+'.','As despesas operacionais (com depreciação) variaram '+pct(dtV/dtA-1)+', contra '+pct(rbV/R.rbA-1)+' da receita bruta.']);
+  if(dfA)msgs.push(['Despesas financeiras '+(dfV<dfA?'caíram':'subiram')+'.','Foram de '+mi(dfA)+' para '+mi(dfV)+' ('+pct(dfV/dfA-1)+'). Cobertura de juros: '+compFmtInd(I.cob[5],'x')+'.']);
+  if(I.giro[5]!==null)msgs.push(['Capital de giro.','Giro de estoque de '+compFmtInd(I.giro[5],'d')+', recebimento em '+compFmtInd(I.pmr[5],'d')+' e pagamento em '+compFmtInd(I.pmp[5],'d')+': ciclo de caixa de '+compFmtInd(I.ciclo[5],'d')+'.']);
+  var card=function(t,v,s,neg){return '<div class="rd-kc"><div class="t">'+t+'</div><div class="v">'+v+'</div><div class="s'+(neg?' neg':'')+'">'+s+'</div></div>';};
+  pg('Resumo executivo','O que a diretoria precisa saber','<div class="rd-kg">'+
+    card('Receita bruta',mi(rbV),pct(R.rbA?rbV/R.rbA-1:null)+' vs '+anoA,R.rbA&&rbV<R.rbA)+card('EBITDA',mi(ebV),pct(R.p(90)?ebV/R.p(90)-1:null)+' vs '+anoA,R.p(90)&&ebV<R.p(90))+
+    card('Lucro líquido',mi(llV),pct(R.p(89)?llV/R.p(89)-1:null)+' vs '+anoA,R.p(89)&&llV<R.p(89))+card('Margem bruta',compFmtInd(mb[5],'%'),mb[4]===null?'':((mb[5]-mb[4])*100>=0?'+':'')+((mb[5]-mb[4])*100).toFixed(1).replace('.',',')+' p.p. vs '+anoA,mb[5]<mb[4])+'</div>'+
+    msgs.map(function(m){return '<div class="rd-msg"><b>'+E(m[0])+'</b><p>'+E(m[1])+'</p></div>';}).join(''));
+  // 1 DRE acumulada
+  var linhas=[[6,'Receita Bruta'],[7,'Deduções (devoluções + tributos)'],[14,'Receita Líquida'],[703,'CMV'],[60,'Lucro Bruto'],[61,'Despesas operacionais (c/ depreciação)'],[90,'EBITDA'],[84,'Despesas Financeiras'],[85,'Lucro antes de IRPJ/CSLL'],[86,'IRPJ/CSLL'],[89,'Lucro Líquido']].filter(function(x){return compNo(x[0]);});
+  var neg={7:1,703:1,61:1,84:1,86:1};
+  var mx=Math.max.apply(null,linhas.map(function(x){var b=R.p(x[0]),v=R.a(x[0]);return b===null?0:Math.abs(v-b);}))||1;
+  pg('1 · DRE acumulada','Do faturamento ao lucro','<table class="rd-t"><thead><tr><th>Conta</th><th>'+anoA+'</th><th>'+ano+'</th><th>Variação</th><th></th></tr></thead><tbody>'+
+    linhas.map(function(x){var s=neg[x[0]]?-1:1,v=R.a(x[0])*s,b=R.p(x[0]),d=b===null?null:v-b*s,bom=d===null||d>=0;   // custos já estão negativos: variação positiva sempre melhora o resultado
+      var w=d===null?0:Math.round(Math.abs(d)/mx*60);
+      return '<tr class="'+([14,60,90,89].indexOf(x[0])>=0?'rd-tot':'')+'"><td>'+E(x[1])+'</td><td>'+mil(b===null?null:b*s)+'</td><td>'+mil(v)+'</td><td class="'+(bom?'pos':'neg')+'">'+(d===null?'–':(d>=0?'+':'')+mil(d)+'<small>'+pct(b?v/(b*s)-1:null)+'</small>')+'</td><td><span class="rd-bar '+(bom?'pos':'neg')+'" style="width:'+w+'px"></span></td></tr>';}).join('')+
+    '</tbody></table><div class="rd-nt">Leitura: verde = melhorou o resultado; vermelho = piorou. Custos e despesas aparecem negativos. EBITDA = resultado operacional + outras receitas operacionais + depreciação.</div>');
+  // 2 tendência
+  var lab=[],rl=[],cmv=[],me=[];
+  for(var k=13;k>=0;k--){var m=R.ate-k,prev=m<0,mm=prev?m+12:m;lab.push(M[mm].toLowerCase()+'/'+String(prev?anoA:ano).slice(2));
+    var g=function(r){return prev?compMesAnt(r,mm):compMesAtual(r,mm);},vrl=g(14),vcmv=g(703)!==null?g(703):g(15),veb=g(90);
+    rl.push(vrl===null?null:+(vrl/1e6).toFixed(2));cmv.push(vcmv===null?null:+(vcmv/1e6).toFixed(2));me.push(vrl&&veb!==null?+(veb/vrl*100).toFixed(1):null);}
+  var lo={plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#eee'},ticks:{font:{size:10}}}}};
+  var g1=cfImg('line',lab,[{label:'Receita líquida (R$ mi)',data:rl,borderColor:'#111',backgroundColor:'#111',tension:.25,pointRadius:2},{label:'CMV (R$ mi)',data:cmv,borderColor:'#E30613',backgroundColor:'#E30613',tension:.25,pointRadius:2}],lo,640,300);
+  var g2=cfImg('line',lab,[{label:'Margem EBITDA mensal (%)',data:me,borderColor:'#E30613',backgroundColor:'#E30613',tension:.25,pointRadius:2}],lo,640,260);
+  pg('2 · Tendência de 14 meses','A margem EBITDA mês a mês','<div class="rd-g"><div class="rd-gt">Receita líquida × CMV</div><img src="'+g1+'" alt=""></div><div class="rd-g"><div class="rd-gt">Margem EBITDA</div><img src="'+g2+'" alt=""></div>');
+  // 3 e 4 indicadores
+  var indCard=function(x){var c=cls(x[0],x[5]);return '<div class="rd-ic '+c+'"><div class="rd-it"><b>'+E(x[1])+'</b>'+(c?'<span>'+nomeCls[c]+'</span>':'')+'</div><div class="rd-iv"><span class="a">'+anoA+'<b>'+compFmtInd(x[4],x[3])+'</b></span><span>'+ano+'<b>'+compFmtInd(x[5],x[3])+'</b></span></div><div class="rd-if">'+E(x[2])+'</div></div>';};
+  pg('3 · Indicadores de rentabilidade','Margens, juros, estrutura e impostos',['mb','ebitda','ml','cob','sga','taxa'].map(function(k){return indCard(I[k]);}).join(''));
+  pg('4 · Capital de giro','Quanto tempo o dinheiro fica preso',['giro','pmr','pmp','ciclo'].map(function(k){return indCard(I[k]);}).join('')+'<div class="rd-nt">Prazos calculados com o estoque de dezembro de '+anoA+' e os saldos do balancete de '+MF[R.ate].toLowerCase()+'/'+ano+'.</div>');
+  // 5 grupos
+  var G=(CFG.gruposDespesa||[]).filter(function(x){return compNo(x[0]);});
+  var gimg=cfImg('bar',G.map(function(x){return x[1];}),[{label:anoA,data:G.map(function(x){var v=R.p(x[0]);return v===null||!R.rbA?null:+(v/R.rbA*100).toFixed(2);}),backgroundColor:'#bbb'},{label:ano,data:G.map(function(x){return R.rb?+(R.a(x[0])/R.rb*100).toFixed(2):null;}),backgroundColor:'#E30613'}],
+    {indexAxis:'y',plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{type:'logarithmic',grid:{color:'#eee'},ticks:{font:{size:10},callback:function(v){return [0.1,0.5,1,5,10,50].indexOf(+v)>=0?v+'%':'';}}},y:{grid:{display:false},ticks:{font:{size:11}}}}},640,520);
+  pg('5 · Gastos por grupo','Onde cada real da receita está indo','<div class="rd-g"><img src="'+gimg+'" alt=""></div><table class="rd-t"><thead><tr><th>Grupo</th><th>% RB '+anoA+'</th><th>% RB '+ano+'</th><th>Var. p.p.</th></tr></thead><tbody>'+
+    G.map(function(x){var b=R.p(x[0]),v=R.a(x[0]),pb=b===null||!R.rbA?null:b/R.rbA,pa=R.rb?v/R.rb:null;return '<tr><td>'+E(x[1])+'</td><td>'+pc(b,R.rbA)+'</td><td>'+pc(v,R.rb)+'</td><td class="'+(pa!==null&&pb!==null&&pa>pb?'neg':'pos')+'">'+(pa===null||pb===null?'–':((pa-pb)*100>=0?'+':'')+((pa-pb)*100).toFixed(2).replace('.',','))+'</td></tr>';}).join('')+'</tbody></table>');
+  // 6 altas e quedas (sem CMV)
+  var semCmv=R.lista.filter(function(x){return !/^3\.1\.1\.03\.001/.test(x.c);}).map(function(x){return Object.assign({d:x.a-x.b},x);});
+  var altas=semCmv.slice().sort(function(x,y){return y.d-x.d;}).filter(function(x){return x.d>0;}).slice(0,8),quedas=semCmv.slice().sort(function(x,y){return x.d-y.d;}).filter(function(x){return x.d<0;}).slice(0,8);
+  var tabAQ=function(l){return '<table class="rd-t"><thead><tr><th>Natureza</th><th>'+anoA+'</th><th>'+ano+'</th><th>Var. R$</th></tr></thead><tbody>'+l.map(function(x){return '<tr><td>'+E(x.n)+'<small>'+E(x.g)+'</small></td><td>'+mil(x.b)+'</td><td>'+mil(x.a)+'</td><td class="'+(x.d>0?'neg':'pos')+'">'+(x.d>0?'+':'')+mil(x.d)+'<small>'+pct(x.b>0.5?x.a/x.b-1:null)+'</small></td></tr>';}).join('')+'</tbody></table>';};
+  pg('6 · Naturezas que mais mudaram','Maiores altas e quedas em R$ (sem CMV)','<div class="rd-st">Maiores altas</div>'+tabAQ(altas)+'<div class="rd-st">Maiores quedas</div>'+tabAQ(quedas));
+  // 7 ranking
+  var cres=R.rbA?R.rb/R.rbA-1:null;
+  var tabNat=function(l,ini){return '<table class="rd-t rd-sm"><thead><tr><th>#</th><th>Natureza</th><th>'+anoA+'</th><th>'+ano+'</th><th>Var.</th><th>% RB</th></tr></thead><tbody>'+l.map(function(x,k){var v=x.b>0.5?x.a/x.b-1:null;return '<tr><td>'+(ini+k+1)+'</td><td>'+E(x.n)+'</td><td>'+mil(x.b)+'</td><td>'+mil(x.a)+'</td><td class="'+(v!==null&&cres!==null&&v>cres?'neg':'')+'">'+pct(v,0)+'</td><td>'+pc(x.a,R.rb)+'</td></tr>';}).join('')+'</tbody></table>';};
+  pg('7 · Ranking de saídas','As 20 maiores naturezas de '+ano,tabNat(R.lista.slice(0,20),0)+'<div class="rd-nt">Vermelho = cresceu acima da receita bruta ('+pct(cres)+'). A lista completa das '+R.lista.length+' naturezas está no anexo.</div>');
+  // 8 recomendações
+  var recs=R.rec?R.rec.split(/\n+/).map(function(t){return t.trim();}).filter(Boolean):[];
+  var autos=[];R.ind.forEach(function(x){var c=cls(x[0],x[5]);if(c==='rs')autos.push(x[1]+' em risco ('+compFmtInd(x[5],x[3])+').');});
+  pg('8 · Recomendações','Frentes para recuperar o resultado',(recs.length?recs:autos).map(function(t,k){var p=t.split(/:\s+/);return '<div class="rd-rec"><span>'+(k+1)+'</span><div>'+(p.length>1?'<b>'+E(p[0])+'</b><p>'+E(p.slice(1).join(': '))+'</p>':'<p>'+E(t)+'</p>')+'</div></div>';}).join('')+
+    (recs.length?'':'<div class="rd-nt">Pontos gerados a partir dos indicadores. Registre o plano de ação da Audicon no Comparativo (Recomendações) para ele sair aqui.</div>'));
+  // 9 ICV
+  if(R.icv){
+    var V=R.icv,ganho=V.a!==null&&V.b!==null?(V.a-V.b)*R.rb:null,metaV=V.meta!==null?V.meta:V.b;
+    var porG={};V.lin.forEach(function(x){var g=porG[x.g]=porG[x.g]||{a:0,b:0,n:0};g.a+=x.a;g.b+=x.b;g.n++;});
+    var gs=Object.keys(porG).sort(function(x,y){return porG[y].a-porG[x].a;});
+    var gimg2=cfImg('bar',gs.map(function(g){return g.replace(/^DESPESAS C\/ /i,'').toLowerCase().replace(/(^|\s)\S/g,function(c){return c.toUpperCase();});}),[{label:anoA,data:gs.map(function(g){return R.rbA?+(porG[g].b/R.rbA*100).toFixed(2):null;}),backgroundColor:'#bbb'},{label:ano,data:gs.map(function(g){return R.rb?+(porG[g].a/R.rb*100).toFixed(2):null;}),backgroundColor:'#E30613'}],
+      {indexAxis:'y',plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{grid:{color:'#eee'},ticks:{font:{size:10},callback:function(v){return v+'%';}}},y:{grid:{display:false},ticks:{font:{size:10}}}}},640,330);
+    pg('9 · ICV dos gestores','O custo que os gestores controlam '+(V.ta>=V.tb?'subiu ':'caiu ')+pct(V.tb?V.ta/V.tb-1:null,0).replace('+',''),'<div class="rd-kg">'+
+      card('ICV '+ano,compFmtInd(V.a,'%'),(V.a!==null&&V.b!==null?((V.a-V.b)*100>=0?'+':'')+((V.a-V.b)*100).toFixed(2).replace('.',',')+' p.p. vs '+compFmtInd(V.b,'%'):''),V.a>V.b)+card('Saídas dos gestores',mi(V.ta),pct(V.tb?V.ta/V.tb-1:null)+' vs '+anoA,V.ta>V.tb)+
+      card('Receita bruta',mi(R.rb),pct(R.rbA?R.rb/R.rbA-1:null)+' vs '+anoA)+card(ganho>0?'Ganho se o ICV de '+anoA+' fosse mantido':'Economia sobre o ICV de '+anoA,ganho===null?'–':'R$ '+mil(Math.abs(ganho))+' mil','em '+(R.ate+1)+' meses · meta '+compFmtInd(metaV,'%'))+'</div>'+
+      '<div class="rd-nt">ICV (índice de custo sobre vendas): saídas em que os gestores atuam ÷ receita bruta. Mostra quantos reais de gasto controlável a empresa consome a cada R$ 100 vendidos. Quanto menor, melhor.</div><div class="rd-g"><div class="rd-gt">ICV por grupo (% da receita bruta)</div><img src="'+gimg2+'" alt=""></div>');
+    var icvAQ=V.lin.map(function(x){return Object.assign({d:x.a-x.b},x);});
+    var tabICV=function(l){return '<table class="rd-t"><thead><tr><th>Natureza</th><th>'+anoA+'</th><th>'+ano+'</th><th>Var. R$</th><th>p.p. ICV</th></tr></thead><tbody>'+l.map(function(x){var pp=R.rb&&R.rbA?(x.a/R.rb-x.b/R.rbA)*100:null;return '<tr><td>'+E(x.n)+'<small>'+E(x.g)+'</small></td><td>'+mil(x.b)+'</td><td>'+mil(x.a)+'</td><td class="'+(x.d>0?'neg':'pos')+'">'+(x.d>0?'+':'')+mil(x.d)+'<small>'+pct(x.b>0.5?x.a/x.b-1:null)+'</small></td><td>'+(pp===null?'–':(pp>=0?'+':'')+pp.toFixed(2).replace('.',','))+'</td></tr>';}).join('')+'</tbody></table>';};
+    pg('9 · ICV dos gestores','Onde o ICV subiu e onde caiu','<div class="rd-st">Maiores altas</div>'+tabICV(icvAQ.slice().sort(function(x,y){return y.d-x.d;}).filter(function(x){return x.d>0;}).slice(0,8))+'<div class="rd-st">Maiores quedas</div>'+tabICV(icvAQ.slice().sort(function(x,y){return x.d-y.d;}).filter(function(x){return x.d<0;}).slice(0,6)));
+    pg('9 · ICV dos gestores','As '+V.lin.length+' naturezas do ICV',tabNat(V.lin,0).replace('</tbody>','<tr class="rd-tot"><td></td><td>Total ICV gestores</td><td>'+mil(V.tb)+'</td><td>'+mil(V.ta)+'</td><td>'+pct(V.tb?V.ta/V.tb-1:null,0)+'</td><td>'+pc(V.ta,R.rb)+'</td></tr></tbody>'));
+  }
+  // glossário (6 termos por página)
+  if(CFG.glossario){
+    var valG=function(ref){if(ref.indexOf('r:')===0){var r=+ref.slice(2);return [mil(R.p(r)),mil(R.a(r))];}if(ref.indexOf('i:')===0){var x=I[ref.slice(2)];return x?[compFmtInd(x[4],x[3]),compFmtInd(x[5],x[3])]:['–','–'];}
+      if(ref==='icv'&&R.icv)return [compFmtInd(R.icv.b,'%'),compFmtInd(R.icv.a,'%')];return ['–','–'];};
+    var G2=CFG.glossario,tot=Math.ceil(G2.length/6);
+    for(var gi=0;gi<tot;gi++)pg('Glossário · '+(gi+1)+'/'+tot,'Entenda cada número',G2.slice(gi*6,gi*6+6).map(function(g){var v=valG(g[3]);return '<div class="rd-glo"><b>'+E(g[0])+'</b><p><i>O que é:</i> '+E(g[1])+'</p><p><i>Por que importa:</i> '+E(g[2])+'</p><p class="v"><i>Na '+E(CFG.titulo)+':</i> '+anoA+' '+v[0]+' · '+ano+' '+v[1]+'</p></div>';}).join(''));
+  }
+  // anexo: todas as naturezas (24 por página)
+  var porPag=24,totA=Math.ceil(R.lista.length/porPag);
+  for(var ai=0;ai<totA;ai++)pg('Anexo · '+(ai+1)+'/'+totA,'Todas as naturezas de saída',tabNat(R.lista.slice(ai*porPag,ai*porPag+porPag),ai*porPag)+'<div class="rd-nt">R$ mil, '+R.per+'. Valores negativos = estorno ou ganho. % RB = sobre a receita bruta de '+ano+'.</div>');
+  var css='@page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;background:#e9e9e9;font-family:"Helvetica Neue",Arial,sans-serif;color:#1d1d1f;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
+    '.rd-bar0{position:sticky;top:0;background:#1d1d1f;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;z-index:9}.rd-bar0 button{background:#E30613;color:#fff;border:0;border-radius:6px;padding:7px 14px;font-weight:700;cursor:pointer}'+
+    '.rd-p{width:210mm;height:297mm;margin:12px auto;background:#fff;position:relative;overflow:hidden;page-break-after:always;border-top:5mm solid #E30613;display:flex;flex-direction:column}'+
+    '.rd-h{display:flex;justify-content:space-between;align-items:flex-start;padding:10mm 14mm 4mm}.rd-h h2{margin:2px 0 0;font-size:21px;line-height:1.15;max-width:130mm}.rd-k{color:#E30613;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.rd-lg{color:#E30613;font-weight:800;font-size:16px}.rd-h img{height:11mm}'+
+    '.rd-b{padding:2mm 14mm;flex:1}.rd-f{display:flex;justify-content:space-between;padding:4mm 14mm;font-size:9px;color:#888;border-top:1px solid #eee}'+
+    '.rd-capa{border-top:0;background:#fff}.rd-cb{background:#E30613;height:60mm;display:flex;align-items:center;padding:0 16mm}.rd-cb img{height:16mm}.rd-ct{padding:60mm 16mm 0;flex:1}.rd-ct h1{font-size:34px;line-height:1.1;margin:6px 0 10px}.rd-ct p{font-size:13px;color:#444}.rd-ct hr{border:0;border-top:2px solid #E30613;margin:10mm 0 4mm}.rd-s{font-size:11px!important;color:#777!important}.rd-cf{height:22mm;background:#E30613}'+
+    '.rd-kg{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-bottom:5mm}.rd-kc{border:1px solid #e5e5e5;border-radius:3mm;padding:3mm 4mm}.rd-kc .t{font-size:10px;color:#777}.rd-kc .v{font-size:20px;font-weight:800;margin:1mm 0}.rd-kc .s{font-size:10px;color:#1e8e3e;font-weight:700}.rd-kc .s.neg{color:#E30613}'+
+    '.rd-msg{border-left:3px solid #E30613;padding:2mm 4mm;margin:0 0 3mm;background:#fafafa}.rd-msg b{font-size:12.5px}.rd-msg p{margin:1mm 0 0;font-size:11px;color:#444}'+
+    '.rd-t{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:4mm}.rd-t th{background:#E30613;color:#fff;text-align:right;padding:2mm 2.5mm;font-weight:700}.rd-t th:first-child,.rd-t th:nth-child(2){text-align:left}.rd-t td{padding:1.6mm 2.5mm;border-bottom:1px solid #eee;text-align:right;vertical-align:top}.rd-t td:first-child,.rd-t td:nth-child(2){text-align:left}'+
+    '.rd-t td small{display:block;font-size:9px;color:#888}.rd-t .pos{color:#1e8e3e;font-weight:700}.rd-t .neg{color:#E30613;font-weight:700}.rd-t tr.rd-tot td{font-weight:800;background:#f6f6f6}.rd-sm td{padding:1.2mm 2mm;font-size:10.5px}'+
+    '.rd-bar{display:inline-block;height:3mm;border-radius:1mm}.rd-bar.pos{background:#1e8e3e}.rd-bar.neg{background:#E30613}'+
+    '.rd-nt{font-size:10px;color:#666;background:#f4f4f4;border-radius:2mm;padding:2.5mm 3.5mm;margin:2mm 0}.rd-st{color:#E30613;font-weight:800;font-size:12px;margin:3mm 0 2mm}'+
+    '.rd-g{margin-bottom:4mm}.rd-g img{width:100%}.rd-gt{font-size:11px;font-weight:700;margin-bottom:1mm}'+
+    '.rd-ic{border:1px solid #e5e5e5;border-left:4px solid #999;border-radius:2mm;padding:2.5mm 4mm;margin-bottom:3mm}.rd-ic.ok{border-left-color:#1e8e3e}.rd-ic.at{border-left-color:#f39c12}.rd-ic.rs{border-left-color:#E30613}'+
+    '.rd-it{display:flex;justify-content:space-between;font-size:12.5px}.rd-it span{font-size:9.5px;color:#fff;background:#999;border-radius:8px;padding:1px 8px;font-weight:700}.rd-ic.ok .rd-it span{background:#1e8e3e}.rd-ic.at .rd-it span{background:#f39c12}.rd-ic.rs .rd-it span{background:#E30613}'+
+    '.rd-iv{display:flex;gap:10mm;margin:1mm 0;font-size:9px;color:#888}.rd-iv b{display:block;font-size:17px;color:#1d1d1f}.rd-iv .a b{color:#999}.rd-if{font-size:9.5px;color:#777;font-style:italic}'+
+    '.rd-rec{display:flex;gap:3mm;border:1px solid #eee;border-radius:2mm;padding:3mm;margin-bottom:3mm}.rd-rec span{flex:0 0 7mm;height:7mm;border-radius:50%;background:#E30613;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center}.rd-rec b{font-size:12px}.rd-rec p{margin:1mm 0 0;font-size:11px;color:#444}'+
+    '.rd-glo{border:1px solid #eee;border-radius:2mm;padding:3mm 4mm;margin-bottom:3mm}.rd-glo b{font-size:12.5px}.rd-glo p{margin:1mm 0 0;font-size:10.5px;color:#444}.rd-glo i{font-style:normal;font-weight:700;color:#1d1d1f}.rd-glo .v{color:#E30613}'+
+    '@media print{body{background:#fff}.rd-bar0{display:none}.rd-p{margin:0;box-shadow:none}}';
+  // abre por cima do Hub (sem janela nova: o navegador costuma bloquear) e imprime pelo próprio quadro
+  var html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+E(CFG.titulo+' - Relatório à diretoria - '+R.perC.replace('/','-'))+'</title><style>'+css+'</style></head><body>'+pags.join('')+'</body></html>';
+  var ov=document.getElementById('relDirOv');if(ov)ov.remove();
+  ov=document.createElement('div');ov.id='relDirOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.6);display:flex;flex-direction:column';
+  ov.innerHTML='<div style="background:#1d1d1f;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;font-family:Arial,sans-serif"><b>'+E(titulo)+'</b><span style="opacity:.7">'+pags.length+' páginas'+(R.aj?' · com ajuste':' · sem ajuste')+'</span><span style="flex:1"></span>'+
+    '<button id="relDirPrint" style="background:#E30613;color:#fff;border:0;border-radius:6px;padding:7px 14px;font-weight:700;cursor:pointer">Imprimir / salvar em PDF</button><button id="relDirFechar" style="background:#444;color:#fff;border:0;border-radius:6px;padding:7px 14px;cursor:pointer">✕ Fechar</button></div><iframe id="relDirFrame" title="Relatório à diretoria" style="flex:1;border:0;width:100%;background:#e9e9e9"></iframe>';
+  document.body.appendChild(ov);
+  var fr=document.getElementById('relDirFrame');fr.srcdoc=html;
+  document.getElementById('relDirFechar').onclick=function(){ov.remove();};
+  document.getElementById('relDirPrint').onclick=function(){var old=document.title;document.title=CFG.titulo+' - Relatório à diretoria - '+R.perC.replace('/','-');try{fr.contentWindow.focus();fr.contentWindow.print();}finally{setTimeout(function(){document.title=old;},500);}};
+}
+// Excel com as mesmas tabelas do relatório
+function excelRelDiretoria(){
+  if(!window.XLSX||!Object.keys(BALHIST).length)return;
+  var R=relDirDados(),ano=R.ano,anoA=R.anoA,wb=XLSX.utils.book_new(),k=function(v){return v===null||v===undefined||!isFinite(v)?'':Math.round(v/10)/100;};
+  var add=function(nome,rows,cols){var ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=cols.map(function(c){return {wch:c};});XLSX.utils.book_append_sheet(wb,ws,nome);};
+  var cab=[CFG.titulo+' — Relatório à diretoria — '+R.per+' '+ano+' × '+anoA+(R.aj?' (com ajuste)':' (sem ajuste)')],un=['Valores em R$ mil'];
+  var lin=[[6,'Receita Bruta'],[7,'Deduções'],[14,'Receita Líquida'],[703,'CMV'],[15,'Custos'],[60,'Lucro Bruto'],[61,'Despesas operacionais (c/ depreciação)'],[59,'Depreciações e amortizações'],[78,'Resultado operacional'],[90,'EBITDA'],[83,'Receitas financeiras'],[84,'Despesas financeiras'],[85,'Lucro antes de IRPJ/CSLL'],[86,'IRPJ/CSLL'],[89,'Lucro Líquido']].filter(function(x){return compNo(x[0]);});
+  add('DRE',[cab,un,[],['Conta',anoA,ano,'Variação R$','Variação %','% RB '+anoA,'% RB '+ano]].concat(lin.map(function(x){var a=R.a(x[0]),b=R.p(x[0]);return [x[1],k(b),k(a),b===null?'':k(a-b),b?a/b-1:'',b===null||!R.rbA?'':b/R.rbA,R.rb?a/R.rb:''];})),[38,14,14,14,12,12,12]);
+  add('Indicadores',[cab,[],['Indicador',anoA,ano,'Unidade','Avaliação','Fórmula']].concat(R.ind.map(function(x){var c=compClasse(x[0],x[5]);return [x[1],x[4]===null?'n/d':x[4],x[5]===null?'n/d':x[5],x[3]==='%'?'%':x[3]==='d'?'dias':'vezes',{ok:'Saudável',at:'Atenção',rs:'Risco'}[c]||'',x[2]];})),[34,12,12,10,12,60]);
+  add('Gastos por grupo',[cab,[],['Grupo','% RB '+anoA,'% RB '+ano,anoA+' (R$ mil)',ano+' (R$ mil)']].concat((CFG.gruposDespesa||[]).filter(function(x){return compNo(x[0]);}).map(function(x){var a=R.a(x[0]),b=R.p(x[0]);return [x[1],b===null||!R.rbA?'':b/R.rbA,R.rb?a/R.rb:'',k(b),k(a)];})),[24,12,12,16,16]);
+  add('Naturezas',[cab,un,[],['#','Conta','Natureza','Grupo',anoA,ano,'Var. R$','Var. %','% RB '+ano]].concat(R.lista.map(function(x,i){return [i+1,x.c,x.n,x.g,k(x.b),k(x.a),k(x.a-x.b),x.b>0.5?x.a/x.b-1:'',R.rb?x.a/R.rb:''];})),[5,20,40,30,12,12,12,10,10]);
+  if(R.icv)add('ICV gestores',[cab,un,['ICV '+anoA,R.icv.b,'ICV '+ano,R.icv.a,'Meta',R.icv.meta!==null?R.icv.meta:R.icv.b],[],['#','Conta','Natureza','Grupo',anoA,ano,'Var. R$','Var. %','% RB '+anoA,'% RB '+ano]].concat(R.icv.lin.map(function(x,i){return [i+1,x.c,x.n,x.g,k(x.b),k(x.a),k(x.a-x.b),x.b>0.5?x.a/x.b-1:'',R.rbA?x.b/R.rbA:'',R.rb?x.a/R.rb:''];})).concat([['','','Total','',k(R.icv.tb),k(R.icv.ta),k(R.icv.ta-R.icv.tb),R.icv.tb?R.icv.ta/R.icv.tb-1:'',R.icv.b,R.icv.a]]),[5,20,40,30,12,12,12,10,10,10]);
+  add('Recomendações',[cab,[]].concat((R.rec||'Sem recomendações registradas para o mês.').split(/\n+/).map(function(t,i){return [i+1,t];})),[5,120]);
+  if(AJUSTES.length)add('Ajustes',[cab,[],['Ano','Mês','Conta','Natureza','Efeito no resultado (R$)','Descrição']].concat(AJUSTES.map(function(a){return [a.ano,M[a.mes],a.conta,CONTA_NOMES[a.conta]||'',-a.valor,a.desc||''];})),[8,8,20,36,18,60]);
+  if(CFG.glossario)add('Glossário',[cab,[],['Termo','O que é','Por que importa']].concat(CFG.glossario.map(function(g){return [g[0],g[1],g[2]];})),[30,70,70]);
+  XLSX.writeFile(wb,CFG.titulo+' - Relatório à diretoria - '+R.perC.replace('/','-')+'.xlsx');
+}
+
 function montarPaginaComp(){
   var ares=document.querySelector('.nav-item[onclick*="setPage(\'ares\'"]')||document.querySelector('.nav-item[onclick*="setPage(\'dre\'"]');
   if(!ares||document.getElementById('page-comp'))return;
@@ -3613,6 +3795,7 @@ function montarPaginaComp(){
   var sec=document.createElement('section');sec.id='page-comp';sec.className='page';
   sec.innerHTML='<div class="fbar"><span class="fl">Período:</span><select class="fs" id="compMes" onchange="COMP.mes=+this.value;buildComp()"></select>'+
     '<span class="fl">Visão:</span><select class="fs" id="compVisao" onchange="COMP.aj=this.value===\'com\';buildComp()"><option value="sem">Sem ajuste</option><option value="com">Com ajuste</option></select>'+
+    '<button class="fs" onclick="abrirRelDiretoria()">📄 Relatório à diretoria (PDF)</button><button class="fs" onclick="excelRelDiretoria()">📊 Excel</button>'+
     '<label class="fs adm-only" style="cursor:pointer">📥 Importar DRE do ano anterior<input type="file" id="compFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREAnterior(this.files[0])"></label>'+
     '<span id="compStatus" class="fl" style="font-size:12px"></span></div>'+
     '<div style="margin:18px 0 12px"><div class="ptitle">Comparativo</div><div class="psub" id="compSub"></div></div><div id="compBox"></div>';
