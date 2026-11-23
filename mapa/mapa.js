@@ -271,7 +271,7 @@ async function importar(files){
     }
     dirty=true;try{localStorage.setItem(LS_DRAFT,JSON.stringify(V));}catch(e){}
     S.mes=Object.keys(V.meses).sort().pop();render();msg('✓ Importado: '+feitos.join('; ')+'. Confira e clique em Publicar mapa.','ok');
-  }catch(err){msg('⚠ Não foi possível importar: '+err.message,'err');}
+  }catch(err){msg('⚠︎ Não foi possível importar: '+err.message,'err');}
 }
 async function publicar(){
   var msg=function(t,c){var m=document.getElementById('mpMsg');if(m){m.textContent=t;m.className='mp-msg '+(c||'');}};
@@ -284,7 +284,7 @@ async function publicar(){
     await window.HubAuth.gravarDoc('vendas',V);
     publicado=clone(V);dirty=false;try{localStorage.removeItem(LS_DRAFT);}catch(e){}
     render();msg('✓ Mapa publicado. Quem abrir o painel já vê a nova versão.','ok');
-  }catch(err){msg('⚠ Não foi possível publicar: '+(err&&err.code==='permission-denied'?'o seu acesso não permite publicar':err.message),'err');}
+  }catch(err){msg('⚠︎ Não foi possível publicar: '+(err&&err.code==='permission-denied'?'o seu acesso não permite publicar':err.message),'err');}
 }
 function descartar(){
   if(!confirm('Descartar as importações não publicadas?'))return;

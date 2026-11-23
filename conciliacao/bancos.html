@@ -182,6 +182,7 @@ tr.clickable{cursor:pointer}
 <script src="vendor/sheetjs/xlsx.full.min.js"></script>
 <script src="recolher.js?v=1"></script>
 <script src="mes-hub.js?v=3" data-dados="aud-bancos-dados-v1,aud-bancos-revisao-v1,aud-bancos-mapa-v1,aud-bancos-cfg-v1"></script>
+<style>/* ícones monocromáticos (mesmo traço do menu) */.ic{width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:.4em;flex:none;display:inline-block}</style>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -204,14 +205,14 @@ tr.clickable{cursor:pointer}
 <div class="box">
   <div class="grid" id="recImport" data-recolher="Importação de arquivos (razão e extratos)" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
     <div class="upl">
-      <h3>📒 Razão contábil</h3>
+      <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h9.5v11H3zM5.5 2.5v11"/></svg>Razão contábil</h3>
       <div class="muted small">Protheus › Lançamentos Contábeis (.xlsx). Pode ser o razão completo: só as contas de caixa, bancos e aplicações (1.1.01) são usadas aqui.</div>
       <div class="paste-actions"><button class="primary" type="button" onclick="document.getElementById('inRazao').click()">Carregar razão</button></div>
       <input type="file" id="inRazao" accept=".xlsx,.xls" multiple onchange="carregar(this.files,'razao');this.value=''">
       <div class="chips" id="chRazao"></div>
     </div>
     <div class="upl">
-      <h3>🏦 Extratos bancários</h3>
+      <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 6L8 2l6.5 4zM3 7v5M6.5 7v5M9.5 7v5M13 7v5M1.5 13.5h13"/></svg>Extratos bancários</h3>
       <div class="muted small">Excel (Itaú, BB, Safra), PDF (Banco do Brasil, Safra, Itaú, Sicoob/Sisbr — Credicitrus, Credicopa, Sicoob —, aplicações Itaú e XP Performance) ou OFX de qualquer banco. Pode selecionar vários arquivos de uma vez.</div>
       <div class="paste-actions"><button class="primary" type="button" onclick="document.getElementById('inExt').click()">Carregar extratos</button></div>
       <input type="file" id="inExt" accept=".xlsx,.xls,.pdf,.ofx" multiple onchange="carregar(this.files,'extrato');this.value=''">
@@ -223,7 +224,7 @@ tr.clickable{cursor:pointer}
       <select id="tolDias" onchange="cfg.tol=+this.value;salvarCfg();processar()">
         <option value="0">mesmo dia</option><option value="1">até 1 dia</option><option value="3">até 3 dias</option><option value="5">até 5 dias</option><option value="10">até 10 dias</option>
       </select></label>
-    <button type="button" onclick="exportarExcel()">📊 Exportar Excel (divergências e sugestões)</button>
+    <button type="button" onclick="exportarExcel()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Exportar Excel (divergências e sugestões)</button>
     <button type="button" class="ghost" onclick="limparRazaoB()">Limpar razão</button>
     <button type="button" class="ghost" onclick="limparExtratos()">Limpar extratos</button>
     <span class="muted small" id="stTopo"></span>

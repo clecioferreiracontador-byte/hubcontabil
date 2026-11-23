@@ -151,6 +151,7 @@ footer{display:none}
 <script src="hub-db.js?v=4"></script>
 <script src="recolher.js?v=1"></script>
 <script src="mes-hub.js?v=3" data-dados="audicon-consorcios-v1,audicon-consorcios-conciliacao-v1"></script>
+<style>/* ícones monocromáticos (mesmo traço do menu) */.ic{width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:.4em;flex:none;display:inline-block}</style>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -170,12 +171,12 @@ footer{display:none}
 <main class="wrap">
 <div class="box">
 <div class="toolbar">
-  <button class="primary" onclick="document.getElementById('globalPdfInput').click()">📄 Carregar PDF(s) de consórcio</button>
+  <button class="primary" onclick="document.getElementById('globalPdfInput').click()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4"/></svg>Carregar PDF(s) de consórcio</button>
   <button onclick="addCard()">+ Nova cota em branco</button>
   <button onclick="exportJSON()">Exportar dados (JSON)</button>
   <button onclick="document.getElementById('importFile').click()">Importar dados (JSON)</button>
   <button onclick="exportCSV()">Exportar resumo (CSV)</button>
-  <button class="primary" onclick="gerarRelatorioPDF()">📑 Gerar relatório (PDF)</button>
+  <button class="primary" onclick="gerarRelatorioPDF()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4"/></svg>Gerar relatório (PDF)</button>
   <button class="ghost" onclick="window.print()">Imprimir</button>
   <span class="pdf-msg" id="globalPdfMsg"></span>
   <label style="display:flex; align-items:center; gap:6px; margin:0; font-size:12.5px; color:var(--text);">Data-base:
@@ -274,7 +275,7 @@ const CONC_SEMENTE = {};
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo noturno';
+  if (btn) btn.textContent = theme === 'dark' ? 'Modo claro' : 'Modo noturno';
   try { localStorage.setItem(THEME_KEY, theme); } catch(e){}
 }
 function toggleTheme(){ applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
@@ -777,7 +778,7 @@ function renderCards(vs, rs){
       </div>
       <div class="card-body">
         <div class="paste-actions" style="margin:0 0 12px;">
-          <button class="primary" onclick="document.getElementById('pdfInput-${c.id}').click()">📄 Carregar/atualizar PDF desta cota</button>
+          <button class="primary" onclick="document.getElementById('pdfInput-${c.id}').click()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4"/></svg>Carregar/atualizar PDF desta cota</button>
           <input type="file" id="pdfInput-${c.id}" accept="application/pdf" onchange="handleCardPdfUpload('${c.id}', event)">
           <span class="parse-msg" id="msg-${c.id}">${c.arquivo ? 'Último PDF: ' + esc(c.arquivo) : ''}</span>
         </div>

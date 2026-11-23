@@ -440,9 +440,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 }
 @media print{.rp-sheet{zoom:1!important}}
 </style>
+<style>/* ícones monocromáticos (mesmo traço do menu) */.ic{width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:.4em;flex:none;display:inline-block}</style>
 </head>
 <body class="hub-locked">
-<div id="verCliBar" role="status" style="display:none"><span>👁 Você está vendo o dash <b>como o cliente vê</b>. Nada foi alterado; só a sua tela mudou.</span><button type="button" onclick="verComoCliente(false)">Voltar ao admin</button></div>
+<div id="verCliBar" role="status" style="display:none"><span><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8zM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>Você está vendo o dash <b>como o cliente vê</b>. Nada foi alterado; só a sua tela mudou.</span><button type="button" onclick="verComoCliente(false)">Voltar ao admin</button></div>
 <div class="shell">
 
 <header class="topbar">
@@ -592,7 +593,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="fdiv"></div>
     <button class="fs dre-tbtn" id="dreAllBtn" onclick="toggleDreAll()"><svg class="niv" id="dreAllIco" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path id="dreAllPath" d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span id="dreAllLbl">Expandir contas</span></button>
     <button class="fs dre-tbtn" id="dreXlsBtn" onclick="exportDREXlsx()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4.8 7L8 10.2 11.2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 11.5v1.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span id="dreXlsLbl">Exportar DRE (.xlsx)</span></button>
-    <span class="finfo">💡 Passe o mouse sobre a conta para ver a descrição</span>
+    <span class="finfo"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h4M6.5 11.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>Passe o mouse sobre a conta para ver a descrição</span>
   </div>
   <div style="margin:18px 0 14px"><div class="ptitle">DRE</div><div class="psub" id="dSub">Demonstrativo completo · consulte por mês ou período</div></div>
   <div class="tw" id="dTable"></div>
@@ -727,9 +728,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       </select>
       <div class="fdiv"></div>
       <input type="file" id="impFile" accept=".xlsx,.xls,.xlsm" multiple style="display:none" onchange="handleBalanceteFiles(this.files)">
-      <button class="fs" style="cursor:pointer" onclick="document.getElementById('impFile').click()">📂 Selecionar balancete (.xlsx)</button>
-      <button class="fs" id="impSaveBtn" style="cursor:pointer;display:none;border-color:rgba(46,204,113,.5);color:var(--green2)" onclick="saveCurrentBase()">💾 Salvar base atual</button>
-      <button class="fs" id="impPubBtn" style="cursor:pointer;display:none;border-color:rgba(52,152,219,.5);color:var(--blue)" onclick="publishBaseToGitHub()">🌐 Publicar para todos</button>
+      <button class="fs" style="cursor:pointer" onclick="document.getElementById('impFile').click()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5h5l1.5 1.5h6.5v7.5h-13z"/></svg>Selecionar balancete (.xlsx)</button>
+      <button class="fs" id="impSaveBtn" style="cursor:pointer;display:none;border-color:rgba(46,204,113,.5);color:var(--green2)" onclick="saveCurrentBase()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h8l2 2v9H3zM5.5 2.5v3h4v-3M5.5 13.5v-4h5v4"/></svg>Salvar base atual</button>
+      <button class="fs" id="impPubBtn" style="cursor:pointer;display:none;border-color:rgba(52,152,219,.5);color:var(--blue)" onclick="publishBaseToGitHub()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5C6.2 12.7 5.4 10.5 5.4 8S6.2 3.3 8 1.5"/></svg>Publicar para todos</button>
     </div>
     <div id="impStatus" style="font-size:13px;color:var(--gray);margin-top:10px;line-height:1.6"></div>
   </div>
@@ -738,7 +739,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <!-- LALUR -->
 <section id="page-lalur" class="page">
   <div class="fbar">
-    <span class="finfo">💡 Cada coluna mostra o acumulado de janeiro até aquele mês (Lucro Real Anual, balanço de redução/suspensão) · passe o mouse sobre uma linha para ver de qual conta ela vem</span>
+    <span class="finfo"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h4M6.5 11.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>Cada coluna mostra o acumulado de janeiro até aquele mês (Lucro Real Anual, balanço de redução/suspensão) · passe o mouse sobre uma linha para ver de qual conta ela vem</span>
   </div>
   <div style="margin:18px 0 16px"><div class="ptitle">LALUR</div><div class="psub" id="lalurSub">Livro de Apuração do Lucro Real · Jan–Jul 2026</div></div>
   <div id="lalurAviso" class="lal-aviso" role="alert" style="display:none"></div>
@@ -751,11 +752,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
         <input type="text" id="lalurPrejIniInput" class="fs" style="width:180px" value="0,00" onchange="onLalurParamChange()">
       </div>
       <div>
-        <button class="fs" style="cursor:pointer;border-color:rgba(52,152,219,.5);color:var(--blue)" onclick="publishLalur()">🌐 Publicar para todos</button>
+        <button class="fs" style="cursor:pointer;border-color:rgba(52,152,219,.5);color:var(--blue)" onclick="publishLalur()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5C6.2 12.7 5.4 10.5 5.4 8S6.2 3.3 8 1.5"/></svg>Publicar para todos</button>
       </div>
       <div id="lalurPlanBox" style="display:none">
         <div class="fl" style="margin-bottom:5px">Planilhas do LALUR (meses fechados)</div>
-        <label class="fs" style="cursor:pointer;display:inline-block">📥 Importar planilha (LALUR ou diferido)<input type="file" id="lalurPlanFile" accept=".xls,.xlsx,.xlsm" style="display:none" onchange="importarPlanilhaLalur(this.files[0])"></label>
+        <label class="fs" style="cursor:pointer;display:inline-block"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3"/></svg>Importar planilha (LALUR ou diferido)<input type="file" id="lalurPlanFile" accept=".xls,.xlsx,.xlsm" style="display:none" onchange="importarPlanilhaLalur(this.files[0])"></label>
         <button class="fs" style="cursor:pointer" onclick="removerPlanilhaLalur()">Tirar planilhas</button>
         <div id="lalurPlanInfo" style="font-size:11.5px;color:var(--gray);margin-top:5px"></div>
       </div>
@@ -770,7 +771,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <!-- RELATÓRIO CONSOLIDADO -->
 <div id="relOverlay">
   <div class="rel-bar">
-    <span class="rel-tit">📑 Relatório Consolidado</span>
+    <span class="rel-tit"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4"/></svg>Relatório Consolidado</span>
     <span class="fl">Trimestre:</span><select class="fs" id="relTri" onchange="onRelTri()"></select>
     <span class="fl">De:</span><select class="fs" id="relDe" onchange="onRelPeriodo()"></select>
     <span class="fl">até:</span><select class="fs" id="relAte" onchange="onRelPeriodo()"></select>
@@ -782,8 +783,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <span class="fl">Valores:</span><select class="fs" id="relUnit" onchange="buildRelatorio()"><option value="rs">R$</option><option value="mil">R$ mil</option></select>
     <label class="fl" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="relLalur" checked onchange="buildRelatorio()">Incluir LALUR</label>
     <span class="sp"></span>
-    <button class="fs" onclick="printRelatorio()">🖨️ Imprimir / PDF</button>
-    <button class="fs" onclick="exportRelatorioExcel()">📊 Excel consolidado</button>
+    <button class="fs" onclick="printRelatorio()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6V2h8v4M4 11H2V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h-2M4.5 9.5h7v4.5h-7z"/></svg>Imprimir / PDF</button>
+    <button class="fs" onclick="exportRelatorioExcel()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Excel consolidado</button>
     <button class="fs" onclick="closeRelatorio()">✕ Fechar</button>
   </div>
   <div class="rel-wrap"><div id="relDoc"></div></div>
@@ -1264,9 +1265,9 @@ function importarPlanilhaLalur(file){
       lalurPlan.arquivos=(lalurPlan.arquivos||[]).filter(function(a){return a.tipo!==res.tipo;}).concat([{nome:file.name,tipo:res.tipo,em:new Date().toISOString()}]);
       saveLalurParams();buildLalur();
       var ms=Object.keys(res.meses).map(Number).filter(function(m){var x=res.meses[m];return x.lucroAcum||x.planDifIR||x.planDifCS;}).sort(function(a,b){return a-b;});
-      st.textContent='✅ Planilha '+(res.tipo==='diferido'?'do IRPJ/CSLL diferido':'do LALUR')+' importada ('+(ms.length?M[ms[0]]+'–'+M[ms[ms.length-1]]:'sem meses')+'). Clique em "Publicar para todos" para valer para todos.';
+      st.textContent='✓ Planilha '+(res.tipo==='diferido'?'do IRPJ/CSLL diferido':'do LALUR')+' importada ('+(ms.length?M[ms[0]]+'–'+M[ms[ms.length-1]]:'sem meses')+'). Clique em "Publicar para todos" para valer para todos.';
       st.style.color='var(--green2)';
-    }catch(err){st.textContent='⚠ '+err.message;st.style.color='var(--red2)';}
+    }catch(err){st.textContent='⚠︎ '+err.message;st.style.color='var(--red2)';}
     document.getElementById('lalurPlanFile').value='';
   };
   rd.readAsArrayBuffer(file);
@@ -1389,7 +1390,7 @@ function onLalurParamChange(){
   lalurPrejFiscalIni=parseBR(document.getElementById('lalurPrejIniInput').value);
   document.getElementById('lalurPrejIniInput').value=fmtBR(lalurPrejFiscalIni);
   if(saveLalurParams()){
-    document.getElementById('lalurParamStatus').textContent='💾 Parâmetro salvo.';
+    document.getElementById('lalurParamStatus').textContent='Parâmetro salvo.';
     document.getElementById('lalurParamStatus').style.color='var(--green2)';
   }
   buildLalur();
@@ -1399,7 +1400,7 @@ function onLalurCell(el){
   arr[i]=parseBR(el.value);
   saveLalurParams();
   var st=document.getElementById('lalurParamStatus');
-  if(st){st.textContent='💾 Lançamento de '+MF[i]+' salvo neste navegador.';st.style.color='var(--green2)';}
+  if(st){st.textContent='Lançamento de '+MF[i]+' salvo neste navegador.';st.style.color='var(--green2)';}
   setTimeout(function(){
     var act=document.activeElement,aid=act&&act.id;
     buildLalur();
@@ -1517,7 +1518,7 @@ function buildLalurTable(){
   }
   h+='</tbody></table>';
   var sm=LC?lalSemMov(n-1):[];
-  if(sm.length)h='<div class="lal-aviso" role="alert">⚠ Reimporte o balancete de '+sm.join(', ')+': esses meses foram importados antes de o Hub guardar o movimento por conta, e as adições/exclusões automáticas ficam sem eles.</div>'+h;
+  if(sm.length)h='<div class="lal-aviso" role="alert">⚠︎ Reimporte o balancete de '+sm.join(', ')+': esses meses foram importados antes de o Hub guardar o movimento por conta, e as adições/exclusões automáticas ficam sem eles.</div>'+h;
   document.getElementById('lalurTableWrap').innerHTML='<div class="tw">'+h+'</div>';
 }
 // Avisos para lançamentos de exclusão que parecem errados: valor acumulado
@@ -1536,7 +1537,7 @@ function lalurAvisos(){
   var h=[];
   if(acum.length)h.push('<li><b>Exclusão que parece acumulada em '+acum.join(', ')+'.</b> Nesses meses o valor se repete ou é maior que o do mês anterior, como numa linha acumulada. Aqui você lança só a exclusão <b>daquele mês</b>, porque o dash já soma de janeiro até o mês. Se você copiou a linha acumulada da planilha, a exclusão entra em dobro e o IRPJ/CSLL pode zerar. Se é mesmo uma exclusão nova daquele mês, pode ignorar este aviso.</li>');
   if(subv.length)h.push('<li><b>Exclusão igual à subvenção de ICMS em '+subv.join(', ')+'.</b> O dash já exclui a subvenção sozinho (conta 3.3.01.1004 do balancete). Se ela também foi digitada aqui, sai duas vezes.</li>');
-  return h.length?'⚠ Confira as exclusões do LALUR<ul>'+h.join('')+'</ul>':'';
+  return h.length?'⚠︎ Confira as exclusões do LALUR<ul>'+h.join('')+'</ul>':'';
 }
 function showLalurAviso(){
   var el=document.getElementById('lalurAviso');if(!el)return;
@@ -1663,7 +1664,7 @@ function renderBalPage(){
     (liqCorr>=1?'▲':'▼')+' <strong>Liquidez Corrente '+fmtx(liqCorr)+'</strong> — '+fmt(b.ac)+' de AC para '+fmt(b.pc)+' de PC. '+(cgl>=0?'Capital de giro positivo de '+fmt(cgl)+'.':'Capital de giro negativo de '+fmt(Math.abs(cgl))+'.')+'<br>'+
     (liqSeca>=1?'▲':'▼')+' <strong>Liquidez Seca '+fmtx(liqSeca)+'</strong> — '+(liqSeca>=1?'Mesmo excluindo estoques, cobre com folga o passivo circulante.':'Excluindo estoques, não cobre integralmente o passivo circulante.')+'<br>'+
     (liqIm>=0.3?'▲':'▼')+' <strong>Liquidez Imediata '+fmtx(liqIm)+'</strong> — Caixa cobre apenas '+(liqIm*100).toFixed(0)+'% das obrigações imediatas.'+(liqIm<0.3?' Atenção ao fluxo de caixa de curto prazo.':' Posição de caixa confortável.')+'<br>'+
-    '⚠ <strong>Endividamento '+(endGeral*100).toFixed(1).replace('.',',')+'%</strong> — Estrutura '+(endGeral>0.6?'ainda financiada majoritariamente por terceiros':'com equilíbrio entre capital próprio e de terceiros')+'. EBITDA acumulado de '+fmt(ebAcum)+' (Jan–'+M[balSelMes]+') demonstra '+(ebAcum>0?'boa capacidade de geração de caixa para servir a dívida':'geração de caixa limitada no período')+'.<br>'+
+    '⚠︎ <strong>Endividamento '+(endGeral*100).toFixed(1).replace('.',',')+'%</strong> — Estrutura '+(endGeral>0.6?'ainda financiada majoritariamente por terceiros':'com equilíbrio entre capital próprio e de terceiros')+'. EBITDA acumulado de '+fmt(ebAcum)+' (Jan–'+M[balSelMes]+') demonstra '+(ebAcum>0?'boa capacidade de geração de caixa para servir a dívida':'geração de caixa limitada no período')+'.<br>'+
     '▲ <strong>PL '+fmt(b.pl)+'</strong> — Patrimônio Líquido em '+MF[balSelMes]+'/2026, composto por Capital Social ('+fmt(b.capSoc)+'), Ajuste de Avaliação Patrimonial ('+fmt(b.ajusteAval)+'), Lucros Acumulados ('+fmt(lucrosAcumTot)+') e Resultado do Exercício ('+fmt(b.resExerc)+').';
 
   mkC('cIdx','radar',['Liq. Imediata','Liq. Seca','Liq. Corrente','Liq. Geral'],[{data:[+liqIm.toFixed(2),+liqSeca.toFixed(2),+liqCorr.toFixed(2),+liqGeral.toFixed(2)],backgroundColor:'rgba(201,168,76,.15)',borderColor:'rgba(201,168,76,.7)',borderWidth:2,pointBackgroundColor:'#C9A84C',pointRadius:4}],{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw.toFixed(2);}}}},scales:{r:{grid:{color:'rgba(201,168,76,.1)'},pointLabels:{color:'#A0B0BE',font:{size:11,family:'Calibri',weight:'500'}},ticks:{color:'#6E7E8E',font:{size:9},backdropColor:'transparent'},suggestedMin:0,suggestedMax:1.5}}});
@@ -2080,7 +2081,7 @@ function msgContasNovas(inc,b){
   }
   var bal=[['outAC','Ativo circulante'],['outANC','Ativo não circulante'],['outPCnovo','Passivo circulante'],['outrosPNC','Passivo não circulante'],['outrosPL','Patrimônio líquido']].filter(function(k){return b&&Math.abs(b[k[0]]||0)>=0.01;});
   if(bal.length)h+='<br>🆕 Balanço: há contas fora dos grupos conhecidos em '+bal.map(function(k){return k[1]+' ('+fmt(b[k[0]])+')';}).join(', ')+'. Elas já entram no total do grupo.';
-  if(inc&&inc.comp.length)h+='<br>ℹ Contas de compensação que se anulam no mês ficaram fora da DRE: '+inc.comp.join(', ')+'.';
+  if(inc&&inc.comp.length)h+='<br>ℹ︎ Contas de compensação que se anulam no mês ficaram fora da DRE: '+inc.comp.join(', ')+'.';
   return h;
 }
 // Arquivo com um balancete por aba (ex.: "Landix Sistemas - Balancetes 2026.xlsx"): cada aba "Acumulado MM.AAAA"
@@ -2096,8 +2097,8 @@ function importarVariosMeses(wb,abas,statusEl){
     if(conf.modo==='mov'&&!BALHIST[a.mes-1]){falhas.push(a.aba+' (só movimento, sem o mês anterior)');return;}
     doImport(a.mes,codeMap,conf.modo==='mov');feitos.push(M[a.mes]);
   });
-  statusEl.innerHTML=(feitos.length?'✅ Balancetes importados: <b>'+feitos.join(', ')+'</b> de '+DRE_ANO+'. DRE, balanço e LALUR atualizados.':'')+
-    (falhas.length?'<br>⚠ Não reconheci: '+falhas.join(', ')+'.':'');
+  statusEl.innerHTML=(feitos.length?'✓ Balancetes importados: <b>'+feitos.join(', ')+'</b> de '+DRE_ANO+'. DRE, balanço e LALUR atualizados.':'')+
+    (falhas.length?'<br>⚠︎ Não reconheci: '+falhas.join(', ')+'.':'');
   statusEl.style.color=feitos.length?'var(--green2)':'var(--red2)';
   if(feitos.length)basePosImport(statusEl);
 }
@@ -2105,8 +2106,8 @@ function importarVariosMeses(wb,abas,statusEl){
 // botões de salvar/publicar aparecem; "Publicar para todos" leva a base para o Firebase.
 function basePosImport(statusEl){
   var ok=false;try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));ok=true;}catch(e){}
-  statusEl.innerHTML+=ok?'<br>💾 Base salva neste navegador. Para os clientes verem, clique em <b>🌐 Publicar para todos</b>.'
-    :'<br>⚠ Não consegui salvar neste navegador (espaço cheio). Clique em <b>🌐 Publicar para todos</b> para não perder a importação.';
+  statusEl.innerHTML+=ok?'<br><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h8l2 2v9H3zM5.5 2.5v3h4v-3M5.5 13.5v-4h5v4"/></svg>Base salva neste navegador. Para os clientes verem, clique em <b><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5C6.2 12.7 5.4 10.5 5.4 8S6.2 3.3 8 1.5"/></svg>Publicar para todos</b>.'
+    :'<br>⚠︎ Não consegui salvar neste navegador (espaço cheio). Clique em <b><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5C6.2 12.7 5.4 10.5 5.4 8S6.2 3.3 8 1.5"/></svg>Publicar para todos</b> para não perder a importação.';
   document.getElementById('impSaveBtn').style.display='inline-block';
   document.getElementById('impPubBtn').style.display='inline-block';
 }
@@ -2148,9 +2149,9 @@ async function handleBalanceteFiles(files){
       doImport(it.mes,codeMap,conf.modo==='mov');feitos.push(M[it.mes]);
     }catch(e){falhas.push(it.f.name+' ('+e.message+')');}
   }
-  statusEl.innerHTML=(feitos.length?'✅ Balancetes importados: <b>'+feitos.join(', ')+'</b> de '+DRE_ANO+'. DRE, balanço e LALUR atualizados.':'')+
-    (ajustados.length?'<br>ℹ Lançamentos feitos depois do fechamento em <b>'+ajustados.join(', ')+'</b> (o saldo anterior do mês seguinte era diferente) entraram no próprio mês.':'')+
-    (falhas.length?'<br>⚠ Não importei: '+falhas.join(', ')+'.':'');
+  statusEl.innerHTML=(feitos.length?'✓ Balancetes importados: <b>'+feitos.join(', ')+'</b> de '+DRE_ANO+'. DRE, balanço e LALUR atualizados.':'')+
+    (ajustados.length?'<br>ℹ︎ Lançamentos feitos depois do fechamento em <b>'+ajustados.join(', ')+'</b> (o saldo anterior do mês seguinte era diferente) entraram no próprio mês.':'')+
+    (falhas.length?'<br>⚠︎ Não importei: '+falhas.join(', ')+'.':'');
   statusEl.style.color=feitos.length?'var(--green2)':'var(--red2)';
   if(feitos.length)basePosImport(statusEl);
   document.getElementById('impFile').value='';
@@ -2171,26 +2172,26 @@ function handleBalanceteFile(file){
       var cols=balCols(found.rows[found.headerRow]);
       var codeMap=buildCodeMap(dataRows,cols);
       if(Object.keys(codeMap).length<10){
-        statusEl.textContent='⚠ Não foi possível reconhecer as contas do arquivo. Verifique se o balancete está no formato Conta | Descrição | Saldo anterior | Débito | Crédito | Saldo atual.';
+        statusEl.textContent='⚠︎ Não foi possível reconhecer as contas do arquivo. Verifique se o balancete está no formato Conta | Descrição | Saldo anterior | Débito | Crédito | Saldo atual.';
         statusEl.style.color='var(--red2)';
         return;
       }
       var mIdx=parseInt(document.getElementById('impMes').value);
       var conf=conferirSaldos(codeMap);
       if(conf.modo==='mov'&&!BALHIST[mIdx-1]){
-        statusEl.innerHTML='⚠ Este balancete traz só o <b>movimento do mês</b> (Saldo anterior zerado em todas as contas), e não há saldo final de '+(mIdx>0?MF[mIdx-1]:'dezembro do ano anterior')+' na base para partir dele. O Balanço &amp; Índices precisa do saldo final: gere o balancete com <b>Saldo anterior e Saldo atual</b> e importe de novo. Nada foi alterado.';
+        statusEl.innerHTML='⚠︎ Este balancete traz só o <b>movimento do mês</b> (Saldo anterior zerado em todas as contas), e não há saldo final de '+(mIdx>0?MF[mIdx-1]:'dezembro do ano anterior')+' na base para partir dele. O Balanço &amp; Índices precisa do saldo final: gere o balancete com <b>Saldo anterior e Saldo atual</b> e importe de novo. Nada foi alterado.';
         statusEl.style.color='var(--red2)';
         document.getElementById('impFile').value='';
         return;
       }
       var inc=doImport(mIdx,codeMap,conf.modo==='mov');
-      var aviso=conf.modo==='mov'?'<br>ℹ O balancete traz só o movimento do mês: o saldo final do balanço foi apurado como saldo final de '+MF[mIdx-1]+' + movimento de '+MF[mIdx]+'. Se '+MF[mIdx-1]+' também foi importado só com movimento, reimporte os meses com Saldo anterior e Saldo atual.'
-        :conf.modo==='calc'?'<br>ℹ A coluna lida como "Saldo atual" não fechava com Saldo anterior + Débito − Crédito em '+conf.erra+' conta(s); o saldo final foi recalculado a partir do saldo anterior. Confira o layout do balancete.':'';
-      statusEl.innerHTML='✅ Balancete de '+MF[mIdx]+'/2026 importado com sucesso — '+Object.keys(codeMap).length+' contas processadas. DRE, índices e balanço (saldo final do mês) já foram atualizados. Revise os dados e clique em "Salvar base atual" para manter esta atualização na próxima vez que abrir o dashboard.'+aviso+msgContasNovas(inc,BALHIST[mIdx]);
+      var aviso=conf.modo==='mov'?'<br>ℹ︎ O balancete traz só o movimento do mês: o saldo final do balanço foi apurado como saldo final de '+MF[mIdx-1]+' + movimento de '+MF[mIdx]+'. Se '+MF[mIdx-1]+' também foi importado só com movimento, reimporte os meses com Saldo anterior e Saldo atual.'
+        :conf.modo==='calc'?'<br>ℹ︎ A coluna lida como "Saldo atual" não fechava com Saldo anterior + Débito − Crédito em '+conf.erra+' conta(s); o saldo final foi recalculado a partir do saldo anterior. Confira o layout do balancete.':'';
+      statusEl.innerHTML='✓ Balancete de '+MF[mIdx]+'/2026 importado com sucesso — '+Object.keys(codeMap).length+' contas processadas. DRE, índices e balanço (saldo final do mês) já foram atualizados. Revise os dados e clique em "Salvar base atual" para manter esta atualização na próxima vez que abrir o dashboard.'+aviso+msgContasNovas(inc,BALHIST[mIdx]);
       statusEl.style.color='var(--green2)';
       basePosImport(statusEl);
     }catch(err){
-      statusEl.textContent='⚠ Erro ao processar o arquivo: '+err.message;
+      statusEl.textContent='⚠︎ Erro ao processar o arquivo: '+err.message;
       statusEl.style.color='var(--red2)';
     }
     document.getElementById('impFile').value='';
@@ -2202,10 +2203,10 @@ function saveCurrentBase(){
   try{
     var state=buildBaseState();
     localStorage.setItem('nhdDashBase',JSON.stringify(state));
-    statusEl.textContent='💾 Base salva com sucesso em '+new Date().toLocaleString('pt-BR')+'. Esta base será carregada automaticamente na próxima vez que este dashboard for aberto neste navegador — importar um novo mês não apaga os meses já salvos.';
+    statusEl.textContent='Base salva com sucesso em '+new Date().toLocaleString('pt-BR')+'. Esta base será carregada automaticamente na próxima vez que este dashboard for aberto neste navegador — importar um novo mês não apaga os meses já salvos.';
     statusEl.style.color='var(--green2)';
   }catch(err){
-    statusEl.textContent='⚠ Não foi possível salvar localmente: '+err.message;
+    statusEl.textContent='⚠︎ Não foi possível salvar localmente: '+err.message;
     statusEl.style.color='var(--red2)';
   }
 }
@@ -2228,10 +2229,10 @@ async function publishBaseToGitHub(){
     }
     await HubAuth.gravarDoc('base',state);
     BASE_REMOTA_EM=state.savedAt;
-    s.textContent='🌐 Base publicada em '+new Date().toLocaleString('pt-BR')+'. Quem abrir o painel já vê a atualização.';
+    s.textContent='Base publicada em '+new Date().toLocaleString('pt-BR')+'. Quem abrir o painel já vê a atualização.';
     s.style.color='var(--green2)';
   }catch(err){
-    s.textContent='⚠ Falha ao publicar: '+(err&&err.code==='permission-denied'?'o seu acesso não permite publicar.':(err.message||err));s.style.color='var(--red2)';
+    s.textContent='⚠︎ Falha ao publicar: '+(err&&err.code==='permission-denied'?'o seu acesso não permite publicar.':(err.message||err));s.style.color='var(--red2)';
   }
 }
 // Subvenção de ICMS (conta 3.3.01.1004) na DRE: sai de "Outras receitas" e entra
@@ -2689,7 +2690,7 @@ function relSecIdx(d){
     (r.liqCorr>=1?'▲':'▼')+' <b>Liquidez Corrente '+relX(r.liqCorr)+'</b> — '+relR(b.ac)+' de Ativo Circulante para '+relR(b.pc)+' de Passivo Circulante. '+(r.cgl>=0?'Capital de giro positivo de '+relR(r.cgl)+'.':'Capital de giro negativo de '+relR(Math.abs(r.cgl))+'.'),
     (r.liqSeca>=1?'▲':'▼')+' <b>Liquidez Seca '+relX(r.liqSeca)+'</b> — '+(r.liqSeca>=1?'mesmo excluindo estoques, cobre com folga o passivo circulante.':'excluindo estoques, não cobre integralmente o passivo circulante.'),
     (r.liqIm>=0.3?'▲':'▼')+' <b>Liquidez Imediata '+relX(r.liqIm)+'</b> — o caixa cobre '+(r.liqIm*100).toFixed(0)+'% das obrigações de curto prazo.'+(r.liqIm<0.3?' Atenção ao fluxo de caixa.':' Posição de caixa confortável.'),
-    (r.endGeral>0.8?'⚠':'▲')+' <b>Endividamento '+(r.endGeral*100).toFixed(1).replace('.',',')+'%</b> — estrutura '+(r.endGeral>0.6?'financiada majoritariamente por capital de terceiros':'equilibrada entre capital próprio e de terceiros')+'. EBITDA acumulado de '+relR(ebAcum)+' (Jan–'+M[d.bm]+') '+(ebAcum>0?'indica capacidade de geração de caixa para servir a dívida.':'indica geração de caixa limitada no período.'),
+    (r.endGeral>0.8?'⚠︎':'▲')+' <b>Endividamento '+(r.endGeral*100).toFixed(1).replace('.',',')+'%</b> — estrutura '+(r.endGeral>0.6?'financiada majoritariamente por capital de terceiros':'equilibrada entre capital próprio e de terceiros')+'. EBITDA acumulado de '+relR(ebAcum)+' (Jan–'+M[d.bm]+') '+(ebAcum>0?'indica capacidade de geração de caixa para servir a dívida.':'indica geração de caixa limitada no período.'),
     (b.pl>=0?'▲':'▼')+' <b>Patrimônio Líquido '+relR(b.pl)+'</b> — Capital Social '+relR(b.capSoc)+', Ajuste de Avaliação '+relR(b.ajusteAval)+', Lucros Acumulados '+relR(lucAc)+' e Resultado do Exercício '+relR(b.resExerc)+'.'
   ];
   h+='<div class="rp-sub">Interpretação</div><div class="rp-interp">'+it.join('<br>')+'</div>';
@@ -3025,10 +3026,10 @@ async function abrirLancDRE(r){
   var periodo=DRE_CI.length===1?MF[DRE_CI[0]]+'/'+DRE_ANO:MF[DRE_CI[0]]+' a '+MF[DRE_CI[DRE_CI.length-1]]+'/'+DRE_ANO;
   var bate=Math.abs(total-valDre)<1;
   var h='<div class="lm-box"><div class="lm-top"><div><h3>'+(no?no.l:'')+'</h3><div class="lm-sub">Lançamentos do razão · '+periodo+' · contas '+cods.map(function(c){return c.code+'*';}).join(', ')+'</div></div>'+
-    '<div style="display:flex;gap:6px"><button class="fs" style="cursor:pointer" onclick="exportarLancDRE()">📊 Excel</button><button class="fs" style="cursor:pointer" onclick="fecharLancDRE()">✕ Fechar</button></div></div>'+
+    '<div style="display:flex;gap:6px"><button class="fs" style="cursor:pointer" onclick="exportarLancDRE()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Excel</button><button class="fs" style="cursor:pointer" onclick="fecharLancDRE()">✕ Fechar</button></div></div>'+
     '<div class="lm-res"><div class="lm-k">Total do razão<b>'+fmtBR(total)+'</b></div><div class="lm-k">Valor na DRE<b>'+fmtBR(valDre)+'</b></div><div class="lm-k">Lançamentos<b>'+lin.length.toLocaleString('pt-BR')+'</b></div>'+
     '<div class="lm-k">Conferência<b style="color:'+(bate?'var(--green2)':'var(--red2)')+'">'+(bate?'Razão = DRE':'Diferença '+fmtBR(total-valDre))+'</b></div></div>'+
-    (semRaz.length?'<div style="color:var(--g2);font-size:13px">⚠ Razão não importado para: '+semRaz.map(function(m){return MF[+m.slice(5)-1];}).join(', ')+'. Importe no Book de conciliação (Admin › Conciliação).</div>':'')+
+    (semRaz.length?'<div style="color:var(--g2);font-size:13px">⚠︎ Razão não importado para: '+semRaz.map(function(m){return MF[+m.slice(5)-1];}).join(', ')+'. Importe no Book de conciliação (Admin › Conciliação).</div>':'')+
     '<div class="lm-scroll" style="max-height:22vh"><table><thead><tr><th>Conta</th><th>Descrição</th><th class="n">Lançamentos</th><th class="n">Total</th></tr></thead><tbody>'+
     Object.keys(porConta).sort().map(function(c){return '<tr class="lm-c" onclick="filtrarLancDRE(\''+c+'\')"><td>'+c+'</td><td>'+(desc[c]||'')+'</td><td class="n">'+porConta[c].n+'</td><td class="n">'+fmtBR(porConta[c].v)+'</td></tr>';}).join('')+
     '</tbody></table></div><div id="lmDet"></div></div>';
@@ -3144,14 +3145,14 @@ async function admLiberar(ev){
   var email=document.getElementById('admEmail').value,nome=document.getElementById('admNome').value,papel=document.getElementById('admPapel').value,book=document.getElementById('admBook').checked;
   var emps=[].slice.call(document.querySelectorAll('#admEmps input:checked')).map(function(x){return x.value;});
   try{await HubAuth.salvarAcesso(email,papel,nome,book,emps);document.getElementById('admBook').checked=false;admMsg('admMsgU','✓ Acesso liberado para '+email.trim().toLowerCase()+'.','ok');document.getElementById('admEmail').value='';document.getElementById('admNome').value='';admListar();}
-  catch(e){admMsg('admMsgU','⚠ '+(e.code==='permission-denied'?'o seu acesso não permite liberar usuários':e.message),'err');}
+  catch(e){admMsg('admMsgU','⚠︎ '+(e.code==='permission-denied'?'o seu acesso não permite liberar usuários':e.message),'err');}
 }
 // liga/desliga o "Book: visualizar" de um usuário já liberado (mantém papel e nome)
 async function admBook(ck){
   var a=(ADM_LISTA||[]).filter(function(x){return x.email===ck.dataset.email;})[0];if(!a)return;
   ck.disabled=true;
   try{await HubAuth.salvarAcesso(a.email,a.papel,a.nome,ck.checked);a.book=ck.checked;admMsg('admMsgU',(ck.checked?'✓ Book liberado para ':'Book retirado de ')+a.email+'.','ok');}
-  catch(e){ck.checked=!ck.checked;admMsg('admMsgU','⚠ '+(e.code==='permission-denied'?'o seu acesso não permite alterar usuários':e.message),'err');}
+  catch(e){ck.checked=!ck.checked;admMsg('admMsgU','⚠︎ '+(e.code==='permission-denied'?'o seu acesso não permite alterar usuários':e.message),'err');}
   ck.disabled=false;
 }
 // caixas das empresas que o cliente vê (seletor do topo)
@@ -3165,20 +3166,20 @@ async function admEmp(ck){
   var box=ck.closest('td'),emps=[].slice.call(box.querySelectorAll('input:checked')).map(function(x){return x.value;});
   ck.disabled=true;
   try{await HubAuth.salvarAcesso(a.email,a.papel,a.nome,!!a.book,emps);a.empresas=emps;admMsg('admMsgU','✓ Empresas de '+a.email+': '+emps.map(function(e){return HubEmpresa.lista[e].curto;}).join(', ')+'.','ok');}
-  catch(e){ck.checked=!ck.checked;admMsg('admMsgU','⚠ '+(e.code==='permission-denied'?'o seu acesso não permite alterar usuários':e.message),'err');}
+  catch(e){ck.checked=!ck.checked;admMsg('admMsgU','⚠︎ '+(e.code==='permission-denied'?'o seu acesso não permite alterar usuários':e.message),'err');}
   ck.disabled=false;
 }
 async function admRemover(email){
   if(!confirm('Remover o acesso de '+email+'? A pessoa deixa de abrir o Hub na próxima vez que entrar.'))return;
   try{await HubAuth.removerAcesso(email);admMsg('admMsgU','Acesso de '+email+' removido.','ok');admListar();}
-  catch(e){admMsg('admMsgU','⚠ '+e.message,'err');}
+  catch(e){admMsg('admMsgU','⚠︎ '+e.message,'err');}
 }
 async function admSalvarToken(){
   var t=(document.getElementById('admTk').value||'').trim();if(!t){admMsg('admMsgT','Cole o token.','err');return;}
   admMsg('admMsgT','Verificando no GitHub…');
-  try{var r=await adminCheckToken(t);if(!r.ok){admMsg('admMsgT','⚠ '+r.msg+'.','err');return;}
+  try{var r=await adminCheckToken(t);if(!r.ok){admMsg('admMsgT','⚠︎ '+r.msg+'.','err');return;}
     try{localStorage.setItem('nhdGhToken',t);}catch(e){}admMsg('admMsgT','✓ Token salvo neste navegador.','ok');}
-  catch(e){admMsg('admMsgT','⚠ Não foi possível validar: '+e.message,'err');}
+  catch(e){admMsg('admMsgT','⚠︎ Não foi possível validar: '+e.message,'err');}
 }
 function admEsquecerToken(){try{localStorage.removeItem('nhdGhToken');}catch(e){}document.getElementById('admTk').value='';admMsg('admMsgT','Token esquecido neste navegador.','ok');}
 // KPIs da barra lateral calculados da base carregada (acumulado do ano)
@@ -3369,7 +3370,7 @@ function montarPaginaARes(){
   sec.innerHTML='<div class="fbar"><span class="fl">Mês:</span><select class="fs" id="aresMes" onchange="aresFiltro()"></select>'+
     '<span class="fl">Nível:</span><select class="fs" id="aresNivel" onchange="aresFiltro()"><option value="all">Todas as contas</option><option value="4">Até o 4º nível (grupos)</option><option value="3">Até o 3º nível</option></select>'+
     '<label class="fl" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="aresSoMov" checked onchange="aresFiltro()">Só contas com valor</label>'+
-    '<button class="fs" onclick="aresExcel()">📊 Exportar Excel</button></div>'+
+    '<button class="fs" onclick="aresExcel()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Exportar Excel</button></div>'+
     '<div style="margin:18px 0 12px"><div class="ptitle">Análise de Resultado</div><div class="psub" id="aresSub"></div></div>'+
     '<div class="ares-kpis" id="aresKpi"></div><div id="aresBox"></div>';
   var ref=document.getElementById('page-dre');ref.parentNode.insertBefore(sec,ref.nextSibling);
@@ -3419,9 +3420,9 @@ function importarDREAnterior(file){
       });
       if(!Object.keys(A.rv).length)throw new Error('a aba "DRE '+ano+'" não tem valores');
       ANT=A;try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(x){}
-      st.innerHTML='✅ DRE de '+ano+' importada ('+Object.keys(A.rv).map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Balanço &amp; Índices › 🌐 Publicar para todos.';
+      st.innerHTML='✓ DRE de '+ano+' importada ('+Object.keys(A.rv).map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Balanço &amp; Índices › Publicar para todos.';
       st.style.color='var(--green2)';buildComp();
-    }catch(err){st.textContent='⚠ '+err.message;st.style.color='var(--red2)';}
+    }catch(err){st.textContent='⚠︎ '+err.message;st.style.color='var(--red2)';}
     document.getElementById('compFile').value='';
   };
   rd.readAsArrayBuffer(file);
@@ -3796,8 +3797,8 @@ function montarPaginaComp(){
   var sec=document.createElement('section');sec.id='page-comp';sec.className='page';
   sec.innerHTML='<div class="fbar"><span class="fl">Período:</span><select class="fs" id="compMes" onchange="COMP.mes=+this.value;buildComp()"></select>'+
     '<span class="fl">Visão:</span><select class="fs" id="compVisao" onchange="COMP.aj=this.value===\'com\';buildComp()"><option value="sem">Sem ajuste</option><option value="com">Com ajuste</option></select>'+
-    '<button class="fs" onclick="abrirRelDiretoria()">📄 Relatório à diretoria (PDF)</button><button class="fs" onclick="excelRelDiretoria()">📊 Excel</button>'+
-    '<label class="fs adm-only" style="cursor:pointer">📥 Importar DRE do ano anterior<input type="file" id="compFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREAnterior(this.files[0])"></label>'+
+    '<button class="fs" onclick="abrirRelDiretoria()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4"/></svg>Relatório à diretoria (PDF)</button><button class="fs" onclick="excelRelDiretoria()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Excel</button>'+
+    '<label class="fs adm-only" style="cursor:pointer"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3"/></svg>Importar DRE do ano anterior<input type="file" id="compFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREAnterior(this.files[0])"></label>'+
     '<span id="compStatus" class="fl" style="font-size:12px"></span></div>'+
     '<div style="margin:18px 0 12px"><div class="ptitle">Comparativo</div><div class="psub" id="compSub"></div></div><div id="compBox"></div>';
   var ref=document.getElementById('page-dre');ref.parentNode.insertBefore(sec,ref.nextSibling);

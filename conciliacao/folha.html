@@ -258,6 +258,7 @@ tr.inferido td{background:#FFF8E6}
 .prog{font-size:.85rem;color:var(--aud-primary);margin-top:8px}
 .cols2{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
 </style>
+<style>/* ícones monocromáticos (mesmo traço do menu) */.ic{width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:.4em;flex:none;display:inline-block}</style>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -279,7 +280,7 @@ tr.inferido td{background:#FFF8E6}
 
 <div class="box">
   <div class="upl" id="recImport" data-recolher="Importação (resumo da folha e das rescisões)">
-    <h3>🧾 Resumo da folha (PDF)</h3>
+    <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h8v13l-2-1.2-2 1.2-2-1.2-2 1.2zM6 5h4M6 8h4"/></svg>Resumo da folha (PDF)</h3>
     <div class="muted small">Folha Analítica do Protheus com a página <b>TOTAL GERAL</b>: o resumo <b>Geral</b> da competência e, se houver, o <b>Resumo de rescisões</b> (o nome do arquivo com “RESC” indica rescisões). PDF com texto é lido direto; PDF em imagem é lido por OCR neste computador (leva uns 15 segundos por página e os dados não saem daqui). O mês vem do “Comp:” do relatório.</div>
     <div class="paste-actions"><button class="primary" type="button" onclick="$('inFol').click()">Importar resumo da folha (PDF)</button></div>
     <div class="prog" id="prog"></div>
@@ -379,20 +380,20 @@ function stNuvem(t, tipo){ const el = $('stNuvem'); if (!el) return; el.textCont
 function salvar(){ dados.savedAt = new Date().toISOString(); if (!lsSet(LS, dados)) msg('Não foi possível salvar neste navegador (espaço cheio).', 'err'); agendarNuvem(); }
 function agendarNuvem(){
   if (!HUB || HUB.papel !== 'admin') return;
-  clearTimeout(tNuvem); stNuvem('☁ Salvando no Firebase…');
+  clearTimeout(tNuvem); stNuvem('Salvando no Firebase…');
   tNuvem = setTimeout(async () => {
-    try { await HUB.gravarDoc(DOC_NUVEM, dados); stNuvem('☁ Base salva no Firebase às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.', 'ok'); }
-    catch(e){ stNuvem('⚠ Não foi possível salvar no Firebase: ' + (e && e.code === 'permission-denied' ? 'o seu acesso não permite salvar' : (e && e.message) || e) + ' (os dados continuam neste navegador).', 'err'); }
+    try { await HUB.gravarDoc(DOC_NUVEM, dados); stNuvem('Base salva no Firebase às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '.', 'ok'); }
+    catch(e){ stNuvem('⚠︎ Não foi possível salvar no Firebase: ' + (e && e.code === 'permission-denied' ? 'o seu acesso não permite salvar' : (e && e.message) || e) + ' (os dados continuam neste navegador).', 'err'); }
   }, 2500);
 }
 async function carregarNuvem(){
   if (!HUB){ stNuvem('Base guardada neste navegador (abra pelo Hub para salvar no Firebase).'); return; }
   try {
     const d = await HUB.lerDoc(DOC_NUVEM);
-    if (d && d.meses && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){ dados = d; lsSet(LS, dados); stNuvem('☁ Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok'); }
+    if (d && d.meses && (!dados.savedAt || (d.savedAt || '') > dados.savedAt)){ dados = d; lsSet(LS, dados); stNuvem('Base carregada do Firebase (salva em ' + new Date(d.savedAt).toLocaleString('pt-BR') + ').', 'ok'); }
     else if (dados.savedAt && (!d || (d.savedAt || '') < dados.savedAt)) agendarNuvem();
-    else if (d) stNuvem('☁ Base em dia com o Firebase.', 'ok');
-  } catch(e){ stNuvem('⚠ Não foi possível ler a base no Firebase: ' + ((e && e.message) || e) + ' — usando a deste navegador.', 'err'); }
+    else if (d) stNuvem('Base em dia com o Firebase.', 'ok');
+  } catch(e){ stNuvem('⚠︎ Não foi possível ler a base no Firebase: ' + ((e && e.message) || e) + ' — usando a deste navegador.', 'err'); }
 }
 let assinBase = '';
 async function assinaturaBase(){

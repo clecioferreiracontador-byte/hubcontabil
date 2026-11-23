@@ -288,6 +288,7 @@ table.bk td.mes-res{font-size:.62rem}
 <script src="hub-db.js?v=4"></script>
 <script src="recolher.js?v=1"></script>
 <script src="mes-hub.js?v=3"></script>
+<style>/* ícones monocromáticos (mesmo traço do menu) */.ic{width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:.4em;flex:none;display:inline-block}</style>
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -308,16 +309,16 @@ table.bk td.mes-res{font-size:.62rem}
 <main class="wrap">
 
 <div class="box">
-  <div class="ro-aviso" role="status">👁 <b>Modo visualização.</b> Você vê o Book dos meses fechados pela Audicon; nada pode ser alterado aqui.</div>
+  <div class="ro-aviso" role="status"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8zM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg><b>Modo visualização.</b> Você vê o Book dos meses fechados pela Audicon; nada pode ser alterado aqui.</div>
   <div class="grid upl-grid" id="recImport" data-recolher="Importação de arquivos (Book / balancete e razão)" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
     <div class="upl">
-      <h3>📘 Balancete / Book do mês</h3>
+      <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h9.5v11H3zM5.5 2.5v11"/></svg>Balancete / Book do mês</h3>
       <div class="muted small">O Book (.xlsx, aba “Book”) traz saldos, observações e diferenças já apuradas; ou o balancete do Protheus (Conta | Descrição | Saldo anterior | Débito | Crédito | Saldo atual).</div>
       <div class="paste-actions"><button class="primary" type="button" onclick="document.getElementById('inBal').click()">Importar Book / balancete</button></div>
       <input type="file" id="inBal" accept=".xlsx,.xls" onchange="importarBalancete(this.files[0]);this.value=''">
     </div>
     <div class="upl">
-      <h3>📒 Razão completo</h3>
+      <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h9.5v11H3zM5.5 2.5v11"/></svg>Razão completo</h3>
       <div class="muted small">Protheus › Lançamentos Contábeis (.xlsx), todas as contas, um ou vários meses. Fica guardado só neste navegador e alimenta o Book e a DRE do Hub.</div>
       <div class="paste-actions"><button class="primary" type="button" onclick="document.getElementById('inRaz').click()">Importar razão</button></div>
       <input type="file" id="inRaz" accept=".xlsx,.xls" multiple onchange="importarRazao(this.files);this.value=''">
@@ -325,9 +326,9 @@ table.bk td.mes-res{font-size:.62rem}
   </div>
   <div class="toolbar" style="margin-top:12px">
     <label>Mês do Book:<select id="selMes" onchange="mesAtual=this.value;salvarPref();carregarMes()"></select></label>
-    <button type="button" onclick="exportarBook()">📊 Exportar Book (Excel)</button>
-    <button type="button" class="so-admin" onclick="salvarMesPortal()" title="Guarda o mês selecionado (balancete/Book, suportes, status e observações) no portal agora. Enquanto o Hub estiver aberto, isso também é feito sozinho de hora em hora quando o mês mudou.">☁ Salvar mês no portal</button>
-    <button type="button" class="so-admin" onclick="carregarPortal()" title="Traz os meses salvos no portal para este navegador">☁ Carregar do portal</button>
+    <button type="button" onclick="exportarBook()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Exportar Book (Excel)</button>
+    <button type="button" class="so-admin" onclick="salvarMesPortal()" title="Guarda o mês selecionado (balancete/Book, suportes, status e observações) no portal agora. Enquanto o Hub estiver aberto, isso também é feito sozinho de hora em hora quando o mês mudou."><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5h7a3 3 0 0 0 .4-6A4 4 0 0 0 4.3 7a2.8 2.8 0 0 0 .2 5.5z"/></svg>Salvar mês no portal</button>
+    <button type="button" class="so-admin" onclick="carregarPortal()" title="Traz os meses salvos no portal para este navegador"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5h7a3 3 0 0 0 .4-6A4 4 0 0 0 4.3 7a2.8 2.8 0 0 0 .2 5.5z"/></svg>Carregar do portal</button>
     <span class="muted small" id="stTopo"></span>
     <span class="muted small" id="stPortal" style="flex-basis:100%"></span>
   </div>
@@ -400,7 +401,7 @@ table.bk td.mes-res{font-size:.62rem}
       <label>Conta<select id="lConta" onchange="renderLanc()"></select></label>
       <label>Mês<select id="lMes" onchange="renderLanc()"></select></label>
       <label>Buscar<input type="text" id="lBusca" oninput="renderLancFiltro()" placeholder="histórico, documento, valor"></label>
-      <button type="button" onclick="exportarLanc()">📊 Exportar Excel</button>
+      <button type="button" onclick="exportarLanc()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Exportar Excel</button>
     </div>
     <div id="lInfo" class="muted small" style="margin-bottom:8px"></div>
     <div id="lVazio" class="empty">Importe o razão completo para consultar os lançamentos.</div>
@@ -710,7 +711,7 @@ async function trazerDoPortal(m){
   Object.keys(rev).filter(k => k.indexOf(m + '|') === 0).forEach(k => { delete rev[k]; });
   Object.assign(rev, pac.rev || {}); lsSet(LS_REV, rev);
   const antes = bal; bal = pac.bal; const a = lsGet(LS_AUTO, {}); a[m] = assinaturaMes(m); lsSet(LS_AUTO, a); bal = antes;
-  setPortal('☁ ' + mesLbl(m) + ' carregado do portal (salvo em ' + new Date(pac.salvoEm).toLocaleString('pt-BR') + ').', 'ok');
+  setPortal('' + mesLbl(m) + ' carregado do portal (salvo em ' + new Date(pac.salvoEm).toLocaleString('pt-BR') + ').', 'ok');
   return true;
 }
 async function carregarMes(){
@@ -932,7 +933,7 @@ function renderBook(){
     const stSel = `<select class="stsel ${st[0]}${manual ? ' manual' : ''}" title="${manual ? 'Definido manualmente — clique para mudar' : 'Automático — clique para mudar'}" onchange="setRev('${k}','st',this.value)">${opcoes.map((o, i) => `<option value="${o[0]}" ${i === 0 ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`;
     h += `<tr>${celConta(l.conta)}<td class="desc"><div class="dsc">${descConta(l)}</div></td><td><b>${fmt(l.c.sa)}</b></td><td>${fmt(l.c.d)}</td><td>${fmt(l.c.c)}</td><td><b>${fmt(l.c.sf)}</b></td>
       <td class="c-raz" title="${l.razOk === null ? 'Razão do mês não importado' : 'Razão: D ' + fmt(l.agg ? l.agg.d : 0) + ' / C ' + fmt(l.agg ? l.agg.c : 0)}">${l.razOk === null ? '' : (l.razOk ? '<span class="dok">✔</span>' : '<span class="dbad">✗</span>')}</td>
-      <td><input type="text" value="${esc(supTxt)}" placeholder="${l.fonte && l.fonte !== 'manual' ? fmt(l.suporte) : '0,00'}" onchange="setRev('${k}','sup',this.value)">${l.fonte && l.fonte !== 'manual' ? `<div class="auto">automático: ${esc(l.fonte)}</div>` : ''}${l.aviso ? `<div class="auto" style="color:#8a5a00" title="O status do fechamento continua pelo suporte salvo no mês. Se o valor do painel for o certo, digite-o no suporte ou ajuste o painel.">⚠ ${esc(l.aviso.fonte)} mostra agora ${fmt(l.aviso.saldo)}</div>` : ''}</td>
+      <td><input type="text" value="${esc(supTxt)}" placeholder="${l.fonte && l.fonte !== 'manual' ? fmt(l.suporte) : '0,00'}" onchange="setRev('${k}','sup',this.value)">${l.fonte && l.fonte !== 'manual' ? `<div class="auto">automático: ${esc(l.fonte)}</div>` : ''}${l.aviso ? `<div class="auto" style="color:#8a5a00" title="O status do fechamento continua pelo suporte salvo no mês. Se o valor do painel for o certo, digite-o no suporte ou ajuste o painel.">⚠︎ ${esc(l.aviso.fonte)} mostra agora ${fmt(l.aviso.saldo)}</div>` : ''}</td>
       <td class="${isNaN(l.dif) ? '' : (Math.abs(l.dif) < 0.015 ? 'c-ok' : 'dbad')}">${isNaN(l.dif) ? '—' : (Math.abs(l.dif) < 0.015 ? '<span class="okc" title="Sem diferença' + (Math.abs(l.dif) >= 0.005 ? ' (arredondamento de ' + fmt(l.dif) + ')' : '') + '">✓</span>' : fmt(l.dif))}${l.difDoBook ? '<div class="auto">do Book</div>' : ''}</td>
       <td>${stSel}</td>
       <td class="obs"><textarea class="obs" rows="${Math.min(4, Math.max(1, Math.ceil(String(l.obs || '').length / 48)))}" onchange="setRev('${k}','obs',this.value)" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${esc(l.obs)}</textarea></td>
@@ -1039,7 +1040,7 @@ async function salvarMesPortal(auto){
   if (LEITURA) return false;
   if (!bal){ if (!auto) alert('Importe o Book ou o balancete do mês primeiro.'); return false; }
   const m = mesAtual, caminho = PORTAL_DIR + '/' + m + '.json', pac = pacoteMes(m), ok = [], falhas = [];
-  setPortal('☁ ' + (auto ? 'Salvamento automático: salvando ' : 'Salvando ') + mesLbl(m) + '…');
+  setPortal('' + (auto ? 'Salvamento automático: salvando ' : 'Salvando ') + mesLbl(m) + '…');
   // 1) Firebase: é de onde o Book é lido por quem tem a permissão "Book: visualizar"
   if (HUB && HUB.papel === 'admin'){
     try { const kb = await HUB.gravarBook(m, pac); ok.push('Firebase (' + kb + ' KB)'); }
@@ -1061,8 +1062,8 @@ async function salvarMesPortal(auto){
     } catch(e){ falhas.push('GitHub: ' + e.message); }
   }
   const quando = new Date(pac.salvoEm).toLocaleString('pt-BR');
-  if (ok.length) setPortal('☁ ' + mesLbl(m) + ' salvo em ' + quando + (auto ? ' (automático)' : '') + ' — ' + ok.join(' e ') + '.' + (falhas.length ? ' ⚠ ' + esc(falhas.join(' · ')) : '') + proximoAuto(), falhas.length ? '' : 'ok');
-  else setPortal('⚠ Não foi possível salvar' + (auto ? ' (automático)' : '') + ': ' + esc(falhas.join(' · ')) + proximoAuto(), 'err');
+  if (ok.length) setPortal('' + mesLbl(m) + ' salvo em ' + quando + (auto ? ' (automático)' : '') + ' — ' + ok.join(' e ') + '.' + (falhas.length ? ' ⚠︎ ' + esc(falhas.join(' · ')) : '') + proximoAuto(), falhas.length ? '' : 'ok');
+  else setPortal('⚠︎ Não foi possível salvar' + (auto ? ' (automático)' : '') + ': ' + esc(falhas.join(' · ')) + proximoAuto(), 'err');
   if (ok.length){ const a = lsGet(LS_AUTO, {}); a[m] = assinaturaMes(m); lsSet(LS_AUTO, a); if (PACS_FB) PACS_FB[m] = pac; }
   return ok.length > 0;
 }
@@ -1079,7 +1080,7 @@ function assinRazao(m){
 async function enviarRazaoPortal(m){
   const assin = assinRazao(m); if (!assin || !HUB || !HUB.gravarRazaoMes) return null;
   const env = lsGet(LS_RAZ_ENV, {}); if (env[m] === assin) return null;
-  setPortal('☁ Enviando o razão de ' + mesLbl(m) + '…');
+  setPortal('Enviando o razão de ' + mesLbl(m) + '…');
   const L = await HubDB.lancamentos([m]);
   const linhas = L.map(l => [l.conta, l.data, l.hist || '', l.doc || '', l.cp || '', l.fil || '', r2(l.deb || 0), r2(l.cred || 0)]);
   const desc = {}; L.forEach(l => { if (raz.desc && raz.desc[l.conta]) desc[l.conta] = raz.desc[l.conta]; });
@@ -1096,7 +1097,7 @@ async function autoSalvar(){
   if (LEITURA || !bal || !mesAtual || !(HUB && HUB.papel === 'admin')) return;
   const a = lsGet(LS_AUTO, {});
   if (a[mesAtual] === assinaturaMes(mesAtual)){
-    if (!/Salvando|Não foi possível/.test($('stPortal').textContent)) setPortal('☁ ' + mesLbl(mesAtual) + ' sem alterações desde o último salvamento no portal.' + proximoAuto());
+    if (!/Salvando|Não foi possível/.test($('stPortal').textContent)) setPortal('' + mesLbl(mesAtual) + ' sem alterações desde o último salvamento no portal.' + proximoAuto());
     return;
   }
   await salvarMesPortal(true);
@@ -1112,7 +1113,7 @@ async function listarPortal(silencioso){
     if (!r.ok) throw await erroPortal(r, 'listar o portal');
     const meses = (await r.json()).filter(f => /^\d{4}-\d{2}\.json$/.test(f.name)).map(f => f.name.slice(0, 7)).sort();
     if (silencioso !== 'quieto') $('stPortal').dataset.meses = meses.join(',');
-    if (silencioso && meses.length && !/Salvando|salvo no portal/.test($('stPortal').textContent)) setPortal('☁ No portal: ' + meses.map(mesLbl).join(', ') + '.');
+    if (silencioso && meses.length && !/Salvando|salvo no portal/.test($('stPortal').textContent)) setPortal('No portal: ' + meses.map(mesLbl).join(', ') + '.');
     return meses;
   } catch(e){ if (!silencioso) throw e; return null; }
 }
@@ -1139,15 +1140,15 @@ async function carregarPortal(){
   if (LEITURA) return;
   if (!tokenGh() && HUB){
     if (!confirm('Trazer do Firebase os meses salvos? Os meses que já estão neste navegador serão substituídos pelos do Firebase.')) return;
-    setPortal('☁ Buscando os meses salvos no Firebase…');
-    try { const ms = await carregarFirebase(); setPortal(ms.length ? '☁ ' + ms.length + ' mês(es) carregado(s) do Firebase: ' + ms.map(mesLbl).join(', ') + '.' : 'Nenhum mês salvo no Firebase ainda. Use “☁ Salvar mês no portal”.', ms.length ? 'ok' : ''); }
-    catch(e){ setPortal('⚠ ' + esc(e.message), 'err'); }
+    setPortal('Buscando os meses salvos no Firebase…');
+    try { const ms = await carregarFirebase(); setPortal(ms.length ? '' + ms.length + ' mês(es) carregado(s) do Firebase: ' + ms.map(mesLbl).join(', ') + '.' : 'Nenhum mês salvo no Firebase ainda. Use “Salvar mês no portal”.', ms.length ? 'ok' : ''); }
+    catch(e){ setPortal('⚠︎ ' + esc(e.message), 'err'); }
     return;
   }
-  setPortal('☁ Buscando os meses salvos no portal…');
+  setPortal('Buscando os meses salvos no portal…');
   try {
     const meses = await listarPortal(false);
-    if (!meses.length){ setPortal('Nenhum mês salvo no portal ainda. Use “☁ Salvar mês no portal”.'); return; }
+    if (!meses.length){ setPortal('Nenhum mês salvo no portal ainda. Use “Salvar mês no portal”.'); return; }
     const locais = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10));
     const repetidos = meses.filter(m => locais.includes(m));
     const sobrescrever = repetidos.length ? confirm('Estes meses já estão neste navegador: ' + repetidos.map(mesLbl).join(', ') + '.\n\nOK = substituir pelos do portal (status, suportes e observações do portal).\nCancelar = manter os deste navegador e trazer só os outros meses.') : false;
@@ -1164,8 +1165,8 @@ async function carregarPortal(){
     }
     lsSet(LS_REV, rev);
     await atualizarListas(); await carregarMes();
-    setPortal('☁ ' + n + ' mês(es) carregado(s) do portal' + (repetidos.length && !sobrescrever ? '; mantidos os deste navegador: ' + repetidos.map(mesLbl).join(', ') : '') + '.', 'ok');
-  } catch(e){ setPortal('⚠ ' + esc(e.message), 'err'); }
+    setPortal('' + n + ' mês(es) carregado(s) do portal' + (repetidos.length && !sobrescrever ? '; mantidos os deste navegador: ' + repetidos.map(mesLbl).join(', ') : '') + '.', 'ok');
+  } catch(e){ setPortal('⚠︎ ' + esc(e.message), 'err'); }
 }
 
 // ===================== exportação no layout do Book NHD =====================

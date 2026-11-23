@@ -111,7 +111,7 @@ async function publicar(){
     try{localStorage.removeItem(LS_DRAFT);}catch(e){}
     render();
     var m2=document.getElementById('agMsg');m2.textContent='✓ Agenda publicada. Quem abrir o painel já vê a nova versão.';m2.className='ag-msg ok';
-  }catch(err){msg.textContent='⚠ Não foi possível publicar: '+(err&&err.code==='permission-denied'?'o seu acesso não permite publicar':err.message);msg.className='ag-msg err';}
+  }catch(err){msg.textContent='⚠︎ Não foi possível publicar: '+(err&&err.code==='permission-denied'?'o seu acesso não permite publicar':err.message);msg.className='ag-msg err';}
 }
 function descartar(){
   if(!confirm('Descartar as alterações não publicadas e voltar para a agenda publicada?'))return;
@@ -127,7 +127,7 @@ function render(){
   var adm=isAdmin(), cs=Object.keys(A.comps).sort();
   var h='<div class="ag-head"><div><div class="ptitle">Agenda de fechamento</div><div class="psub">Datas e tarefas do fechamento mensal, do cliente e da contabilidade, com o andamento de cada uma.</div></div>';
   if(adm)h+='<div class="ag-admin">'+(dirty?'<span class="ag-dirty">● Alterações não publicadas</span><button class="fs" onclick="Agenda.descartar()">Descartar</button>':'')+
-    '<button class="fs ag-pub" onclick="Agenda.publicar()"'+(dirty?'':' disabled')+'>🌐 Publicar agenda</button></div>';
+    '<button class="fs ag-pub" onclick="Agenda.publicar()"'+(dirty?'':' disabled')+'><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5C6.2 12.7 5.4 10.5 5.4 8S6.2 3.3 8 1.5"/></svg>Publicar agenda</button></div>';
   h+='</div><div id="agMsg" class="ag-msg"></div>';
 
   if(!cs.length){
