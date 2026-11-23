@@ -263,8 +263,7 @@ body:not(.is-admin) .adm-only{display:none!important}
 /* ===== Comparativo (Centerfrio) ===== */
 .comp-sec{font-weight:700;color:var(--g2);margin:20px 0 10px;font-size:15px;display:flex;align-items:center}
 .comp-ind{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:16px}
-.comp-k{background:var(--n3);border:1px solid rgba(255,255,255,.07);border-left:4px solid #5D6D7E;border-radius:10px;padding:10px 12px}
-.comp-k.ok{border-left-color:#27AE60}.comp-k.at{border-left-color:#E67E22}.comp-k.rs{border-left-color:#E74C3C}
+.comp-k{background:var(--n3);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 12px}
 .comp-k .t{font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;line-height:1.3}
 /* selo do semáforo: tamanho fixo, alinhado ao topo (não estica quando o título quebra em duas linhas) */
 .comp-k .b{flex:0 0 auto;align-self:flex-start;font-size:10.5px;line-height:1;padding:4px 9px;border-radius:10px;background:#5D6D7E;color:#fff;white-space:nowrap}
@@ -3406,7 +3405,9 @@ function montarPaginaARes(){
    DRE acumulada ano × ano anterior, tendência de 14 meses, os 10 indicadores do relatório da diretoria
    (saudável / atenção / risco) e o ranking das naturezas de gasto com o peso sobre a receita bruta.
    O ano anterior vem da planilha "DRE CONTÁBIL" (aba "DRE aaaa", uma coluna por mês, valores com sinal da DRE). */
-var COMP={mes:null,todas:false,aj:false};
+var COMP={mes:null,de:0,todas:false,aj:false};
+// rótulo do período escolhido (de–até); um mês só vira o nome do mês
+function compPer(ate){var de=Math.min(COMP.de||0,ate);return de===ate?M[ate].toLowerCase():M[de].toLowerCase()+'–'+M[ate].toLowerCase();}
 // efeito dos ajustes nas linhas da DRE (ano, meses de..até): linhas de conta pela receita, as de cálculo pela DRE_ORDER
 function compAdjRows(ano,de,ate){
   var rows={},lista=COMP.aj?AJUSTES.filter(function(a){return String(a.ano)===String(ano)&&a.mes>=de&&a.mes<=ate;}):[];
@@ -3415,7 +3416,7 @@ function compAdjRows(ano,de,ate){
   DRE_ORDER.forEach(function(r){var rc=DRE_RECIPE[r];if(!rc)return;var t=0;rc.x.forEach(function(x){t+=(rows[x[0]]||0)*x[1];});if(t)rows[r]=t;});
   return rows;
 }
-function compAdjNat(ano,ate){var o={};if(!COMP.aj)return o;AJUSTES.forEach(function(a){if(String(a.ano)===String(ano)&&a.mes<=ate)o[a.conta]=(o[a.conta]||0)+a.valor;});return o;}
+function compAdjNat(ano,ate){var o={};if(!COMP.aj)return o;AJUSTES.forEach(function(a){if(String(a.ano)===String(ano)&&a.mes>=COMP.de&&a.mes<=ate)o[a.conta]=(o[a.conta]||0)+a.valor;});return o;}
 function importarDREAnterior(file){
   if(!file)return;
   var st=document.getElementById('compStatus'),ano=String(+DRE_ANO-1);
@@ -3446,6 +3447,7 @@ function importarDREAnterior(file){
         A.rv[k]=computeDREFromBalancete(cm);A.mov[k]=mv;
       });
       if(!Object.keys(A.rv).length)throw new Error('a aba "DRE '+ano+'" não tem valores');
+      if(ANT&&ANT.sal){A.sal=ANT.sal;A.salIni=ANT.salIni;A.balArquivo=ANT.balArquivo;}   // mantém os saldos do balancete já importado
       ANT=A;try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(x){}
       st.innerHTML='✓ DRE de '+ano+' importada ('+Object.keys(A.rv).map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Balanço &amp; Índices › Publicar para todos.';
       st.style.color='var(--green2)';buildComp();
@@ -3454,15 +3456,54 @@ function importarDREAnterior(file){
   };
   rd.readAsArrayBuffer(file);
 }
-// valor de uma linha da DRE: ano atual (n.v) ou anterior (ANT.rv), somado de janeiro até o mês
+// Balancete mensal do ano anterior (uma aba por mês, "01.2025", "02-2025"...): guarda o saldo atual das contas
+// patrimoniais (grupos 1 e 2) e o saldo anterior de janeiro, para os prazos e o giro do ano anterior.
+function importarBalAnterior(file){
+  if(!file)return;
+  var st=document.getElementById('compStatus'),ano=String(+DRE_ANO-1);
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
+      var sal={},ini=null;
+      wb.SheetNames.forEach(function(sn){
+        var m=/^(\d{2})[.\-\/ ](\d{4})$/.exec(String(sn).trim());if(!m||m[2]!==ano)return;
+        var mi=+m[1]-1;if(mi<0||mi>11)return;
+        var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});
+        var hi=rows.findIndex(function(r){return r&&/^conta contabil/.test(normCab(r[0]));});if(hi<0)return;
+        var cA=-1,cF=-1;rows[hi].forEach(function(c,j){var n=normCab(c);if(/^saldo ant/.test(n))cA=j;else if(/^saldo atual/.test(n))cF=j;});
+        if(cF<0)return;
+        var o={},oi={};
+        for(var i=hi+1;i<rows.length;i++){var r=rows[i];if(!r||r[0]==null)continue;var c=String(r[0]).trim();
+          if(!/^[12](\.\d+)*$/.test(c))continue;
+          if(typeof r[cF]==='number')o[c]=Math.round(r[cF]*100)/100;
+          if(mi===0&&cA>=0&&typeof r[cA]==='number')oi[c]=Math.round(r[cA]*100)/100;}
+        sal[mi]=o;if(mi===0)ini=oi;
+      });
+      var ms=Object.keys(sal).map(Number).sort(function(a,b){return a-b;});
+      if(!ms.length)throw new Error('não achei as abas mensais de '+ano+' (ex.: "01.'+ano+'") com as colunas Conta Contábil e Saldo Atual');
+      ANT=ANT||{ano:ano,rv:{},mov:{},arquivo:''};
+      ANT.sal=sal;ANT.salIni=ini;ANT.balArquivo=file.name;
+      try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(x){}
+      st.innerHTML='✓ Balancetes de '+ano+' importados ('+ms.map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Balanço &amp; Índices › Publicar para todos.';
+      st.style.color='var(--green2)';buildComp();
+    }catch(err){st.textContent='⚠︎ '+err.message;st.style.color='var(--red2)';}
+    document.getElementById('compBalFile').value='';
+  };
+  rd.readAsArrayBuffer(file);
+}
+// valor de uma linha da DRE: ano atual (n.v) ou anterior (ANT.rv), somado do mês "de" até o mês
 function compNo(r){return acharNo(DTREE,r);}
-function compAtual(r,ate){var no=compNo(r),t=0;for(var i=0;i<=ate;i++)t+=no&&no.v[i]!==undefined?no.v[i]:0;return t+(compAdjRows(DRE_ANO,0,ate)[r]||0);}
-function compAnt(r,ate){if(!ANT)return null;var t=0,tem=false;for(var i=0;i<=ate;i++){var x=ANT.rv[i];if(x&&x[r]!==undefined){t+=x[r];tem=true;}}return tem?t+(compAdjRows(ANT.ano,0,ate)[r]||0):null;}
+function compAtual(r,ate){var no=compNo(r),t=0;for(var i=COMP.de;i<=ate;i++)t+=no&&no.v[i]!==undefined?no.v[i]:0;return t+(compAdjRows(DRE_ANO,COMP.de,ate)[r]||0);}
+function compAnt(r,ate){if(!ANT)return null;var t=0,tem=false;for(var i=COMP.de;i<=ate;i++){var x=ANT.rv[i];if(x&&x[r]!==undefined){t+=x[r];tem=true;}}return tem?t+(compAdjRows(ANT.ano,COMP.de,ate)[r]||0):null;}
 function compMesAnt(r,i){return ANT&&ANT.rv[i]&&ANT.rv[i][r]!==undefined?ANT.rv[i][r]+(compAdjRows(ANT.ano,i,i)[r]||0):null;}
 function compMesAtual(r,i){var no=compNo(r);return no&&no.v[i]!==undefined?no.v[i]+(compAdjRows(DRE_ANO,i,i)[r]||0):null;}
 function compSaldo(i,code){return lalSaldo(i,code);}
-function compSaldoIni(code){var s=lalSaldo(0,code);return s===null?null:s-lalMov(0,code,'dc');}   // saldo de dezembro do ano anterior
-function compDias(ate){var d=0;for(var i=0;i<=ate;i++)d+=new Date(+DRE_ANO,i+1,0).getDate();return d;}
+// saldo no início do período: dezembro do ano anterior (período a partir de janeiro) ou o fim do mês anterior ao "de"
+function compSaldoIni(code){if(COMP.de>0)return lalSaldo(COMP.de-1,code);var s=lalSaldo(0,code);return s===null?null:s-lalMov(0,code,'dc');}
+function compDias(ate,ano){var d=0;for(var i=COMP.de;i<=ate;i++)d+=new Date(+(ano||DRE_ANO),i+1,0).getDate();return d;}
+// saldos do ano anterior (balancete mensal importado no Comparativo); m = −1 é dezembro do ano retrasado
+function compSalAnt(m,code){if(!ANT||!ANT.sal||!code)return null;var x=m<0?ANT.salIni:ANT.sal[m];return x&&x[code]!==undefined?x[code]:null;}
 function compIndicadores(ate){
   var IC=CFG.indicadores||{},CT=IC.contas||{},a=function(r){return compAtual(r,ate);},p=function(r){return compAnt(r,ate);};
   var rb=a(6),rl=a(14),cmv=compNo(703)?a(703):a(15),mb=a(60),eb=a(90),ll=a(89),dfn=a(84),dt=a(61),da=a(59),ai=a(85),ir=a(86);
@@ -3475,14 +3516,21 @@ function compIndicadores(ate){
   var compras=estI!==null&&estF!==null?cmv+estF-estI:null;
   var pmp=forn!==null&&compras?(-forn)/compras*dias:null;
   var ciclo=giro!==null&&pmr!==null&&pmp!==null?giro+pmr-pmp:null;
+  var cmvA=compNo(703)?p(703):p(15),diasA=compDias(ate,+DRE_ANO-1);
+  var estIA=compSalAnt(COMP.de-1,CT.estoque),estFA=compSalAnt(ate,CT.estoque),cliA=compSalAnt(ate,CT.clientes),fornA=compSalAnt(ate,CT.fornecedores);
+  var giroA=estIA!==null&&estFA!==null&&cmvA?((estIA+estFA)/2)/cmvA*diasA:null;
+  var pmrA=cliA!==null&&rbA?cliA/rbA*diasA:null;
+  var comprasA=estIA!==null&&estFA!==null&&cmvA!==null?cmvA+estFA-estIA:null;
+  var pmpA=fornA!==null&&comprasA?(-fornA)/comprasA*diasA:null;
+  var cicloA=giroA!==null&&pmrA!==null&&pmpA!==null?giroA+pmrA-pmpA:null;
   return [
     ['mb','Margem Bruta','Lucro bruto / receita líquida','%',div(mbA,rlA),div(mb,rl)],
     ['ebitda','Margem EBITDA','EBITDA / receita líquida','%',div(ebA,rlA),div(eb,rl)],
     ['ml','Margem Líquida','Lucro líquido / receita líquida','%',div(llA,rlA),div(ll,rl)],
-    ['giro','Giro de estoque','(Estoque médio / CMV) × dias','d',null,giro],
-    ['pmr','Prazo médio de recebimento','(Clientes a receber / receita bruta) × dias','d',null,pmr],
-    ['pmp','Prazo médio de pagamento','(Fornecedores / compras) × dias · compras = CMV + estoque final − inicial','d',null,pmp],
-    ['ciclo','Ciclo de caixa','Giro de estoque + PMR − PMP','d',null,ciclo],
+    ['giro','Giro de estoque','(Estoque médio / CMV) × dias','d',giroA,giro],
+    ['pmr','Prazo médio de recebimento','(Clientes a receber / receita bruta) × dias','d',pmrA,pmr],
+    ['pmp','Prazo médio de pagamento','(Fornecedores / compras) × dias · compras = CMV + estoque final − inicial','d',pmpA,pmp],
+    ['ciclo','Ciclo de caixa','Giro de estoque + PMR − PMP','d',cicloA,ciclo],
     ['cob','Cobertura de juros','EBITDA / despesas financeiras','x',div(ebA,dfnA),div(eb,dfn)],
     ['sga','SG&A sobre receita líquida','(Despesas operacionais − depreciação) / receita líquida','%',dtA===null?null:div(dtA-(daA||0),rlA),div(dt-da,rl)],
     ['taxa','Taxa efetiva IRPJ/CSLL','(IRPJ + CSLL) / lucro antes dos impostos','%',div(irA,aiA),div(ir,ai)]
@@ -3501,9 +3549,12 @@ function buildComp(){
   var sel=document.getElementById('compMes');
   if(!meses.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Balanço &amp; Índices.</p>';return;}
   var ate=COMP.mes!==null&&meses.indexOf(COMP.mes)>=0?COMP.mes:meses[meses.length-1];COMP.mes=ate;
-  sel.innerHTML=meses.map(function(i){return '<option value="'+i+'"'+(i===ate?' selected':'')+'>Jan–'+M[i]+'/'+DRE_ANO+'</option>';}).join('');
-  var ano=DRE_ANO,anoA=String(+DRE_ANO-1),per='jan–'+M[ate].toLowerCase();
-  document.getElementById('compSub').textContent='Acumulado '+per+' · '+ano+' × '+anoA+' · visão '+(COMP.aj?'COM ajuste ('+AJUSTES.length+' ajuste(s))':'sem ajuste')+(ANT?' · ano anterior: '+ANT.arquivo:' · importe a DRE de '+anoA+' para comparar')+' · alterações (ajustes, recomendações, meta) ficam neste navegador até publicar em Balanço & Índices';
+  if(!(COMP.de>=0&&COMP.de<=ate))COMP.de=0;
+  var selDe=document.getElementById('compDe');
+  if(selDe)selDe.innerHTML=meses.filter(function(i){return i<=ate;}).map(function(i){return '<option value="'+i+'"'+(i===COMP.de?' selected':'')+'>'+M[i]+'/'+DRE_ANO+'</option>';}).join('');
+  sel.innerHTML=meses.filter(function(i){return i>=COMP.de;}).map(function(i){return '<option value="'+i+'"'+(i===ate?' selected':'')+'>'+M[i]+'/'+DRE_ANO+'</option>';}).join('');
+  var ano=DRE_ANO,anoA=String(+DRE_ANO-1),per=compPer(ate);
+  document.getElementById('compSub').textContent=(COMP.de?'Período ':'Acumulado ')+per+' · '+ano+' × '+anoA+' · visão '+(COMP.aj?'COM ajuste ('+AJUSTES.length+' ajuste(s))':'sem ajuste')+(ANT?' · ano anterior: '+ANT.arquivo:' · importe a DRE de '+anoA+' para comparar')+' · alterações (ajustes, recomendações, meta) ficam neste navegador até publicar em Balanço & Índices';
   var N=function(v){return v===null?'–':relN(v/1000,1);};
   var P=function(v){return v===null||!isFinite(v)?'–':(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';};
   // 1) indicadores
@@ -3524,7 +3575,7 @@ function buildComp(){
   // 3) naturezas de gasto
   var NIV=CFG.naturezaNivel||0;   // natureza = conta analítica com este número de níveis (a planilha do ano anterior tem subtotais com código)
   var nat={},soma=function(mv,ii,alvo,k){Object.keys(mv).forEach(function(c){if(!/^3/.test(c)||/^3\.1\.1\.01\.001/.test(c)||(NIV&&c.split('.').length!==NIV))return;var x=mv[c],v=x[0]-x[1];(nat[c]=nat[c]||{a:0,b:0})[k]+=v;});};
-  for(var i=0;i<=ate;i++){if(BALHIST[i]&&BALHIST[i]._mov)soma(BALHIST[i]._mov,i,nat,'a');if(ANT&&ANT.mov[i])soma(ANT.mov[i],i,nat,'b');}
+  for(var i=COMP.de;i<=ate;i++){if(BALHIST[i]&&BALHIST[i]._mov)soma(BALHIST[i]._mov,i,nat,'a');if(ANT&&ANT.mov[i])soma(ANT.mov[i],i,nat,'b');}
   var adA=compAdjNat(DRE_ANO,ate),adB=ANT?compAdjNat(ANT.ano,ate):{};
   Object.keys(adA).forEach(function(c){(nat[c]=nat[c]||{a:0,b:0}).a+=adA[c];});Object.keys(adB).forEach(function(c){(nat[c]=nat[c]||{a:0,b:0}).b+=adB[c];});
   var lista=Object.keys(nat).map(function(c){return {c:c,a:nat[c].a,b:nat[c].b};}).filter(function(x){return x.a>0.5||x.b>0.5;}).sort(function(x,y){return y.a-x.a;});
@@ -3639,7 +3690,7 @@ function compSalvarMeta(){var v=(document.getElementById('icvMetaIn').value||'')
 function compNatAll(ate){
   var NIV=CFG.naturezaNivel||0,nat={};
   var soma=function(mv,k){Object.keys(mv).forEach(function(c){if(!/^3/.test(c)||/^3\.1\.1\.01\.001/.test(c)||(NIV&&c.split('.').length!==NIV))return;var x=mv[c];(nat[c]=nat[c]||{a:0,b:0})[k]+=x[0]-x[1];});};
-  for(var i=0;i<=ate;i++){if(BALHIST[i]&&BALHIST[i]._mov)soma(BALHIST[i]._mov,'a');if(ANT&&ANT.mov[i])soma(ANT.mov[i],'b');}
+  for(var i=COMP.de;i<=ate;i++){if(BALHIST[i]&&BALHIST[i]._mov)soma(BALHIST[i]._mov,'a');if(ANT&&ANT.mov[i])soma(ANT.mov[i],'b');}
   var adA=compAdjNat(DRE_ANO,ate),adB=ANT?compAdjNat(ANT.ano,ate):{};
   Object.keys(adA).forEach(function(c){(nat[c]=nat[c]||{a:0,b:0}).a+=adA[c];});Object.keys(adB).forEach(function(c){(nat[c]=nat[c]||{a:0,b:0}).b+=adB[c];});
   return nat;
@@ -3663,7 +3714,7 @@ function relDirDados(){
   var IC=CFG.icv,icv=null;
   if(IC){var ta=0,tb=0,li=IC.contas.map(function(c){var x=nat[c]||{a:0,b:0};ta+=x.a;tb+=x.b;return {c:c,n:CONTA_NOMES[c]||c,g:compGrupoNat(c),a:x.a,b:x.b};}).sort(function(x,y){return y.a-x.a;});
     icv={lin:li,ta:ta,tb:tb,a:rb?ta/rb:null,b:rbA?tb/rbA:null,meta:ICV_META};}
-  return {ate:ate,ano:ano,anoA:anoA,per:'jan–'+M[ate].toLowerCase(),perC:'jan–'+M[ate].toLowerCase()+'/'+String(ano).slice(2),a:a,p:p,rb:rb,rbA:rbA,nat:nat,lista:lista,icv:icv,
+  return {ate:ate,ano:ano,anoA:anoA,per:compPer(ate),perC:compPer(ate)+'/'+String(ano).slice(2),a:a,p:p,rb:rb,rbA:rbA,nat:nat,lista:lista,icv:icv,
     ind:compIndicadores(ate),aj:COMP.aj,rec:REC_TXT[ano+'-'+String(ate+1).padStart(2,'0')]||''};
 }
 function abrirRelDiretoria(){
@@ -3719,7 +3770,7 @@ function abrirRelDiretoria(){
   // 3 e 4 indicadores
   var indCard=function(x){var c=cls(x[0],x[5]);return '<div class="rd-ic '+c+'"><div class="rd-it"><b>'+E(x[1])+'</b>'+(c?'<span>'+nomeCls[c]+'</span>':'')+'</div><div class="rd-iv"><span class="a">'+anoA+'<b>'+compFmtInd(x[4],x[3])+'</b></span><span>'+ano+'<b>'+compFmtInd(x[5],x[3])+'</b></span></div><div class="rd-if">'+E(x[2])+'</div></div>';};
   pg('3 · Indicadores de rentabilidade','Margens, juros, estrutura e impostos',['mb','ebitda','ml','cob','sga','taxa'].map(function(k){return indCard(I[k]);}).join(''));
-  pg('4 · Capital de giro','Quanto tempo o dinheiro fica preso',['giro','pmr','pmp','ciclo'].map(function(k){return indCard(I[k]);}).join('')+'<div class="rd-nt">Prazos calculados com o estoque de dezembro de '+anoA+' e os saldos do balancete de '+MF[R.ate].toLowerCase()+'/'+ano+'.</div>');
+  pg('4 · Capital de giro','Quanto tempo o dinheiro fica preso',['giro','pmr','pmp','ciclo'].map(function(k){return indCard(I[k]);}).join('')+'<div class="rd-nt">Prazos calculados com o estoque do início do período e os saldos do balancete de '+MF[R.ate].toLowerCase()+' de cada ano.</div>');
   // 5 grupos
   var G=(CFG.gruposDespesa||[]).filter(function(x){return compNo(x[0]);});
   var gimg=cfImg('bar',G.map(function(x){return x[1];}),[{label:anoA,data:G.map(function(x){var v=R.p(x[0]);return v===null||!R.rbA?null:+(v/R.rbA*100).toFixed(2);}),backgroundColor:'#bbb'},{label:ano,data:G.map(function(x){return R.rb?+(R.a(x[0])/R.rb*100).toFixed(2):null;}),backgroundColor:'#E30613'}],
@@ -3749,7 +3800,7 @@ function abrirRelDiretoria(){
       {indexAxis:'y',plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:10,font:{size:11}}}},scales:{x:{grid:{color:'#eee'},ticks:{font:{size:10},callback:function(v){return v+'%';}}},y:{grid:{display:false},ticks:{font:{size:10}}}}},640,330);
     pg('9 · ICV dos gestores','O custo que os gestores controlam '+(V.ta>=V.tb?'subiu ':'caiu ')+pct(V.tb?V.ta/V.tb-1:null,0).replace('+',''),'<div class="rd-kg">'+
       card('ICV '+ano,compFmtInd(V.a,'%'),(V.a!==null&&V.b!==null?((V.a-V.b)*100>=0?'+':'')+((V.a-V.b)*100).toFixed(2).replace('.',',')+' p.p. vs '+compFmtInd(V.b,'%'):''),V.a>V.b)+card('Saídas dos gestores',mi(V.ta),pct(V.tb?V.ta/V.tb-1:null)+' vs '+anoA,V.ta>V.tb)+
-      card('Receita bruta',mi(R.rb),pct(R.rbA?R.rb/R.rbA-1:null)+' vs '+anoA)+card(ganho>0?'Ganho se o ICV de '+anoA+' fosse mantido':'Economia sobre o ICV de '+anoA,ganho===null?'–':'R$ '+mil(Math.abs(ganho))+' mil','em '+(R.ate+1)+' meses · meta '+compFmtInd(metaV,'%'))+'</div>'+
+      card('Receita bruta',mi(R.rb),pct(R.rbA?R.rb/R.rbA-1:null)+' vs '+anoA)+card(ganho>0?'Ganho se o ICV de '+anoA+' fosse mantido':'Economia sobre o ICV de '+anoA,ganho===null?'–':'R$ '+mil(Math.abs(ganho))+' mil','em '+(R.ate-COMP.de+1)+' meses · meta '+compFmtInd(metaV,'%'))+'</div>'+
       '<div class="rd-nt">ICV (índice de custo sobre vendas): saídas em que os gestores atuam ÷ receita bruta. Mostra quantos reais de gasto controlável a empresa consome a cada R$ 100 vendidos. Quanto menor, melhor.</div><div class="rd-g"><div class="rd-gt">ICV por grupo (% da receita bruta)</div><img src="'+gimg2+'" alt=""></div>');
     var icvAQ=V.lin.map(function(x){return Object.assign({d:x.a-x.b},x);});
     var tabICV=function(l){return '<table class="rd-t"><thead><tr><th>Natureza</th><th>'+anoA+'</th><th>'+ano+'</th><th>Var. R$</th><th>p.p. ICV</th></tr></thead><tbody>'+l.map(function(x){var pp=R.rb&&R.rbA?(x.a/R.rb-x.b/R.rbA)*100:null;return '<tr><td>'+E(x.n)+'<small>'+E(x.g)+'</small></td><td>'+mil(x.b)+'</td><td>'+mil(x.a)+'</td><td class="'+(x.d>0?'neg':'pos')+'">'+(x.d>0?'+':'')+mil(x.d)+'<small>'+pct(x.b>0.5?x.a/x.b-1:null)+'</small></td><td>'+(pp===null?'–':(pp>=0?'+':'')+pp.toFixed(2).replace('.',','))+'</td></tr>';}).join('')+'</tbody></table>';};
@@ -3822,10 +3873,10 @@ function montarPaginaComp(){
   nav.innerHTML='<svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M3 13V7M8 13V3M13 13V9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Comparativo';
   ares.parentNode.insertBefore(nav,ares.nextSibling);
   var sec=document.createElement('section');sec.id='page-comp';sec.className='page';
-  sec.innerHTML='<div class="fbar"><span class="fl">Período:</span><select class="fs" id="compMes" onchange="COMP.mes=+this.value;buildComp()"></select>'+
+  sec.innerHTML='<div class="fbar"><span class="fl">Período: de</span><select class="fs" id="compDe" onchange="COMP.de=+this.value;buildComp()"></select><span class="fl">até</span><select class="fs" id="compMes" onchange="COMP.mes=+this.value;buildComp()"></select>'+
     '<span class="fl">Visão:</span><select class="fs" id="compVisao" onchange="COMP.aj=this.value===\'com\';buildComp()"><option value="sem">Sem ajuste</option><option value="com">Com ajuste</option></select>'+
     '<button class="fs" onclick="abrirRelDiretoria()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4"/></svg>Relatório à diretoria (PDF)</button><button class="fs" onclick="excelRelDiretoria()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Excel</button>'+
-    '<label class="fs adm-only" style="cursor:pointer"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3"/></svg>Importar DRE do ano anterior<input type="file" id="compFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREAnterior(this.files[0])"></label>'+
+    '<label class="fs adm-only" style="cursor:pointer"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3"/></svg>Importar DRE do ano anterior<input type="file" id="compFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREAnterior(this.files[0])"></label><label class="fs adm-only" style="cursor:pointer"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3"/></svg>Importar balancetes do ano anterior<input type="file" id="compBalFile" accept=".xls,.xlsx" style="display:none" onchange="importarBalAnterior(this.files[0])"></label>'+
     '<span id="compStatus" class="fl" style="font-size:12px"></span></div>'+
     '<div style="margin:18px 0 12px"><div class="ptitle">Comparativo</div><div class="psub" id="compSub"></div></div><div id="compBox"></div>';
   var ref=document.getElementById('page-dre');ref.parentNode.insertBefore(sec,ref.nextSibling);
