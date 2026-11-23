@@ -154,6 +154,14 @@
     guardarMov: true,
     // Indicadores do relatório da diretoria (modelo enviado pela Centerfrio): faixas de saudável / atenção / risco.
     // bom: 'alto' = quanto maior melhor; 'baixo' = quanto menor melhor. [limite saudável, limite atenção]
+    // bloco "Ajuste realizado" no fim da DRE (como na planilha DRE CONTÁBIL do cliente)
+    dreAjuste: {
+      pdd: ['3.1.3.01.045.00018', 'Perdas cred. liq. duvidosa'],
+      amortizacao: { cp: ['2.1.5.03', '2.1.5.04'], lp: ['2.2.5.03', '2.2.5.04'] },
+      parcelamentos: { cp: ['2.1.3.05'], lp: ['2.2.3.05'] },
+      juros: ['3.1.3.05.002.00007', '3.1.3.05.002.00010'],
+      base: ['3.1.1.01.001', '3.1.1.01.009']
+    },
     indicadores: {
       contas: { estoque: '1.1.5', clientes: '1.1.3.01.001', fornecedores: '2.1.1.06' },
       faixas: {

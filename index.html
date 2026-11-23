@@ -6,7 +6,7 @@
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=2"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=13"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=14"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -249,6 +249,7 @@ body:not(.is-admin) .adm-only{display:none!important}
 .dt tr.lal-dif td{background:#1C2129!important;color:#E9E1D3}
 .lal-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.lal-tabs .fs{cursor:pointer}.lal-tabs .fs.on{border-color:var(--gold);color:var(--gold)}
 .lal-opc{font-weight:700;letter-spacing:.02em}
+.dt tbody tr.dre-aj-sec td{background:rgba(201,168,76,.10);color:var(--gold);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding-top:10px;padding-bottom:10px;border-top:2px solid rgba(201,168,76,.35)}
 .dt tbody tr.lal-sec td{background:rgba(201,168,76,.10);color:var(--gold);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding-top:9px;padding-bottom:9px}
 .dt tbody tr.lal-dif td:first-child{border-left:3px solid rgba(230,126,34,.55)}
 .dt tr.lal-dif-h td{background:#2A2620!important;color:#E3B470;font-weight:700;letter-spacing:.02em}
@@ -1095,6 +1096,42 @@ function onDMesChange(){
   document.getElementById('dRangeWrap').style.display=(m==='range')?'inline-flex':'none';
   buildDRE();
 }
+/* ---------- Ajuste realizado (CFG.dreAjuste) ----------
+   Bloco no fim da DRE, como na planilha "DRE CONTÁBIL" do cliente: resultado antes do IR sem o ajuste da PDD,
+   mais o principal pago de empréstimos e parcelamentos e os juros, chegando ao resultado ajustado. */
+function dreAjMes(i){
+  var A=CFG&&CFG.dreAjuste;if(!A||!BALHIST[i]||!BALHIST[i]._mov)return null;
+  var S=function(l,t){return (l||[]).reduce(function(a,c){return a+lalMovMes(i,c,t);},0);};
+  // principal pago = débitos do curto prazo, menos os juros lançados direto nele (créditos do CP que não vieram do LP)
+  var princ=function(x){return S(x.cp,'d')-Math.max(0,S(x.cp,'c')-S(x.lp,'d'));};
+  var no=acharNo(DTREE,85),ai=no&&no.v[i]!==undefined?no.v[i]:0;
+  var pdd=A.pdd?-lalMovMes(i,A.pdd[0],'dc'):0,antes=ai+pdd;
+  var am=princ(A.amortizacao),pa=princ(A.parcelamentos),ju=S(A.juros,'dc'),aj=antes+am+pa+ju,base=-S(A.base,'dc');
+  return {pdd:pdd,antes:antes,am:am,pa:pa,ju:ju,aj:aj,base:base};
+}
+function dreAjusteRows(ci){
+  var A=CFG&&CFG.dreAjuste;if(!A)return '';
+  var R=ci.map(dreAjMes),n=ci.length+(ci.length>1?2:1);
+  var tot=function(k){var t=0,tem=false;R.forEach(function(x){if(x){t+=x[k];tem=true;}});return tem?t:undefined;};
+  var lin=function(lbl,tip,cls,k,pad){var h='<tr class="'+cls+'"><td style="padding-left:'+(pad||12)+'px'+(cls==='rt'?';background:rgba(201,168,76,.08)':'')+'">'+(tip?'<span class="dlbl" data-tip="'+tip.replace(/"/g,'&quot;')+'">'+lbl+'</span>':lbl)+'</td>';
+    R.forEach(function(x){h+=x?'<td class="'+(x[k]<0?'vn':'')+'">'+fmt(x[k])+'</td>':'<td class="dre-blank">—</td>';});
+    if(ci.length>1){var t=tot(k);h+=t===undefined?'<td class="dre-blank">—</td>':'<td class="'+(t<0?'vn':'')+'">'+fmt(t)+'</td>';}
+    return h+'</tr>';};
+  var pct=function(lbl,tip,k){var h='<tr class="rs"><td style="padding-left:24px"><span class="dlbl" data-tip="'+tip+'">'+lbl+'</span></td>';
+    R.forEach(function(x){h+=x&&x.base?'<td><span class="vpc" style="display:inline">'+(x[k]/x.base*100).toFixed(2).replace('.',',')+'%</span></td>':'<td class="dre-blank">—</td>';});
+    if(ci.length>1){var t=tot(k),b=tot('base');h+=t!==undefined&&b?'<td><span class="vpc" style="display:inline">'+(t/b*100).toFixed(2).replace('.',',')+'%</span></td>':'<td class="dre-blank">—</td>';}
+    return h+'</tr>';};
+  var h='<tr class="dre-aj-sec"><td colspan="'+n+'">Ajuste realizado</td></tr>';
+  if(A.pdd)h+=lin(A.pdd[0]+' · '+A.pdd[1],'Movimento do mês na conta da PDD (crédito − débito), como na planilha da DRE.','rs','pdd',24);
+  h+=lin('Resultado antes IRPJ/CSLL — antes do ajuste PDD','Res. antes IRPJ e CSLL + a linha da PDD acima.','rst','antes');
+  h+=pct('Resultado antes IRPJ/CSLL (em %)','Sobre o faturamento líquido (vendas − devoluções).','antes');
+  h+=lin('Amortização empréstimos (vr principal)','Débitos do mês em '+A.amortizacao.cp.join(', ')+' (principal pago), sem os juros lançados direto no curto prazo.','rs','am',24);
+  h+=lin('Parcelamentos tributários (vr principal)','Débitos do mês em '+A.parcelamentos.cp.join(', ')+' (principal pago), sem os juros lançados direto no curto prazo.','rs','pa',24);
+  h+=lin('Juros s/ empréstimos/parcelamentos','Débito − crédito do mês em '+A.juros.join(', ')+'.','rs','ju',24);
+  h+=lin('RESULTADO AJUSTADO','Resultado antes do ajuste PDD + amortização + parcelamentos + juros.','rt','aj');
+  h+=pct('Margem operacional','Resultado ajustado sobre o faturamento líquido (vendas − devoluções).','aj');
+  return h;
+}
 function buildDRE(){
   ensureTip();
   var m=document.getElementById('dMes').value;
@@ -1120,6 +1157,7 @@ function buildDRE(){
   if(ci.length>1)h+='<th>ANUAL</th>';
   h+='</tr></thead><tbody>';
   h+=renderTreeRows(DTREE,ci,view,base,bk,0);
+  h+=dreAjusteRows(ci);
   h+='</tbody></table>';
   document.getElementById('dTable').innerHTML=h;
   DRE_CI=ci;
