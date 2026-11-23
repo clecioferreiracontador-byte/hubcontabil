@@ -193,6 +193,8 @@
       { t: 'RESULTADO APÓS IR/CS', code: '3', f: ['rai', '3.5.1', '3.3'], key: 'rf' },
       { p: 'RESULTADO (em %)', k: 'rf' }
     ],
+    // ponto de equilíbrio: contas tratadas como custo variável além dos custos e das despesas comerciais
+    pe: { contasVariaveis: [['3.1.3.01.045.00016', 'Fretes diversos']] },
     // bloco "Ajuste realizado" no fim da DRE (como na planilha DRE CONTÁBIL do cliente)
     dreAjuste: {
       pdd: ['3.1.3.01.045.00018', 'Perdas cred. liq. duvidosa'],
