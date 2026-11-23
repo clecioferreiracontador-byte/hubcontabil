@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
-<script src="empresa.js?v=1"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=6"><\/script>');</script>
+<script src="empresa.js?v=2"></script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=8"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -260,6 +260,22 @@ body:not(.is-admin) .adm-only{display:none!important}
 #lalurTableWrap .lal-in{min-width:0;width:100%;font-size:12.5px;padding:3px 5px}
 #lalurTableWrap .lal-orig{font-size:9.5px;font-weight:500;color:var(--gray,#8a9aac);letter-spacing:.03em;text-transform:uppercase}
 #lalurTableWrap .lal-orig.pl{color:#E3B470}
+/* ===== Comparativo (Centerfrio) ===== */
+.comp-sec{font-weight:700;color:var(--g2);margin:20px 0 10px;font-size:15px;display:flex;align-items:center}
+.comp-ind{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.comp-k{background:var(--n3);border:1px solid rgba(255,255,255,.07);border-left:4px solid #5D6D7E;border-radius:10px;padding:10px 12px}
+.comp-k.ok{border-left-color:#27AE60}.comp-k.at{border-left-color:#E67E22}.comp-k.rs{border-left-color:#E74C3C}
+.comp-k .t{font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;gap:6px}
+.comp-k .b{font-size:10.5px;padding:1px 7px;border-radius:9px;background:#5D6D7E;color:#fff;white-space:nowrap}
+.comp-k.ok .b{background:#27AE60}.comp-k.at .b{background:#E67E22}.comp-k.rs .b{background:#E74C3C}
+.comp-k .v{display:flex;gap:18px;margin:6px 0 4px;font-size:11px;color:var(--gray,#8a9aac)}
+.comp-k .v b{display:block;font-size:18px;color:var(--white)}.comp-k .v .a b{color:var(--gray,#8a9aac)}
+.comp-k .f{font-size:11px;color:var(--gray,#8a9aac)}
+.comp-t td{white-space:nowrap}.comp-t td:first-child{text-align:left}
+.comp-t td.comp-up{color:#E74C3C;font-weight:700}
+.dt.comp-rk thead th:first-child,.dt.comp-rk tbody td:first-child{min-width:40px;width:40px;text-align:center}
+.comp-ch{height:320px;background:var(--n3);border-radius:10px;padding:10px}
+.comp-nota{font-size:11.5px;color:var(--gray,#8a9aac);margin-top:6px}
 /* ===== Análise de Resultado (Landix) ===== */
 .ares{font-size:13px;width:100%}
 .ares td{white-space:nowrap;text-align:right;background:var(--n3)}
@@ -705,7 +721,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
         <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
       </select>
       <div class="fdiv"></div>
-      <input type="file" id="impFile" accept=".xlsx,.xls" style="display:none" onchange="handleBalanceteFile(this.files[0])">
+      <input type="file" id="impFile" accept=".xlsx,.xls,.xlsm" multiple style="display:none" onchange="handleBalanceteFiles(this.files)">
       <button class="fs" style="cursor:pointer" onclick="document.getElementById('impFile').click()">📂 Selecionar balancete (.xlsx)</button>
       <button class="fs" id="impSaveBtn" style="cursor:pointer;display:none;border-color:rgba(46,204,113,.5);color:var(--green2)" onclick="saveCurrentBase()">💾 Salvar base atual</button>
       <button class="fs" id="impPubBtn" style="cursor:pointer;display:none;border-color:rgba(52,152,219,.5);color:var(--blue)" onclick="publishBaseToGitHub()">🌐 Publicar para todos</button>
@@ -854,7 +870,9 @@ var BAL_GRUPOS={ac:['1.1'],anc:['1.2'],pc:['2.1'],pnc:['2.2'],pl:['2.3']};
 var RES_CONTAS=/^3/;
 var ROT={};
 function rot(t){return ROT[t]||t;}
-var CONTA_NOMES={};   // conta → título, do último balancete importado (empresa com CFG.guardarMov)
+var CONTA_NOMES={};
+// Ano anterior para o comparativo: {ano, rv:{mês:{linha da DRE: valor}}, mov:{mês:{conta:[d,c]}}, arquivo}
+var ANT=null;   // conta → título, do último balancete importado (empresa com CFG.guardarMov)
 const cols=m=>m==='all'?Array.from({length:numMeses},(_,i)=>i):[parseInt(m)];
 var FULLVALS=false;try{FULLVALS=localStorage.getItem('nhdFullVals')==='1';}catch(e){}
 const fmt=v=>{v=(typeof v==='number'&&isFinite(v))?v:0;const a=Math.abs(v),n=v<0;if(FULLVALS){const t='R$ '+a.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});return n?'-'+t:t;}let s=a>=1e6?'R$ '+(a/1e6).toFixed(2)+'M':a>=1e3?'R$ '+(a/1e3).toFixed(0)+'K':'R$ '+Math.round(a).toLocaleString('pt-BR');return n?'-'+s:s;};
@@ -1158,7 +1176,11 @@ function lalMov(i,code,tipo){
     Object.keys(mv).forEach(function(c){if(!lalPref(code,c))return;var x=mv[c];t+=tipo==='d'?x[0]:tipo==='c'?x[1]:x[0]-x[1];});}
   return t;
 }
-function lalSaldo(i,code){var sf=BALHIST[i]&&BALHIST[i]._sf;if(!sf)return null;var t=0;Object.keys(sf).forEach(function(c){if(lalPref(code,c))t+=sf[c];});return t;}
+// saldo da conta no mês: a própria linha quando o balancete a traz; senão, a soma das analíticas abaixo dela
+// (o _sf guarda sintéticas e analíticas juntas: somar tudo pelo prefixo contaria o mesmo valor várias vezes)
+function lalSaldo(i,code){var sf=BALHIST[i]&&BALHIST[i]._sf;if(!sf)return null;if(typeof sf[code]==='number')return sf[code];
+  var fs=Object.keys(sf).filter(function(c){return c.indexOf(code+'.')===0;}),t=0;
+  fs.forEach(function(c){if(!fs.some(function(o){return o!==c&&o.indexOf(c+'.')===0;}))t+=sf[c];});return t;}
 function lalSemMov(upto){var f=[];for(var m=0;m<=upto&&m<numMeses;m++){if(BALHIST[m]&&!BALHIST[m]._mov)f.push(M[m]);}return f;}
 function lalAuto(i){
   var LC=CFG.LALUR,r={adic:0,excl:0,adicD:{},exclD:{}};
@@ -1271,7 +1293,7 @@ function lalurAplicarPlan(out){
     // diferido: o cálculo (prejuízo × alíquota) continua; a planilha aparece ao lado para conferência
     if(p.planDifIR!==undefined)c.planDifIR=p.planDifIR;
     if(p.planDifCS!==undefined)c.planDifCS=p.planDifCS;
-    c.difIResp=c.prejTransp*LC.diferido.ir.aliq;c.difCSesp=c.prejTransp*LC.diferido.cs.aliq;
+    if(LC.diferido){c.difIResp=c.prejTransp*LC.diferido.ir.aliq;c.difCSesp=c.prejTransp*LC.diferido.cs.aliq;}
     if(c.difIRsaldo!==null)c.difIRdif=c.difIResp-c.difIRsaldo;
     if(c.difCSsaldo!==null)c.difCSdif=c.difCSesp-c.difCSsaldo;
     c.plan=true;
@@ -1317,13 +1339,14 @@ function computeLALUR(uptoIdx){
       var sal=function(c){var v=lalSaldo(i,c[0]);if(v===null)return 0;var sa0=(lalSaldo(0,c[0])||0)-lalMov(0,c[0],'dc');return v-Math.max(0,sa0-lalMov(i,c[0],'c'));};
       var retD={};LC.retencoesIR.concat(LC.retencoesCS).forEach(function(c){retD[c[0]]=sal(c);});
       var retIR=LC.retencoesIR.reduce(function(t,c){return t+retD[c[0]];},0),retCS=LC.retencoesCS.reduce(function(t,c){return t+retD[c[0]];},0);
-      var dI=LC.diferido.ir,dC=LC.diferido.cs,sI=lalSaldo(i,dI.conta),sC=lalSaldo(i,dC.conta);
-      var espI=prejTransp*dI.aliq,espC=prejTransp*dC.aliq;
+      // empresa sem IRPJ/CSLL diferido (LC.diferido = null): o bloco do diferido fica de fora
+      var DF=LC.diferido,dI=DF&&DF.ir,dC=DF&&DF.cs,sI=dI?lalSaldo(i,dI.conta):null,sC=dC?lalSaldo(i,dC.conta):null;
+      var espI=dI?prejTransp*dI.aliq:null,espC=dC?prejTransp*dC.aliq:null;
       ext={auto:auto,retD:retD,patGasto:patGasto,patInc:patInc,patLim:patLim,pat:pat,retIR:retIR,retCS:retCS,
         irRecolher:irApurado-pat-retIR,csRecolher:csApurado-retCS,
-        difIRsaldo:sI,difIResp:espI,difIRdif:sI===null?null:espI-sI,difCSsaldo:sC,difCSesp:espC,difCSdif:sC===null?null:espC-sC,
-        difIRres:lalMov(i,dI.resultado,'dc'),difCSres:lalMov(i,dC.resultado,'dc'),
-        corrIR:lalMov(i,LC.correnteIR,'dc'),corrCS:lalMov(i,LC.correnteCS,'dc')};
+        difIRsaldo:sI,difIResp:espI,difIRdif:sI===null||espI===null?null:espI-sI,difCSsaldo:sC,difCSesp:espC,difCSdif:sC===null||espC===null?null:espC-sC,
+        difIRres:dI?lalMov(i,dI.resultado,'dc'):0,difCSres:dC?lalMov(i,dC.resultado,'dc'):0,
+        corrIR:LC.correnteIR?lalMov(i,LC.correnteIR,'dc'):0,corrCS:LC.correnteCS?lalMov(i,LC.correnteCS,'dc'):0};
     }
     out.push(Object.assign(ext,{adicMes:lalurAdic[i]||0,exclMes:lalurExcl[i]||0,exclManAcum:exclManAcum,lucroAcum:lucroAcum,adicAcum:adicAcum,subvAcum:subvAcum,exclAcum:exclAcum,baseAntes:baseAntes,limite30:limite30,prejComp:prejComp,baseIR:baseIR,ir15:ir15,adicIR:adicIR,irApurado:irApurado,irMes:irMes,csApurado:csApurado,csMes:csMes,prejTransp:prejTransp}));
 
@@ -1459,7 +1482,7 @@ function buildLalurTable(){
     // a provisão da DRE soma corrente + diferido: aqui compara só a corrente (acumulada) com o apurado
     var corr=calc.map(function(c){return c?c.corrIR+c.corrCS:undefined;}),apur=calc.map(function(c){return c?c.irApurado+c.csApurado:undefined;});
     h+=lalurRow('IRPJ + CSLL apurados (acum.)',null,'rs',apur,24);
-    h+=lalurRow('Provisão corrente no balancete (acum.)','Contas '+LC.correnteIR+' e '+LC.correnteCS+' (débito − crédito de janeiro até o mês).','rs',corr,24);
+    h+=lalurRow('Provisão corrente no balancete (acum.)','Conta(s) '+[LC.correnteIR,LC.correnteCS].filter(Boolean).join(' e ')+' (débito − crédito de janeiro até o mês).','rs',corr,24);
     h+=lalurRow('Diferença',null,'rs',calc.map(function(c,k){return c?apur[k]-corr[k]:undefined;}),24);
     h+=lalurRow('( − ) PAT — incentivo deduzido','15% do gasto com PAT ('+LC.pat.contas.join(' e ')+'), limitado a 4% do IRPJ a 15%.','rs',g('pat'),24);
     var gr=function(k){return calc.map(function(c){return c&&c.retD?c.retD[k]:undefined;});};
@@ -1469,6 +1492,7 @@ function buildLalurTable(){
     h+=lalurRow('( − ) CSLL retida no ano','Saldo de cada conta sem a parte de anos anteriores ainda não compensada.','rs',g('retCS'),24);
     LC.retencoesCS.forEach(function(c){h+=lalurRow(c[0]+' · '+c[1],null,'rs',gr(c[0]),40);});
     h+=lalurRow('CSLL a recolher (− = saldo negativo)',null,'rt',g('csRecolher'));
+    if(LC.diferido){
     h+=lalurRow('IRPJ/CSLL DIFERIDOS (prejuízo fiscal × alíquota)',null,'rst lal-dif lal-dif-h',calc.map(function(){return undefined;}));
     h+=lalurRow('Prejuízo fiscal / base negativa que sobra','Saldo inicial − compensação do ano (+ prejuízo do ano, se a base ficar negativa).','rs lal-dif',g('prejTransp'),24);
     h+=lalurRow('IRPJ diferido esperado (25%)',null,'rs lal-dif',g('difIResp'),24);
@@ -1479,6 +1503,7 @@ function buildLalurTable(){
     if(lalurPlan)h+=lalurRow('Saldo final na planilha do diferido','Saldo final da CSLL diferida na planilha "IRPJ E CSLL DIFERIDO" importada.','rs lal-dif',g('planDifCS'),40);
     h+=lalurRow('Saldo no balancete · '+LC.diferido.cs.conta,null,'rs lal-dif',g('difCSsaldo'),24);
     h+=lalurRow('Ajuste a contabilizar (CSLL)','Positivo: constituir (D '+LC.diferido.cs.conta+' / C '+LC.diferido.cs.resultado+'). Negativo: reverter (D '+LC.diferido.cs.resultado+' / C '+LC.diferido.cs.conta+').','rt lal-dif',g('difCSdif'));
+    }
   }else{
     h+=lalurRow('Provisão no Balancete (IRPJ+CSLL)',null,'rs',totalProv,24);
     h+=lalurRow('Diferença',null,'rs',totalDif,24);
@@ -1867,7 +1892,7 @@ function rebuildMonthSelectors(){
   }
 }
 // cabeçalho do balancete: "Conta" (NHD) ou "Conta Contábil" (Landix) na 1ª coluna
-function ehCabBal(r){return !!r&&/^conta( contabil)?$/.test(normCab(r[0]));}
+function ehCabBal(r){return !!r&&/^(conta( contabil)?|analitica)$/.test(normCab(r[0]));}
 function cabBal(rows){for(var r=0;r<Math.min(rows.length,10);r++){if(ehCabBal(rows[r]))return r;}return -1;}
 function findBalanceteSheet(wb,nomeAba){
   var names=nomeAba?[nomeAba]:wb.SheetNames.slice().sort(function(a,b){return (/balancete/i.test(b)?1:0)-(/balancete/i.test(a)?1:0);});
@@ -2078,6 +2103,51 @@ function basePosImport(statusEl){
   document.getElementById('impSaveBtn').style.display='inline-block';
   document.getElementById('impPubBtn').style.display='inline-block';
 }
+// Vários arquivos de uma vez (ex.: os Books de jan a out): o mês vem do nome do arquivo ("... 03-2026.xlsx")
+async function handleBalanceteFiles(files){
+  files=[].slice.call(files||[]);
+  if(files.length<2){handleBalanceteFile(files[0]);return;}
+  var statusEl=document.getElementById('impStatus'),feitos=[],falhas=[],itens=[];
+  statusEl.textContent='Lendo '+files.length+' arquivos...';statusEl.style.color='var(--gray)';
+  files.forEach(function(f){var m=/(?:^|[^0-9])(0[1-9]|1[0-2])[.\-_ ](20\d{2})(?![0-9])/.exec(f.name);
+    if(m&&m[2]===DRE_ANO)itens.push({f:f,mes:+m[1]-1});else falhas.push(f.name+' (sem o mês/'+DRE_ANO+' no nome)');});
+  itens.sort(function(a,b){return a.mes-b.mes;});
+  // lê todos antes: o saldo anterior do mês seguinte é o saldo final definitivo do mês
+  for(var q=0;q<itens.length;q++){
+    try{var wb=XLSX.read(new Uint8Array(await itens[q].f.arrayBuffer()),{type:'array',cellDates:false});var found=findBalanceteSheet(wb);
+      itens[q].cm=buildCodeMap(found.rows.slice(found.headerRow+1),balCols(found.rows[found.headerRow]));}catch(e){itens[q].erro=e.message;}
+  }
+  var ajustados=[];
+  for(var q2=0;q2<itens.length-1;q2++){
+    var cur=itens[q2],nx=itens[q2+1];if(!cur.cm||!nx.cm||nx.mes!==cur.mes+1)continue;
+    // ajuste lançado depois do fechamento (no mês já fechado): entra como movimento do próprio mês
+    var mexeu=false;
+    Object.keys(nx.cm).forEach(function(c){
+      var fin=nx.cm[c].a,x=cur.cm[c];
+      if(!x){if(Math.abs(fin)<0.005)return;x=cur.cm[c]={a:0,d:0,c:0,f:0,n:nx.cm[c].n};}
+      var dl=fin-x.f;if(Math.abs(dl)<0.005)return;
+      if(dl>0)x.d+=dl;else x.c-=dl;x.f=fin;mexeu=true;
+    });
+    if(mexeu)ajustados.push(M[cur.mes]);
+  }
+  for(var k=0;k<itens.length;k++){
+    var it=itens[k];
+    try{
+      if(it.erro)throw new Error(it.erro);
+      var codeMap=it.cm;
+      if(Object.keys(codeMap).length<10){falhas.push(it.f.name);continue;}
+      var conf=conferirSaldos(codeMap);
+      if(conf.modo==='mov'&&!BALHIST[it.mes-1]){falhas.push(it.f.name+' (só movimento, sem o mês anterior)');continue;}
+      doImport(it.mes,codeMap,conf.modo==='mov');feitos.push(M[it.mes]);
+    }catch(e){falhas.push(it.f.name+' ('+e.message+')');}
+  }
+  statusEl.innerHTML=(feitos.length?'✅ Balancetes importados: <b>'+feitos.join(', ')+'</b> de '+DRE_ANO+'. DRE, balanço e LALUR atualizados.':'')+
+    (ajustados.length?'<br>ℹ Lançamentos feitos depois do fechamento em <b>'+ajustados.join(', ')+'</b> (o saldo anterior do mês seguinte era diferente) entraram no próprio mês.':'')+
+    (falhas.length?'<br>⚠ Não importei: '+falhas.join(', ')+'.':'');
+  statusEl.style.color=feitos.length?'var(--green2)':'var(--red2)';
+  if(feitos.length)basePosImport(statusEl);
+  document.getElementById('impFile').value='';
+}
 function handleBalanceteFile(file){
   if(!file)return;
   var statusEl=document.getElementById('impStatus');
@@ -2087,7 +2157,7 @@ function handleBalanceteFile(file){
     try{
       var data=new Uint8Array(e.target.result);
       var wb=XLSX.read(data,{type:'array',cellDates:false});
-      var abasMes=wb.SheetNames.map(function(n){var m=/acumulado\s*(\d{2})[.\-\/ ](\d{4})/i.exec(n);return m&&m[2]===DRE_ANO?{aba:n,mes:+m[1]-1}:null;}).filter(Boolean).sort(function(a,b){return a.mes-b.mes;});
+      var abasMes=wb.SheetNames.map(function(n){var m=/^(?:acumulado\s*)?(\d{2})[.\-\/ ](\d{4})$/i.exec(String(n).trim());return m&&m[2]===DRE_ANO?{aba:n,mes:+m[1]-1}:null;}).filter(Boolean).sort(function(a,b){return a.mes-b.mes;});
       if(abasMes.length>1){importarVariosMeses(wb,abasMes,statusEl);document.getElementById('impFile').value='';return;}
       var found=findBalanceteSheet(wb);
       var dataRows=found.rows.slice(found.headerRow+1);
@@ -2133,7 +2203,7 @@ function saveCurrentBase(){
   }
 }
 function buildBaseState(){
-  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,plan:lalurPlan,at:lalurAt},savedAt:new Date().toISOString()};
+  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,ant:ANT,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,plan:lalurPlan,at:lalurAt},savedAt:new Date().toISOString()};
 }
 // Base publicada no Firebase (dados/base). Só o admin grava; as regras do banco garantem isso.
 var BASE_REMOTA_EM=null;
@@ -2210,6 +2280,7 @@ function applyBaseState(state){
     balSelMes=(state.balSelMes!==undefined)?state.balSelMes:numMeses-1;
   }
   if(state.nomes)CONTA_NOMES=state.nomes;
+  if(state.ant)ANT=state.ant;
 }
 async function loadRemoteBase(){
   try{
@@ -2242,6 +2313,7 @@ function loadSavedBase(){
       });
       balSelMes=(state.balSelMes!==undefined)?state.balSelMes:numMeses-1;
       if(state.nomes)CONTA_NOMES=state.nomes;
+      if(state.ant)ANT=state.ant;
     }else if(state.BAL){
       var legacyMes=(state.BALMES!==undefined)?state.BALMES:numMeses-1;
       BALHIST[legacyMes]=state.BAL;
@@ -3172,6 +3244,7 @@ function setPage(n,el){
   if(n==='bal')buildBal();
   if(n==='lalur')buildLalur();
   if(n==='ares')buildARes();
+  if(n==='comp')buildComp();
   if(n==='mercado'&&window.Mercado)Mercado.render();
   if(n==='mapa'&&window.Mapa)Mapa.render();
   if(n==='agenda'&&window.Agenda)Agenda.render();
@@ -3292,6 +3365,150 @@ function montarPaginaARes(){
     '<div class="ares-kpis" id="aresKpi"></div><div id="aresBox"></div>';
   var ref=document.getElementById('page-dre');ref.parentNode.insertBefore(sec,ref.nextSibling);
 }
+/* ---------- Comparativo com o ano anterior (empresa com CFG.comparativo) ----------
+   DRE acumulada ano × ano anterior, tendência de 14 meses, os 10 indicadores do relatório da diretoria
+   (saudável / atenção / risco) e o ranking das naturezas de gasto com o peso sobre a receita bruta.
+   O ano anterior vem da planilha "DRE CONTÁBIL" (aba "DRE aaaa", uma coluna por mês, valores com sinal da DRE). */
+var COMP={mes:null,todas:false};
+function importarDREAnterior(file){
+  if(!file)return;
+  var st=document.getElementById('compStatus'),ano=String(+DRE_ANO-1);
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false});
+      var sn=wb.SheetNames.find(function(n){return normCab(n)==='dre '+ano;});
+      if(!sn)throw new Error('não achei a aba "DRE '+ano+'" no arquivo');
+      var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});
+      var hi=rows.findIndex(function(r){return r&&/^analitica$/.test(normCab(r[0]));});
+      if(hi<0)throw new Error('não achei o cabeçalho ANALÍTICA | DESCRIÇÃO | JAN ... DEZ');
+      var MESES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],col={};
+      rows[hi].forEach(function(c,j){var k=MESES.indexOf(normCab(c));if(k>=0&&col[k]===undefined)col[k]=j;});
+      // só as contas analíticas (sem filhas na aba): os grupos saem da soma delas; linha repetida vale a primeira
+      var lin=[],vistos={};
+      for(var i=hi+1;i<rows.length;i++){var r=rows[i];if(!r||r[0]==null)continue;var c=String(r[0]).trim();
+        if(!/^\d(\.\d+)*$/.test(c)||/%/.test(String(r[1]||''))||vistos[c])continue;vistos[c]=1;lin.push({c:c,n:String(r[1]||'').trim(),r:r});}
+      var cods=lin.map(function(x){return x.c;});
+      var folhas=lin.filter(function(x){return !cods.some(function(o){return o.indexOf(x.c+'.')===0;});});
+      var A={ano:ano,rv:{},mov:{},arquivo:file.name,em:new Date().toISOString()};
+      Object.keys(col).forEach(function(k){
+        var cm={},mv={},tem=false;
+        folhas.forEach(function(x){var v=x.r[col[k]];v=typeof v==='number'?v:0;if(!v)return;tem=true;
+          var d=v<0?-v:0,c=v>0?v:0;cm[x.c]={a:0,d:d,c:c,f:d-c,n:x.n};mv[x.c]=[Math.round(d*100)/100,Math.round(c*100)/100];
+          if(x.n&&!CONTA_NOMES[x.c])CONTA_NOMES[x.c]=x.n;});
+        if(!tem)return;
+        A.rv[k]=computeDREFromBalancete(cm);A.mov[k]=mv;
+      });
+      if(!Object.keys(A.rv).length)throw new Error('a aba "DRE '+ano+'" não tem valores');
+      ANT=A;try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(x){}
+      st.innerHTML='✅ DRE de '+ano+' importada ('+Object.keys(A.rv).map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Balanço &amp; Índices › 🌐 Publicar para todos.';
+      st.style.color='var(--green2)';buildComp();
+    }catch(err){st.textContent='⚠ '+err.message;st.style.color='var(--red2)';}
+    document.getElementById('compFile').value='';
+  };
+  rd.readAsArrayBuffer(file);
+}
+// valor de uma linha da DRE: ano atual (n.v) ou anterior (ANT.rv), somado de janeiro até o mês
+function compNo(r){return acharNo(DTREE,r);}
+function compAtual(r,ate){var no=compNo(r),t=0;for(var i=0;i<=ate;i++)t+=no&&no.v[i]!==undefined?no.v[i]:0;return t;}
+function compAnt(r,ate){if(!ANT)return null;var t=0,tem=false;for(var i=0;i<=ate;i++){var x=ANT.rv[i];if(x&&x[r]!==undefined){t+=x[r];tem=true;}}return tem?t:null;}
+function compMesAnt(r,i){return ANT&&ANT.rv[i]&&ANT.rv[i][r]!==undefined?ANT.rv[i][r]:null;}
+function compSaldo(i,code){return lalSaldo(i,code);}
+function compSaldoIni(code){var s=lalSaldo(0,code);return s===null?null:s-lalMov(0,code,'dc');}   // saldo de dezembro do ano anterior
+function compDias(ate){var d=0;for(var i=0;i<=ate;i++)d+=new Date(+DRE_ANO,i+1,0).getDate();return d;}
+function compIndicadores(ate){
+  var IC=CFG.indicadores||{},CT=IC.contas||{},a=function(r){return compAtual(r,ate);},p=function(r){return compAnt(r,ate);};
+  var rb=a(6),rl=a(14),cmv=compNo(703)?a(703):a(15),mb=a(60),eb=a(90),ll=a(89),dfn=a(84),dt=a(61),da=a(59),ai=a(85),ir=a(86);
+  var rbA=p(6),rlA=p(14),mbA=p(60),ebA=p(90),llA=p(89),dfnA=p(84),dtA=p(61),daA=p(59),aiA=p(85),irA=p(86);
+  var div=function(x,y){return x===null||y===null||!y?null:x/y;},dias=compDias(ate);
+  var estI=CT.estoque?compSaldoIni(CT.estoque):null,estF=CT.estoque?compSaldo(ate,CT.estoque):null;
+  var cli=CT.clientes?compSaldo(ate,CT.clientes):null,forn=CT.fornecedores?compSaldo(ate,CT.fornecedores):null;
+  var giro=estI!==null&&estF!==null&&cmv?((estI+estF)/2)/cmv*dias:null;
+  var pmr=cli!==null&&rb?cli/rb*dias:null;
+  var compras=estI!==null&&estF!==null?cmv+estF-estI:null;
+  var pmp=forn!==null&&compras?(-forn)/compras*dias:null;
+  var ciclo=giro!==null&&pmr!==null&&pmp!==null?giro+pmr-pmp:null;
+  return [
+    ['mb','Margem Bruta','Lucro bruto / receita líquida','%',div(mbA,rlA),div(mb,rl)],
+    ['ebitda','Margem EBITDA','EBITDA / receita líquida','%',div(ebA,rlA),div(eb,rl)],
+    ['ml','Margem Líquida','Lucro líquido / receita líquida','%',div(llA,rlA),div(ll,rl)],
+    ['giro','Giro de estoque','(Estoque médio / CMV) × dias','d',null,giro],
+    ['pmr','Prazo médio de recebimento','(Clientes a receber / receita bruta) × dias','d',null,pmr],
+    ['pmp','Prazo médio de pagamento','(Fornecedores / compras) × dias · compras = CMV + estoque final − inicial','d',null,pmp],
+    ['ciclo','Ciclo de caixa','Giro de estoque + PMR − PMP','d',null,ciclo],
+    ['cob','Cobertura de juros','EBITDA / despesas financeiras','x',div(ebA,dfnA),div(eb,dfn)],
+    ['sga','SG&A sobre receita líquida','(Despesas operacionais − depreciação) / receita líquida','%',dtA===null?null:div(dtA-(daA||0),rlA),div(dt-da,rl)],
+    ['taxa','Taxa efetiva IRPJ/CSLL','(IRPJ + CSLL) / lucro antes dos impostos','%',div(irA,aiA),div(ir,ai)]
+  ];
+}
+function compClasse(k,v){
+  var F=((CFG.indicadores||{}).faixas||{})[k];if(!F||v===null||!isFinite(v))return '';
+  var b=F.f[0],at=F.f[1];
+  if(F.bom==='alto')return v>=b?'ok':v>=at?'at':'rs';
+  return v<=b?'ok':v<=at?'at':'rs';
+}
+function compFmtInd(v,u){if(v===null||!isFinite(v))return 'n/d';return u==='%'?(v*100).toFixed(1).replace('.',',')+'%':u==='x'?v.toFixed(1).replace('.',',')+'x':Math.round(v)+' dias';}
+function buildComp(){
+  var box=document.getElementById('compBox');if(!box)return;
+  var meses=Object.keys(BALHIST).map(Number).sort(function(a,b){return a-b;});
+  var sel=document.getElementById('compMes');
+  if(!meses.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Balanço &amp; Índices.</p>';return;}
+  var ate=COMP.mes!==null&&meses.indexOf(COMP.mes)>=0?COMP.mes:meses[meses.length-1];COMP.mes=ate;
+  sel.innerHTML=meses.map(function(i){return '<option value="'+i+'"'+(i===ate?' selected':'')+'>Jan–'+M[i]+'/'+DRE_ANO+'</option>';}).join('');
+  var ano=DRE_ANO,anoA=String(+DRE_ANO-1),per='jan–'+M[ate].toLowerCase();
+  document.getElementById('compSub').textContent='Acumulado '+per+' · '+ano+' × '+anoA+(ANT?' · ano anterior: '+ANT.arquivo:' · importe a DRE de '+anoA+' para comparar');
+  var N=function(v){return v===null?'–':relN(v/1000,1);};
+  var P=function(v){return v===null||!isFinite(v)?'–':(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';};
+  // 1) indicadores
+  var cls={ok:'Saudável',at:'Atenção',rs:'Risco'};
+  var h='<div class="comp-sec">Indicadores — '+per+'</div><div class="comp-ind">'+compIndicadores(ate).map(function(x){
+    var c=compClasse(x[0],x[5]);
+    return '<div class="comp-k '+c+'"><div class="t">'+relEsc(x[1])+(c?'<span class="b">'+cls[c]+'</span>':'')+'</div>'+
+      '<div class="v"><span class="a">'+anoA+'<b>'+compFmtInd(x[4],x[3])+'</b></span><span>'+ano+'<b>'+compFmtInd(x[5],x[3])+'</b></span></div><div class="f">'+relEsc(x[2])+'</div></div>';}).join('')+'</div>';
+  // 2) DRE acumulada × ano anterior
+  var rb=compAtual(6,ate),rbA=compAnt(6,ate);
+  h+='<div class="comp-sec">DRE acumulada '+per+' · '+ano+' × '+anoA+' (R$ mil)</div><div class="tw"><table class="dt comp-t"><thead><tr><th>Linha</th><th>'+anoA+'</th><th>'+ano+'</th><th>Var. R$</th><th>Var. %</th><th>% RB '+anoA+'</th><th>% RB '+ano+'</th></tr></thead><tbody>';
+  (function w(ns,d){ns.forEach(function(no){
+    var a=compAtual(no.r,ate),b=compAnt(no.r,ate),vr=b===null?null:a-b,vp=b===null||!b?null:(a-b)/Math.abs(b);
+    h+='<tr class="'+no.t+'"><td style="padding-left:'+(10+d*16)+'px">'+relEsc(no.l)+'</td><td>'+N(b)+'</td><td>'+N(a)+'</td><td>'+N(vr)+'</td><td>'+P(vp)+'</td><td>'+(b===null||!rbA?'–':(b/rbA*100).toFixed(1).replace('.',',')+'%')+'</td><td>'+(rb?(a/rb*100).toFixed(1).replace('.',',')+'%':'–')+'</td></tr>';
+    if(no.c&&d<1)w(no.c,d+1);});})(DTREE,0);
+  h+='</tbody></table></div>';
+  h+='<div class="comp-sec">Tendência dos últimos 14 meses (R$ mil)</div><div class="comp-ch"><canvas id="compTend"></canvas></div>';
+  // 3) naturezas de gasto
+  var nat={},soma=function(mv,ii,alvo,k){Object.keys(mv).forEach(function(c){if(!/^3/.test(c)||/^3\.1\.1\.01\.001/.test(c))return;var x=mv[c],v=x[0]-x[1];(nat[c]=nat[c]||{a:0,b:0})[k]+=v;});};
+  for(var i=0;i<=ate;i++){if(BALHIST[i]&&BALHIST[i]._mov)soma(BALHIST[i]._mov,i,nat,'a');if(ANT&&ANT.mov[i])soma(ANT.mov[i],i,nat,'b');}
+  var lista=Object.keys(nat).map(function(c){return {c:c,a:nat[c].a,b:nat[c].b};}).filter(function(x){return x.a>0.5||x.b>0.5;}).sort(function(x,y){return y.a-x.a;});
+  var cresc=rbA?rb/rbA-1:null,mostra=COMP.todas?lista:lista.slice(0,20);
+  h+='<div class="comp-sec">'+(COMP.todas?'Todas as '+lista.length+' naturezas de gasto':'As 20 maiores naturezas de gasto')+' — '+per+' <button class="fs" style="margin-left:10px" onclick="COMP.todas=!COMP.todas;buildComp()">'+(COMP.todas?'Só as 20 maiores':'Ver todas ('+lista.length+')')+'</button></div>'+
+    '<div class="tw"><table class="dt comp-t comp-rk"><thead><tr><th>#</th><th style="text-align:left">Natureza</th><th>Conta</th><th>'+anoA+' (R$ mil)</th><th>'+ano+' (R$ mil)</th><th>Var. %</th><th>% RB '+ano+'</th></tr></thead><tbody>'+
+    mostra.map(function(x,k){var vp=x.b>0.5?x.a/x.b-1:null,alto=vp!==null&&cresc!==null&&vp>cresc;
+      return '<tr><td>'+(k+1)+'</td><td style="text-align:left">'+relEsc(CONTA_NOMES[x.c]||'')+'</td><td style="text-align:left">'+x.c+'</td><td>'+N(ANT?x.b:null)+'</td><td>'+N(x.a)+'</td><td'+(alto?' class="comp-up"':'')+'>'+(ANT?P(vp):'–')+'</td><td>'+(rb?(x.a/rb*100).toFixed(1).replace('.',',')+'%':'–')+'</td></tr>';}).join('')+
+    '</tbody></table></div><div class="comp-nota">Em vermelho: natureza que cresceu acima da receita bruta'+(cresc===null?'':' ('+P(cresc)+')')+'. Valores em débito − crédito (o que reduz o resultado), sem a receita bruta.</div>';
+  box.innerHTML=h;
+  // gráfico: 14 meses terminando no mês escolhido (ano anterior + ano atual)
+  var lab=[],ser={rl:[],mb:[],eb:[],ll:[]},rows={rl:14,mb:60,eb:90,ll:89};
+  for(var k=13;k>=0;k--){var mi=ate-k,prev=mi<0,mm=prev?mi+12:mi;lab.push(M[mm]+'/'+String(prev?anoA:ano).slice(2));
+    Object.keys(rows).forEach(function(s){var v=prev?compMesAnt(rows[s],mm):(compNo(rows[s])?compNo(rows[s]).v[mm]:null);ser[s].push(v===null||v===undefined?null:v/1000);});}
+  mkC('compTend','line',lab,[
+    {label:'Receita líquida',data:ser.rl,borderColor:'#2980B9',backgroundColor:'rgba(41,128,185,.15)',tension:.3,yAxisID:'y'},
+    {label:'Lucro bruto',data:ser.mb,borderColor:'#C9A84C',tension:.3,yAxisID:'y'},
+    {label:'EBITDA',data:ser.eb,borderColor:'#27AE60',tension:.3,yAxisID:'y'},
+    {label:'Lucro líquido',data:ser.ll,borderColor:'#E74C3C',tension:.3,yAxisID:'y'}],
+    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:tc}}},scales:{x:{ticks:{color:tc},grid:{display:false}},y:{ticks:{color:tc,callback:function(v){return 'R$ '+v.toLocaleString('pt-BR')+' mil';}},grid:{color:gc}}}});
+}
+function montarPaginaComp(){
+  var ares=document.querySelector('.nav-item[onclick*="setPage(\'ares\'"]')||document.querySelector('.nav-item[onclick*="setPage(\'dre\'"]');
+  if(!ares||document.getElementById('page-comp'))return;
+  var nav=document.createElement('div');nav.className='nav-item';nav.setAttribute('onclick',"setPage('comp',this)");
+  nav.innerHTML='<svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M3 13V7M8 13V3M13 13V9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Comparativo';
+  ares.parentNode.insertBefore(nav,ares.nextSibling);
+  var sec=document.createElement('section');sec.id='page-comp';sec.className='page';
+  sec.innerHTML='<div class="fbar"><span class="fl">Período:</span><select class="fs" id="compMes" onchange="COMP.mes=+this.value;buildComp()"></select>'+
+    '<label class="fs adm-only" style="cursor:pointer">📥 Importar DRE do ano anterior<input type="file" id="compFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREAnterior(this.files[0])"></label>'+
+    '<span id="compStatus" class="fl" style="font-size:12px"></span></div>'+
+    '<div style="margin:18px 0 12px"><div class="ptitle">Comparativo</div><div class="psub" id="compSub"></div></div><div id="compBox"></div>';
+  var ref=document.getElementById('page-dre');ref.parentNode.insertBefore(sec,ref.nextSibling);
+}
 function aplicarCfgEmpresa(){
   var info=window.HubEmpresa?HubEmpresa.info:null;
   if(!CFG)return;
@@ -3309,6 +3526,7 @@ function aplicarCfgEmpresa(){
   else if(lg&&CFG.semLogo)lg.style.display='none';
   document.querySelectorAll('[data-rot]').forEach(function(el){el.textContent=rot(el.getAttribute('data-rot'));});
   if(CFG.analiseResultado)montarPaginaARes();
+  if(CFG.comparativo)montarPaginaComp();
   // páginas que a empresa não usa (ex.: mercado e mapa de vendas)
   (CFG.ocultarPaginas||[]).forEach(function(pg){
     document.querySelectorAll('.nav-item[onclick*="setPage(\''+pg+'\'"]').forEach(function(el){el.style.display='none';});

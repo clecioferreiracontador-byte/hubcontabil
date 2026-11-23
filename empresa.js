@@ -7,7 +7,8 @@
 (function(){
   var EMPRESAS = {
     nhd:    { id: 'nhd',    nome: 'NHD Foods',        curto: 'NHD',    sub: 'Belive' },
-    landix: { id: 'landix', nome: 'Landix Sistemas',  curto: 'Landix', sub: 'Landix Sistemas S/A' }
+    landix: { id: 'landix', nome: 'Landix Sistemas',  curto: 'Landix', sub: 'Landix Sistemas S/A' },
+    centerfrio: { id: 'centerfrio', nome: 'Centerfrio', curto: 'Centerfrio', sub: 'Centerfrio Distribuição e Logística' }
   };
   var K_ABA = 'hubEmpresa', K_ULT = 'hubEmpresaUlt';
   var ls = null; try { ls = window.localStorage; } catch (e) {}
