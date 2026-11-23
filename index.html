@@ -1167,12 +1167,15 @@ function buildDRELayout(ci,view){
   var multi=ci.length>1,soma=function(v){var t=0,tem=false;ci.forEach(function(i){if(v[i]!==undefined){t+=v[i];tem=true;}});return tem?t:undefined;};
   var bA=soma(B);
   var pc=function(v,b){return b?(v/b*100).toFixed(1).replace('.',',')+'%':'–';};
-  var cel=function(v,b,extra,attr){
+  // seta de evolução: o % do mês sobre o faturamento líquido comparado com o do mês anterior (▲ subiu, ▼ caiu, ▬ igual/primeiro)
+  var seta=function(v,k){var a='▬';if(k>0){var i=ci[k],j=ci[k-1];if(v[i]!==undefined&&v[j]!==undefined){var p=B[i]?v[i]/B[i]:0,pp=B[j]?v[j]/B[j]:0;a=p>pp+1e-9?'▲':p<pp-1e-9?'▼':'▬';}}
+    return ' <span class="'+(a==='▲'?'au':a==='▼'?'ad':'an')+'">'+a+'</span>';};
+  var cel=function(v,b,extra,attr,ar){
     if(v===undefined)return '<td class="dre-blank">—</td>';
-    var c=(v<0?'vn ':'')+(extra||'');
-    if(view==='val')return '<td class="'+c+'"'+(attr||'')+'>'+fmt(v)+'</td>';
-    if(view==='pct')return '<td class="'+c+'"'+(attr||'')+'><span class="vpc" style="display:inline">'+pc(v,b)+'</span></td>';
-    return '<td class="'+c+'"'+(attr||'')+'>'+fmt(v)+'<span class="vpc">'+pc(v,b)+'</span></td>';};
+    var c=(v<0?'vn ':'')+(extra||'');ar=ar||'';
+    if(view==='val')return '<td class="'+c+'"'+(attr||'')+'>'+fmt(v)+ar+'</td>';
+    if(view==='pct')return '<td class="'+c+'"'+(attr||'')+'><span class="vpc" style="display:inline">'+pc(v,b)+'</span>'+ar+'</td>';
+    return '<td class="'+c+'"'+(attr||'')+'>'+fmt(v)+'<span class="vpc">'+pc(v,b)+ar+'</span></td>';};
   var h='';
   R.rows.forEach(function(r){
     if(r.tipo==='p'){var v=R.vals[r.k]||[];
@@ -1186,13 +1189,13 @@ function buildDRELayout(ci,view){
     if(r.tipo==='g'&&!solo)h+='<span class="dre-toggle" onclick="DRE_LX[\''+r.code+'\']=!DRE_LX[\''+r.code+'\'];buildDRE()">'+(aberto?'▾':'▸')+'</span> ';
     h+=(r.code?'<span class="dre-cod">'+r.code+'</span>':'')+r.l+'</td>';
     var edSolo=solo&&DRE_EDITMODE;
-    ci.forEach(function(i){var e=solo&&r.kids[0].ed[i];h+=cel(r.v[i],B[i],(edSolo&&r.v[i]!==undefined?'dre-ed ':'')+(e?'dre-edv':''),edSolo&&r.v[i]!==undefined?' onclick="dreEditCell(this,\''+r.code+'\','+i+')"':'');});
+    ci.forEach(function(i,q){var e=solo&&r.kids[0].ed[i];h+=cel(r.v[i],B[i],(edSolo&&r.v[i]!==undefined?'dre-ed ':'')+(e?'dre-edv':''),edSolo&&r.v[i]!==undefined?' onclick="dreEditCell(this,\''+r.code+'\','+i+')"':'',seta(r.v,q));});
     if(multi)h+=cel(soma(r.v),bA,'dre-anual');
     h+='</tr>';
     if(aberto)r.kids.forEach(function(k){
       h+='<tr class="rs"><td style="padding-left:40px"><span class="dre-cod">'+k.code+'</span>'+relEsc(k.l)+'</td>';
-      ci.forEach(function(i){var pode=DRE_EDITMODE&&k.v[i]!==undefined;
-        h+=cel(k.v[i],B[i],(pode?'dre-ed ':'')+(k.ed[i]?'dre-edv':''),pode?' onclick="dreEditCell(this,\''+k.code+'\','+i+')"':'');});
+      ci.forEach(function(i,q){var pode=DRE_EDITMODE&&k.v[i]!==undefined;
+        h+=cel(k.v[i],B[i],(pode?'dre-ed ':'')+(k.ed[i]?'dre-edv':''),pode?' onclick="dreEditCell(this,\''+k.code+'\','+i+')"':'',seta(k.v,q));});
       if(multi)h+=cel(soma(k.v),bA,'dre-anual');
       h+='</tr>';});
   });
@@ -3209,7 +3212,10 @@ async function buildDREWorkbook(){
       ci.forEach(function(i,k){var c0=3+k*3,x=v[i],has=x!==undefined&&x!==null;
         if(pct){lput(row,S,c0,has&&LB[i]?(abs?Math.abs(x):x)/LB[i]:null,{size:8,bold:S.b,color:C('F4A021')},'right','0.0%');lput(row,S,c0+1,null,{size:8},'center');}
         else{lput(row,S,c0,has?x:null,{size:9,bold:S.b,color:C(edit&&edit[i]?'FFD54F':S.v)},'right',NF);lput(row,S,c0+1,has&&LB[i]?x/LB[i]:null,{size:8,bold:S.b,color:C('F4A021')},'center','0.0%');}
-        lput(row,S,c0+2,null,{size:8},'center');});
+        // seta de evolução do % vs o mês anterior (como na DRE padrão)
+        var ar='▬',acr='78909C';
+        if(!pct&&has&&k>0){var j=ci[k-1];if(v[j]!==undefined&&v[j]!==null){var pa=LB[i]?x/LB[i]:0,pb=LB[j]?v[j]/LB[j]:0;if(pa>pb+1e-9){ar='▲';acr='00C853';}else if(pa<pb-1e-9){ar='▼';acr='FF1744';}}}
+        lput(row,S,c0+2,pct||!has?null:ar,{size:9,bold:true,color:C(acr)},'center');});
       var t=sm(v);
       if(pct){lput(row,S,NC-1,t!==null&&LBA?(abs?Math.abs(t):t)/LBA:null,{size:8,bold:true,color:C('F4A021')},'right','0.0%');lput(row,S,NC,null,{size:8},'center');}
       else{lput(row,S,NC-1,t,{size:9,bold:true,color:C('2ECC71')},'right',NF);lput(row,S,NC,t!==null&&LBA?t/LBA:null,{size:8,bold:S.b,color:C('F4A021')},'center','0.0%');}
