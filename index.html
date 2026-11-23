@@ -270,6 +270,10 @@ body:not(.is-admin) .adm-only{display:none!important}
 .dt.ares th:first-child,.dt.ares td:first-child{text-align:left;min-width:118px;width:118px;max-width:118px;left:0;font-size:13px}
 .dt.ares th:nth-child(2),.dt.ares td.ares-t{text-align:left;position:sticky;left:118px;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:200px;max-width:250px;box-shadow:6px 0 8px -6px rgba(0,0,0,.6)}
 .ares thead th:nth-child(2){z-index:3;background:var(--n2)}
+/* a tabela rola dentro da caixa: o cabeçalho fica preso no topo e a conta/título à esquerda */
+#aresBox .tw{max-height:calc(100vh - 210px);overflow:auto}
+.dt.ares thead th{position:sticky;top:0;z-index:2}
+.dt.ares thead th:first-child,.dt.ares thead th:nth-child(2){z-index:4}
 .ares tr.ares-n1 td{font-weight:700;background:#163B5A}
 .ares tr.ares-n2 td{font-weight:700;background:#14314D}
 .ares tr.ares-n3 td{font-weight:600;background:#122A42}
