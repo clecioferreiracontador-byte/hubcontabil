@@ -6,7 +6,7 @@
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=2"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=9"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=11"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -276,6 +276,10 @@ body:not(.is-admin) .adm-only{display:none!important}
 .dt.comp-rk thead th:first-child,.dt.comp-rk tbody td:first-child{min-width:40px;width:40px;text-align:center}
 .comp-ch{height:320px;background:var(--n3);border-radius:10px;padding:10px}
 .comp-nota{font-size:11.5px;color:var(--gray,#8a9aac);margin-top:6px}
+.comp-aj{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.comp-rec{background:var(--n3);border-left:4px solid var(--g2);border-radius:8px;padding:10px 14px;line-height:1.5;font-size:14px}
+.comp-pts{margin:0 0 10px 18px;line-height:1.6;font-size:13.5px}
+.comp-glo td{vertical-align:top}
 /* ===== Análise de Resultado (Landix) ===== */
 .ares{font-size:13px;width:100%}
 .ares td{white-space:nowrap;text-align:right;background:var(--n3)}
@@ -872,7 +876,9 @@ var ROT={};
 function rot(t){return ROT[t]||t;}
 var CONTA_NOMES={};
 // Ano anterior para o comparativo: {ano, rv:{mês:{linha da DRE: valor}}, mov:{mês:{conta:[d,c]}}, arquivo}
-var ANT=null;   // conta → título, do último balancete importado (empresa com CFG.guardarMov)
+var ANT=null;
+// Ajustes gerenciais ("com ajuste"): {ano, mes, conta, valor (débito − crédito), desc}; recomendações do mês; meta do ICV
+var AJUSTES=[],REC_TXT={},ICV_META=null;   // conta → título, do último balancete importado (empresa com CFG.guardarMov)
 const cols=m=>m==='all'?Array.from({length:numMeses},(_,i)=>i):[parseInt(m)];
 var FULLVALS=false;try{FULLVALS=localStorage.getItem('nhdFullVals')==='1';}catch(e){}
 const fmt=v=>{v=(typeof v==='number'&&isFinite(v))?v:0;const a=Math.abs(v),n=v<0;if(FULLVALS){const t='R$ '+a.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});return n?'-'+t:t;}let s=a>=1e6?'R$ '+(a/1e6).toFixed(2)+'M':a>=1e3?'R$ '+(a/1e3).toFixed(0)+'K':'R$ '+Math.round(a).toLocaleString('pt-BR');return n?'-'+s:s;};
@@ -2203,7 +2209,7 @@ function saveCurrentBase(){
   }
 }
 function buildBaseState(){
-  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,ant:ANT,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,plan:lalurPlan,at:lalurAt},savedAt:new Date().toISOString()};
+  return {numMeses:numMeses,D:D,DTREE:DTREE,dreExtra:DRE_EXTRA,BALHIST:BALHIST,balSelMes:balSelMes,nomes:CONTA_NOMES,ant:ANT,ajustes:AJUSTES,recs:REC_TXT,icvMeta:ICV_META,lalur:{v:2,adic:lalurAdic,excl:lalurExcl,prejIni:lalurPrejFiscalIni,plan:lalurPlan,at:lalurAt},savedAt:new Date().toISOString()};
 }
 // Base publicada no Firebase (dados/base). Só o admin grava; as regras do banco garantem isso.
 var BASE_REMOTA_EM=null;
@@ -2281,6 +2287,7 @@ function applyBaseState(state){
   }
   if(state.nomes)CONTA_NOMES=state.nomes;
   if(state.ant)ANT=state.ant;
+  if(state.ajustes)AJUSTES=state.ajustes;if(state.recs)REC_TXT=state.recs;if(state.icvMeta!==undefined)ICV_META=state.icvMeta;
 }
 async function loadRemoteBase(){
   try{
@@ -2314,6 +2321,7 @@ function loadSavedBase(){
       balSelMes=(state.balSelMes!==undefined)?state.balSelMes:numMeses-1;
       if(state.nomes)CONTA_NOMES=state.nomes;
       if(state.ant)ANT=state.ant;
+      if(state.ajustes)AJUSTES=state.ajustes;if(state.recs)REC_TXT=state.recs;if(state.icvMeta!==undefined)ICV_META=state.icvMeta;
     }else if(state.BAL){
       var legacyMes=(state.BALMES!==undefined)?state.BALMES:numMeses-1;
       BALHIST[legacyMes]=state.BAL;
@@ -3369,7 +3377,16 @@ function montarPaginaARes(){
    DRE acumulada ano × ano anterior, tendência de 14 meses, os 10 indicadores do relatório da diretoria
    (saudável / atenção / risco) e o ranking das naturezas de gasto com o peso sobre a receita bruta.
    O ano anterior vem da planilha "DRE CONTÁBIL" (aba "DRE aaaa", uma coluna por mês, valores com sinal da DRE). */
-var COMP={mes:null,todas:false};
+var COMP={mes:null,todas:false,aj:false};
+// efeito dos ajustes nas linhas da DRE (ano, meses de..até): linhas de conta pela receita, as de cálculo pela DRE_ORDER
+function compAdjRows(ano,de,ate){
+  var rows={},lista=COMP.aj?AJUSTES.filter(function(a){return String(a.ano)===String(ano)&&a.mes>=de&&a.mes<=ate;}):[];
+  if(!lista.length)return rows;
+  Object.keys(DRE_RECIPE).forEach(function(r){if(DRE_RECIPE[r].t!=='L')return;var t=0;lista.forEach(function(a){t+=a.valor*dreSinalNaLinha(r,a.conta);});if(t)rows[r]=t;});
+  DRE_ORDER.forEach(function(r){var rc=DRE_RECIPE[r];if(!rc)return;var t=0;rc.x.forEach(function(x){t+=(rows[x[0]]||0)*x[1];});if(t)rows[r]=t;});
+  return rows;
+}
+function compAdjNat(ano,ate){var o={};if(!COMP.aj)return o;AJUSTES.forEach(function(a){if(String(a.ano)===String(ano)&&a.mes<=ate)o[a.conta]=(o[a.conta]||0)+a.valor;});return o;}
 function importarDREAnterior(file){
   if(!file)return;
   var st=document.getElementById('compStatus'),ano=String(+DRE_ANO-1);
@@ -3410,9 +3427,10 @@ function importarDREAnterior(file){
 }
 // valor de uma linha da DRE: ano atual (n.v) ou anterior (ANT.rv), somado de janeiro até o mês
 function compNo(r){return acharNo(DTREE,r);}
-function compAtual(r,ate){var no=compNo(r),t=0;for(var i=0;i<=ate;i++)t+=no&&no.v[i]!==undefined?no.v[i]:0;return t;}
-function compAnt(r,ate){if(!ANT)return null;var t=0,tem=false;for(var i=0;i<=ate;i++){var x=ANT.rv[i];if(x&&x[r]!==undefined){t+=x[r];tem=true;}}return tem?t:null;}
-function compMesAnt(r,i){return ANT&&ANT.rv[i]&&ANT.rv[i][r]!==undefined?ANT.rv[i][r]:null;}
+function compAtual(r,ate){var no=compNo(r),t=0;for(var i=0;i<=ate;i++)t+=no&&no.v[i]!==undefined?no.v[i]:0;return t+(compAdjRows(DRE_ANO,0,ate)[r]||0);}
+function compAnt(r,ate){if(!ANT)return null;var t=0,tem=false;for(var i=0;i<=ate;i++){var x=ANT.rv[i];if(x&&x[r]!==undefined){t+=x[r];tem=true;}}return tem?t+(compAdjRows(ANT.ano,0,ate)[r]||0):null;}
+function compMesAnt(r,i){return ANT&&ANT.rv[i]&&ANT.rv[i][r]!==undefined?ANT.rv[i][r]+(compAdjRows(ANT.ano,i,i)[r]||0):null;}
+function compMesAtual(r,i){var no=compNo(r);return no&&no.v[i]!==undefined?no.v[i]+(compAdjRows(DRE_ANO,i,i)[r]||0):null;}
 function compSaldo(i,code){return lalSaldo(i,code);}
 function compSaldoIni(code){var s=lalSaldo(0,code);return s===null?null:s-lalMov(0,code,'dc');}   // saldo de dezembro do ano anterior
 function compDias(ate){var d=0;for(var i=0;i<=ate;i++)d+=new Date(+DRE_ANO,i+1,0).getDate();return d;}
@@ -3456,7 +3474,7 @@ function buildComp(){
   var ate=COMP.mes!==null&&meses.indexOf(COMP.mes)>=0?COMP.mes:meses[meses.length-1];COMP.mes=ate;
   sel.innerHTML=meses.map(function(i){return '<option value="'+i+'"'+(i===ate?' selected':'')+'>Jan–'+M[i]+'/'+DRE_ANO+'</option>';}).join('');
   var ano=DRE_ANO,anoA=String(+DRE_ANO-1),per='jan–'+M[ate].toLowerCase();
-  document.getElementById('compSub').textContent='Acumulado '+per+' · '+ano+' × '+anoA+(ANT?' · ano anterior: '+ANT.arquivo:' · importe a DRE de '+anoA+' para comparar');
+  document.getElementById('compSub').textContent='Acumulado '+per+' · '+ano+' × '+anoA+' · visão '+(COMP.aj?'COM ajuste ('+AJUSTES.length+' ajuste(s))':'sem ajuste')+(ANT?' · ano anterior: '+ANT.arquivo:' · importe a DRE de '+anoA+' para comparar')+' · alterações (ajustes, recomendações, meta) ficam neste navegador até publicar em Balanço & Índices';
   var N=function(v){return v===null?'–':relN(v/1000,1);};
   var P=function(v){return v===null||!isFinite(v)?'–':(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';};
   // 1) indicadores
@@ -3475,8 +3493,11 @@ function buildComp(){
   h+='</tbody></table></div>';
   h+='<div class="comp-sec">Tendência dos últimos 14 meses (R$ mil)</div><div class="comp-ch"><canvas id="compTend"></canvas></div>';
   // 3) naturezas de gasto
-  var nat={},soma=function(mv,ii,alvo,k){Object.keys(mv).forEach(function(c){if(!/^3/.test(c)||/^3\.1\.1\.01\.001/.test(c))return;var x=mv[c],v=x[0]-x[1];(nat[c]=nat[c]||{a:0,b:0})[k]+=v;});};
+  var NIV=CFG.naturezaNivel||0;   // natureza = conta analítica com este número de níveis (a planilha do ano anterior tem subtotais com código)
+  var nat={},soma=function(mv,ii,alvo,k){Object.keys(mv).forEach(function(c){if(!/^3/.test(c)||/^3\.1\.1\.01\.001/.test(c)||(NIV&&c.split('.').length!==NIV))return;var x=mv[c],v=x[0]-x[1];(nat[c]=nat[c]||{a:0,b:0})[k]+=v;});};
   for(var i=0;i<=ate;i++){if(BALHIST[i]&&BALHIST[i]._mov)soma(BALHIST[i]._mov,i,nat,'a');if(ANT&&ANT.mov[i])soma(ANT.mov[i],i,nat,'b');}
+  var adA=compAdjNat(DRE_ANO,ate),adB=ANT?compAdjNat(ANT.ano,ate):{};
+  Object.keys(adA).forEach(function(c){(nat[c]=nat[c]||{a:0,b:0}).a+=adA[c];});Object.keys(adB).forEach(function(c){(nat[c]=nat[c]||{a:0,b:0}).b+=adB[c];});
   var lista=Object.keys(nat).map(function(c){return {c:c,a:nat[c].a,b:nat[c].b};}).filter(function(x){return x.a>0.5||x.b>0.5;}).sort(function(x,y){return y.a-x.a;});
   var cresc=rbA?rb/rbA-1:null,mostra=COMP.todas?lista:lista.slice(0,20);
   h+='<div class="comp-sec">'+(COMP.todas?'Todas as '+lista.length+' naturezas de gasto':'As 20 maiores naturezas de gasto')+' — '+per+' <button class="fs" style="margin-left:10px" onclick="COMP.todas=!COMP.todas;buildComp()">'+(COMP.todas?'Só as 20 maiores':'Ver todas ('+lista.length+')')+'</button></div>'+
@@ -3484,11 +3505,13 @@ function buildComp(){
     mostra.map(function(x,k){var vp=x.b>0.5?x.a/x.b-1:null,alto=vp!==null&&cresc!==null&&vp>cresc;
       return '<tr><td>'+(k+1)+'</td><td style="text-align:left">'+relEsc(CONTA_NOMES[x.c]||'')+'</td><td style="text-align:left">'+x.c+'</td><td>'+N(ANT?x.b:null)+'</td><td>'+N(x.a)+'</td><td'+(alto?' class="comp-up"':'')+'>'+(ANT?P(vp):'–')+'</td><td>'+(rb?(x.a/rb*100).toFixed(1).replace('.',',')+'%':'–')+'</td></tr>';}).join('')+
     '</tbody></table></div><div class="comp-nota">Em vermelho: natureza que cresceu acima da receita bruta'+(cresc===null?'':' ('+P(cresc)+')')+'. Valores em débito − crédito (o que reduz o resultado), sem a receita bruta.</div>';
+  h+=compSecoesExtras(ate,nat,rb,rbA,per,ano,anoA);
   box.innerHTML=h;
+  compGraficosExtras(ate,nat,rb,rbA,ano,anoA);
   // gráfico: 14 meses terminando no mês escolhido (ano anterior + ano atual)
   var lab=[],ser={rl:[],mb:[],eb:[],ll:[]},rows={rl:14,mb:60,eb:90,ll:89};
   for(var k=13;k>=0;k--){var mi=ate-k,prev=mi<0,mm=prev?mi+12:mi;lab.push(M[mm]+'/'+String(prev?anoA:ano).slice(2));
-    Object.keys(rows).forEach(function(s){var v=prev?compMesAnt(rows[s],mm):(compNo(rows[s])?compNo(rows[s]).v[mm]:null);ser[s].push(v===null||v===undefined?null:v/1000);});}
+    Object.keys(rows).forEach(function(s){var v=prev?compMesAnt(rows[s],mm):compMesAtual(rows[s],mm);ser[s].push(v===null||v===undefined?null:v/1000);});}
   mkC('compTend','line',lab,[
     {label:'Receita líquida',data:ser.rl,borderColor:'#2980B9',backgroundColor:'rgba(41,128,185,.15)',tension:.3,yAxisID:'y'},
     {label:'Lucro bruto',data:ser.mb,borderColor:'#C9A84C',tension:.3,yAxisID:'y'},
@@ -3496,6 +3519,91 @@ function buildComp(){
     {label:'Lucro líquido',data:ser.ll,borderColor:'#E74C3C',tension:.3,yAxisID:'y'}],
     {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:tc}}},scales:{x:{ticks:{color:tc},grid:{display:false}},y:{ticks:{color:tc,callback:function(v){return 'R$ '+v.toLocaleString('pt-BR')+' mil';}},grid:{color:gc}}}});
 }
+// ICV, gráficos de grupos e de altas/quedas, ajustes, recomendações e glossário
+function compSecoesExtras(ate,nat,rb,rbA,per,ano,anoA){
+  var N=function(v){return v===null||v===undefined?'–':relN(v/1000,1);},P=function(v){return v===null||!isFinite(v)?'–':(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';};
+  var pc=function(v,b){return v===null||!b?'–':(v/b*100).toFixed(1).replace('.',',')+'%';},h='';
+  // gráficos
+  h+='<div class="comp-sec">Peso de cada grupo de despesa sobre a receita bruta — '+per+'</div><div class="comp-ch" style="height:300px"><canvas id="compGrupos"></canvas></div>';
+  h+='<div class="comp-sec">Naturezas que mais subiram e mais caíram (R$ mil, '+ano+' − '+anoA+')</div><div class="comp-ch" style="height:360px"><canvas id="compAltas"></canvas></div>';
+  // ICV
+  var IC=CFG.icv;
+  if(IC){
+    var ta=0,tb=0,lin=IC.contas.map(function(c){var x=nat[c]||{a:0,b:0};ta+=x.a;tb+=x.b;return {c:c,a:x.a,b:x.b};}).sort(function(x,y){return y.a-x.a;});
+    var icvA=rb?ta/rb:null,icvB=rbA?tb/rbA:null,meta=ICV_META!==null?ICV_META:icvB;
+    var cls=icvA===null||meta===null?'':icvA<=meta?'ok':icvA<=meta*1.05?'at':'rs';
+    h+='<div class="comp-sec">ICV dos gestores — os '+IC.contas.length+' gastos que a gestão controla</div>'+
+      '<div class="comp-ind" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">'+
+      '<div class="comp-k '+cls+'"><div class="t">ICV (gastos dos gestores / receita bruta)</div><div class="v"><span class="a">'+anoA+'<b>'+pc(ANT?tb:null,rbA)+'</b></span><span>'+ano+'<b>'+pc(ta,rb)+'</b></span></div><div class="f">'+(meta===null?'':'Meta: '+(meta*100).toFixed(2).replace('.',',')+'% '+(ICV_META===null?'(ICV de '+anoA+')':''))+'</div></div>'+
+      '<div class="comp-k"><div class="t">Gastos dos gestores</div><div class="v"><span class="a">'+anoA+'<b>'+N(ANT?tb:null)+'</b></span><span>'+ano+'<b>'+N(ta)+'</b></span></div><div class="f">R$ mil · '+P(tb?ta/tb-1:null)+' contra a receita bruta '+P(rbA?rb/rbA-1:null)+'</div></div>'+
+      '<div class="comp-k adm-only"><div class="t">Meta do ICV</div><div class="f" style="margin-top:6px"><input class="fs" id="icvMetaIn" style="width:90px" placeholder="'+(icvB!==null?(icvB*100).toFixed(2).replace('.',','):'')+'" value="'+(ICV_META!==null?(ICV_META*100).toFixed(2).replace('.',','):'')+'"> % <button class="fs" onclick="compSalvarMeta()">Salvar meta</button></div><div class="f">Em branco: usa o ICV de '+anoA+'.</div></div></div>'+
+      '<div class="tw"><table class="dt comp-t comp-rk"><thead><tr><th>#</th><th style="text-align:left">Gasto</th><th style="text-align:left">Conta</th><th>'+anoA+'</th><th>'+ano+'</th><th>Var. R$</th><th>Var. %</th><th>% RB '+anoA+'</th><th>% RB '+ano+'</th><th>Var. p.p.</th></tr></thead><tbody>'+
+      lin.map(function(x,k){var vp=x.b>0.5?x.a/x.b-1:null,pp=rb&&rbA?(x.a/rb-x.b/rbA)*100:null;
+        return '<tr><td>'+(k+1)+'</td><td style="text-align:left">'+relEsc(CONTA_NOMES[x.c]||'')+'</td><td style="text-align:left">'+x.c+'</td><td>'+N(ANT?x.b:null)+'</td><td>'+N(x.a)+'</td><td>'+N(ANT?x.a-x.b:null)+'</td><td'+(vp!==null&&rbA&&vp>rb/rbA-1?' class="comp-up"':'')+'>'+(ANT?P(vp):'–')+'</td><td>'+pc(ANT?x.b:null,rbA)+'</td><td>'+pc(x.a,rb)+'</td><td>'+(ANT&&pp!==null?(pp>=0?'+':'')+pp.toFixed(2).replace('.',','):'–')+'</td></tr>';}).join('')+
+      '<tr class="rt"><td></td><td style="text-align:left">Total dos gastos dos gestores</td><td></td><td>'+N(ANT?tb:null)+'</td><td>'+N(ta)+'</td><td>'+N(ANT?ta-tb:null)+'</td><td>'+(ANT?P(tb?ta/tb-1:null):'–')+'</td><td>'+pc(ANT?tb:null,rbA)+'</td><td>'+pc(ta,rb)+'</td><td></td></tr></tbody></table></div>';
+  }
+  // ajustes (com ajuste)
+  var mesesOp=M.map(function(m,i){return '<option value="'+i+'"'+(i===ate?' selected':'')+'>'+m+'</option>';}).join('');
+  h+='<div class="comp-sec">Ajustes da visão "com ajuste"</div><div class="comp-nota" style="margin:-4px 0 8px">Cada ajuste muda só a visão "com ajuste" (DRE, indicadores, naturezas e ICV); a contabilidade e a visão "sem ajuste" ficam como estão.</div>'+
+    '<div class="tw"><table class="dt comp-t"><thead><tr><th>Ano / mês</th><th style="text-align:left">Conta</th><th style="text-align:left">Descrição</th><th>Efeito no resultado</th><th class="adm-only"></th></tr></thead><tbody>'+
+    (AJUSTES.length?AJUSTES.map(function(a,k){return '<tr><td>'+M[a.mes]+'/'+a.ano+'</td><td style="text-align:left">'+a.conta+' · '+relEsc(CONTA_NOMES[a.conta]||'')+'</td><td style="text-align:left;white-space:normal">'+relEsc(a.desc||'')+'</td><td>'+relN(-a.valor,2)+'</td><td class="adm-only"><button class="fs" onclick="compTirarAjuste('+k+')">Tirar</button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty">Nenhum ajuste cadastrado.</td></tr>')+
+    '</tbody></table></div>'+
+    '<div class="comp-aj adm-only"><select class="fs" id="ajAno"><option>'+ano+'</option><option>'+anoA+'</option></select><select class="fs" id="ajMes">'+mesesOp+'</select>'+
+    '<input class="fs" id="ajConta" list="ajContas" placeholder="conta (ex.: 3.1.1.03.001.00001)" style="width:230px"><datalist id="ajContas">'+Object.keys(CONTA_NOMES).filter(function(c){return /^3/.test(c);}).sort().map(function(c){return '<option value="'+c+'">'+relEsc(CONTA_NOMES[c])+'</option>';}).join('')+'</datalist>'+
+    '<input class="fs" id="ajValor" placeholder="efeito no resultado (− reduz)" style="width:200px"><input class="fs" id="ajDesc" placeholder="descrição" style="width:280px"><button class="fs adm-pri" onclick="compAddAjuste()">Incluir ajuste</button></div>';
+  // recomendações
+  var chave=DRE_ANO+'-'+String(ate+1).padStart(2,'0'),txt=REC_TXT[chave]||'';
+  h+='<div class="comp-sec">Recomendações e plano de ação — '+MF[ate]+'/'+ano+'</div>'+compPontos(ate,nat,rb,rbA)+
+    '<div class="comp-rec">'+(txt?relEsc(txt).replace(/\n/g,'<br>'):'<span class="muted">A Audicon ainda não registrou as recomendações deste mês.</span>')+'</div>'+
+    '<div class="adm-only" style="margin-top:8px"><textarea class="fs" id="recTxt" rows="5" style="width:100%;font-family:inherit" placeholder="Recomendações da Audicon para a reunião do comitê (uma por linha)">'+relEsc(txt)+'</textarea><button class="fs adm-pri" style="margin-top:6px" onclick="compSalvarRec(\''+chave+'\')">Salvar recomendações</button></div>';
+  // glossário
+  if(CFG.glossario){
+    var IND={};compIndicadores(ate).forEach(function(x){IND[x[0]]=x;});
+    var val=function(ref){if(ref.indexOf('r:')===0){var r=+ref.slice(2);return [ANT?N(compAnt(r,ate)):'–',N(compAtual(r,ate))];}
+      if(ref.indexOf('i:')===0){var x=IND[ref.slice(2)];return x?[compFmtInd(x[4],x[3]),compFmtInd(x[5],x[3])]:['–','–'];}
+      if(ref==='icv'&&IC){var ta2=0,tb2=0;IC.contas.forEach(function(c){var x=nat[c]||{a:0,b:0};ta2+=x.a;tb2+=x.b;});return [ANT?pc(tb2,rbA):'–',pc(ta2,rb)];}return ['–','–'];};
+    h+='<div class="comp-sec">Glossário — o que cada número significa</div><div class="tw"><table class="dt comp-t comp-glo"><thead><tr><th>Termo</th><th style="text-align:left">O que é</th><th style="text-align:left">Por que importa</th><th>'+anoA+'</th><th>'+ano+'</th></tr></thead><tbody>'+
+      CFG.glossario.map(function(g){var v=val(g[3]);return '<tr><td>'+relEsc(g[0])+'</td><td style="text-align:left;white-space:normal">'+relEsc(g[1])+'</td><td style="text-align:left;white-space:normal">'+relEsc(g[2])+'</td><td>'+v[0]+'</td><td>'+v[1]+'</td></tr>';}).join('')+'</tbody></table></div>'+
+      '<div class="comp-nota">Valores em R$ mil (ou %, dias, vezes), acumulados '+per+'.</div>';
+  }
+  return h;
+}
+// pontos de atenção gerados pelos números (base para as recomendações)
+function compPontos(ate,nat,rb,rbA){
+  var it=[],cls={rs:'Risco',at:'Atenção'};
+  compIndicadores(ate).forEach(function(x){var c=compClasse(x[0],x[5]);if(c==='rs'||c==='at')it.push('<b>'+x[1]+'</b> em '+cls[c].toLowerCase()+': '+compFmtInd(x[5],x[3])+(x[4]!==null?' (era '+compFmtInd(x[4],x[3])+')':'')+'.');});
+  if(ANT&&rbA){var cr=rb/rbA-1,sub=Object.keys(nat).map(function(c){return {c:c,a:nat[c].a,b:nat[c].b};}).filter(function(x){return x.b>50000&&x.a/x.b-1>cr;}).sort(function(x,y){return (y.a-y.b)-(x.a-x.b);}).slice(0,5);
+    if(sub.length)it.push('<b>Gastos que cresceram acima da receita</b> ('+(cr*100).toFixed(1).replace('.',',')+'%): '+sub.map(function(x){return relEsc(CONTA_NOMES[x.c]||x.c)+' (+'+relN((x.a-x.b)/1000,1)+' mil)';}).join(', ')+'.');}
+  return it.length?'<ul class="comp-pts">'+it.map(function(t){return '<li>'+t+'</li>';}).join('')+'</ul>':'';
+}
+function compGraficosExtras(ate,nat,rb,rbA,ano,anoA){
+  var G=CFG.gruposDespesa||[];
+  if(G.length)mkC('compGrupos','bar',G.map(function(g){return g[1];}),[
+    {label:anoA,data:G.map(function(g){var v=compAnt(g[0],ate);return v===null||!rbA||v<=0?null:+(v/rbA*100).toFixed(2);}),backgroundColor:'rgba(138,154,172,.55)',borderRadius:3},
+    {label:ano,data:G.map(function(g){var v=compAtual(g[0],ate);return !rb||v<=0?null:+(v/rb*100).toFixed(2);}),backgroundColor:'rgba(201,168,76,.85)',borderRadius:3}],
+    {indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:tc}},tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': '+String(c.raw).replace('.',',')+'% da receita bruta';}}}},
+     scales:{x:{type:'logarithmic',ticks:{color:tc,callback:function(v){return [0.1,0.5,1,2,5,10,50].indexOf(+v)>=0?v+'%':'';}},grid:{color:gc}},y:{ticks:{color:tc},grid:{display:false}}}});
+  if(ANT){
+    var dif=Object.keys(nat).map(function(c){return {c:c,d:nat[c].a-nat[c].b};}).filter(function(x){return Math.abs(x.d)>0.5;}).sort(function(x,y){return y.d-x.d;});
+    var sel=dif.slice(0,8).concat(dif.slice(-8).reverse().filter(function(x){return x.d<0;}));
+    sel=sel.filter(function(x,i,a){return a.indexOf(x)===i;});
+    mkC('compAltas','bar',sel.map(function(x){var n=CONTA_NOMES[x.c]||x.c;return n.length>32?n.slice(0,31)+'…':n;}),[{label:'Variação (R$ mil)',data:sel.map(function(x){return +(x.d/1000).toFixed(1);}),
+      backgroundColor:sel.map(function(x){return x.d>0?'rgba(231,76,60,.75)':'rgba(39,174,96,.75)';}),borderRadius:3}],
+      {indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+(c.raw>0?'+':'')+String(c.raw).replace('.',',')+' mil';}}}},
+       scales:{x:{ticks:{color:tc},grid:{color:gc}},y:{ticks:{color:tc,font:{size:11}},grid:{display:false}}}});
+  }
+}
+function compSalvarBase(){try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(e){}}
+function compAddAjuste(){
+  var conta=(document.getElementById('ajConta').value||'').trim(),v=parseBR(document.getElementById('ajValor').value||'0'),desc=(document.getElementById('ajDesc').value||'').trim();
+  if(!/^3(\.\d+)+$/.test(conta)){alert('Informe a conta de resultado do ajuste (ex.: 3.1.1.03.001.00001).');return;}
+  if(!v){alert('Informe o efeito do ajuste no resultado (negativo se reduz o lucro).');return;}
+  AJUSTES.push({ano:document.getElementById('ajAno').value,mes:+document.getElementById('ajMes').value,conta:conta,valor:-v,desc:desc});
+  compSalvarBase();COMP.aj=true;var t=document.getElementById('compVisao');if(t)t.value='com';buildComp();
+}
+function compTirarAjuste(k){if(!confirm('Tirar este ajuste?'))return;AJUSTES.splice(k,1);compSalvarBase();buildComp();}
+function compSalvarRec(chave){var t=(document.getElementById('recTxt').value||'').trim();if(t)REC_TXT[chave]=t;else delete REC_TXT[chave];compSalvarBase();buildComp();}
+function compSalvarMeta(){var v=(document.getElementById('icvMetaIn').value||'').trim();ICV_META=v?parseBR(v)/100:null;compSalvarBase();buildComp();}
 function montarPaginaComp(){
   var ares=document.querySelector('.nav-item[onclick*="setPage(\'ares\'"]')||document.querySelector('.nav-item[onclick*="setPage(\'dre\'"]');
   if(!ares||document.getElementById('page-comp'))return;
@@ -3504,6 +3612,7 @@ function montarPaginaComp(){
   ares.parentNode.insertBefore(nav,ares.nextSibling);
   var sec=document.createElement('section');sec.id='page-comp';sec.className='page';
   sec.innerHTML='<div class="fbar"><span class="fl">Período:</span><select class="fs" id="compMes" onchange="COMP.mes=+this.value;buildComp()"></select>'+
+    '<span class="fl">Visão:</span><select class="fs" id="compVisao" onchange="COMP.aj=this.value===\'com\';buildComp()"><option value="sem">Sem ajuste</option><option value="com">Com ajuste</option></select>'+
     '<label class="fs adm-only" style="cursor:pointer">📥 Importar DRE do ano anterior<input type="file" id="compFile" accept=".xls,.xlsx" style="display:none" onchange="importarDREAnterior(this.files[0])"></label>'+
     '<span id="compStatus" class="fl" style="font-size:12px"></span></div>'+
     '<div style="margin:18px 0 12px"><div class="ptitle">Comparativo</div><div class="psub" id="compSub"></div></div><div id="compBox"></div>';

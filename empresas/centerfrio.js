@@ -78,6 +78,44 @@
     paineis: ['book'],
     // tela "Comparativo": DRE acumulada × ano anterior, tendência de 14 meses, indicadores e ranking das naturezas
     comparativo: true,
+    naturezaNivel: 6,
+    // ICV dos gestores (índice de custo sobre vendas): os 32 gastos que a gestão controla, como na aba
+    // "ICV GESTORES" do modelo da Centerfrio. ICV = soma desses gastos / receita bruta.
+    icv: {
+      contas: ['3.1.3.01.001.00001', '3.1.3.01.025.00003', '3.1.3.01.020.00003', '3.1.3.01.001.00006', '3.1.3.01.010.00007',
+        '3.1.3.05.002.00002', '3.1.3.01.001.00031', '3.1.3.01.025.00005', '3.1.3.01.020.00002', '3.1.3.01.025.00002',
+        '3.1.3.01.025.00006', '3.1.3.01.010.00008', '3.1.3.05.002.00003', '3.1.3.01.010.00003', '3.1.3.01.001.00008',
+        '3.1.3.01.010.00001', '3.1.3.01.045.00003', '3.1.3.01.015.00004', '3.1.3.01.020.00007', '3.1.3.01.045.00011',
+        '3.1.3.01.001.00023', '3.1.3.01.045.00007', '3.1.3.01.020.00004', '3.1.3.01.045.00005', '3.1.3.01.045.00015',
+        '3.1.3.01.045.00017', '3.1.3.01.025.00007', '3.1.3.01.015.00005', '3.1.3.01.020.00008', '3.1.3.01.045.00014',
+        '3.1.3.01.045.00004', '3.1.3.05.002.00004']
+    },
+    // gráfico "peso de cada grupo de despesa sobre a receita bruta" (linhas da DRE)
+    gruposDespesa: [[703, 'CMV'], [70, 'Pessoal'], [71, 'Veículos'], [76, 'Gerais'], [75, 'Serviços prof.'], [74, 'Ocupação'],
+      [72, 'Manutenção'], [62, 'Comerciais'], [59, 'Depreciação'], [84, 'Financeiras'], [77, 'Tributárias']],
+    // glossário (definições do modelo da Centerfrio); os valores vêm da DRE e dos indicadores
+    glossario: [
+      ['Receita Bruta', 'Tudo o que foi faturado, antes de tirar impostos e devoluções.', 'Mostra o tamanho do negócio e a força comercial. Toda despesa deve crescer menos que ela para a margem melhorar.', 'r:6'],
+      ['Receita Líquida', 'Receita bruta menos impostos sobre venda e devoluções. É o que fica de fato com a empresa.', 'É a base de cálculo das margens.', 'r:14'],
+      ['CMV', 'Custo da mercadoria vendida: quanto pagamos pelos produtos que vendemos.', 'É o maior gasto da empresa.', 'r:703'],
+      ['Lucro Bruto', 'Receita líquida menos o custo. O que sobra para pagar a operação.', 'Mede se o preço de venda cobre bem o custo do produto.', 'r:60'],
+      ['Despesas operacionais', 'Gastos para operar: pessoal, veículos, ocupação, serviços, comerciais e depreciação.', 'É onde a gestão tem mais controle no dia a dia.', 'r:61'],
+      ['EBITDA', 'Lucro da operação antes de juros, impostos, depreciação e amortização. Aproxima o caixa gerado pela operação.', 'Mostra se o negócio, em si, gera dinheiro.', 'r:90'],
+      ['Despesas financeiras', 'Juros de empréstimos, tarifas bancárias e encargos.', 'Custo de usar dinheiro de terceiros.', 'r:84'],
+      ['Lucro antes de IRPJ/CSLL', 'Resultado depois dos juros e antes dos impostos sobre o lucro.', 'É a base de cálculo do IR e da CSLL.', 'r:85'],
+      ['Lucro Líquido', 'O que sobra no final, depois de todas as despesas, juros e impostos.', 'É o resultado para os sócios e para reinvestir.', 'r:89'],
+      ['Margem Bruta', 'Quanto sobra de cada R$ 100 de receita líquida depois de pagar o produto.', 'Mostra a qualidade do preço e da negociação de compra.', 'i:mb'],
+      ['Margem EBITDA', 'Quanto sobra de cada R$ 100 depois de pagar produto e operação.', 'Mede a eficiência operacional. Distribuidoras saudáveis ficam entre 6% e 8%.', 'i:ebitda'],
+      ['Margem Líquida', 'Quanto sobra de cada R$ 100 no final, depois de tudo.', 'É a rentabilidade final do negócio.', 'i:ml'],
+      ['Giro de estoque', 'Quantos dias, em média, o produto fica parado antes de ser vendido.', 'Menos dias = menos dinheiro parado e menos risco de perda. Meta para congelados: 30 a 45 dias.', 'i:giro'],
+      ['Prazo médio de recebimento (PMR)', 'Quantos dias o cliente leva para pagar.', 'Quanto menor, mais rápido a venda vira caixa.', 'i:pmr'],
+      ['Prazo médio de pagamento (PMP)', 'Quantos dias levamos para pagar o fornecedor.', 'Quanto maior (sem multa), mais a operação é financiada pelo fornecedor.', 'i:pmp'],
+      ['Ciclo de caixa', 'Estoque + recebimento − pagamento: quantos dias a empresa banca a operação com dinheiro próprio ou de banco.', 'Quanto menor, menos capital de giro e menos juros.', 'i:ciclo'],
+      ['Cobertura de juros', 'Quantas vezes o EBITDA paga as despesas financeiras.', 'Mede a folga para pagar dívidas. Ideal: acima de 3x.', 'i:cob'],
+      ['SG&A sobre receita líquida', 'Despesas de vendas, gerais e administrativas (sem depreciação) em relação à receita.', 'Mostra o peso da estrutura sobre as vendas.', 'i:sga'],
+      ['Taxa efetiva IRPJ/CSLL', 'Quanto do lucro antes dos impostos foi para IR e CSLL.', 'Mostra a eficiência tributária. A taxa nominal é 34%.', 'i:taxa'],
+      ['ICV dos gestores', 'Índice de custo sobre vendas: soma dos 32 gastos que a gestão controla dividida pela receita bruta.', 'Dá à liderança uma meta clara: cada real economizado nesses gastos vai direto para o resultado.', 'icv']
+    ],
     resultado: /^3/,
     DTREE: DTREE,
     DRE_RECIPE: REC,
