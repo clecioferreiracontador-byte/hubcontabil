@@ -6,7 +6,7 @@
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=2"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=11"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=12"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -1194,6 +1194,7 @@ function lalAuto(i){
   var LC=CFG.LALUR,r={adic:0,excl:0,adicD:{},exclD:{}};
   LC.temporarias.forEach(function(t){var a=lalMov(i,t[0],'c'),e=lalMov(i,t[0],'d');r.adicD[t[0]]=a;r.exclD[t[0]]=e;r.adic+=a;r.excl+=e;});
   LC.naoTemporarias.forEach(function(t){var a=lalMov(i,t[0],'dc');r.adicD['n'+t[0]]=a;r.adic+=a;});
+  (LC.naoTempDC||[]).forEach(function(t){var a=lalMov(i,t[0],'d'),e=lalMov(i,t[0],'c');r.adicD['m'+t[0]]=a;r.exclD['m'+t[0]]=e;r.adic+=a;r.excl+=e;});
   return r;
 }
 /* ---------- LALUR das planilhas (meses fechados) ----------
@@ -1205,7 +1206,7 @@ function lerPlanilhaLalur(wb){
   var out={meses:{},tipo:''};
   wb.SheetNames.forEach(function(sn){
     var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});
-    var hi=rows.findIndex(function(r){return r&&r.some(function(c){return /LUCRO REAL|^APURACAO/.test(lalPlanNorm(c));})&&r.filter(function(c){return typeof c==='number'&&c>40000&&c<60000||c instanceof Date;}).length>=3;});
+    var hi=rows.findIndex(function(r){return r&&r.some(function(c){return /LUCRO REAL|^APURACAO|^LALUR$/.test(lalPlanNorm(c));})&&r.filter(function(c){return typeof c==='number'&&c>40000&&c<60000||c instanceof Date;}).length>=3;});
     if(hi<0)return;
     var col={};
     rows[hi].forEach(function(c,j){var d=c instanceof Date?c:(typeof c==='number'&&c>40000&&c<60000?new Date(Math.round((c-25569)*864e5)):null);
@@ -1213,11 +1214,14 @@ function lerPlanilhaLalur(wb){
     if(Object.keys(col).length<3)return;
     var difer=rows.slice(0,hi+1).some(function(r){return (r||[]).some(function(c){return /DIFERIDO/.test(lalPlanNorm(c));});});
     out.tipo=difer?'diferido':'apuracao';
-    var sec='',put=function(campo,r){Object.keys(col).forEach(function(j){var v=r[j];if(typeof v!=='number')return;var m=col[j];(out.meses[m]=out.meses[m]||{})[campo]=Math.round(v*100)/100;});};
+    // a primeira aba reconhecida vale; outras abas (ESTIMADO, RESUMO...) só completam o que faltar
+    var lido={},sec='',put=function(campo,r){Object.keys(col).forEach(function(j){var v=r[j];if(typeof v!=='number')return;var m=col[j];var o=(out.meses[m]=out.meses[m]||{});
+      if(o[campo]!==undefined&&!lido[m+'|'+campo])return;lido[m+'|'+campo]=1;o[campo]=Math.round(v*100)/100;});};
     for(var i=hi+1;i<rows.length;i++){
       var r=rows[i];if(!r)continue;
-      var lb=lalPlanNorm(r[1]||r[0]);if(!lb)continue;
-      if(/^ADICOES$/.test(lb)&&!sec){sec='ad';if(!difer)put('adicAcum',r);continue;}
+      // rótulo: a primeira célula de texto (NHD/Landix na coluna B; Centerfrio na C, com "R-1" na B)
+      var lb='';for(var ci=0;ci<4&&!lb;ci++){var t0=lalPlanNorm(r[ci]);if(t0.length>3&&/[A-Z]/.test(t0))lb=t0;}if(!lb)continue;
+      if(/^ADICOES($| \(PARA)/.test(lb)&&!sec){sec='ad';if(!difer)put('adicAcum',r);continue;}
       if(/^EXCLUSOES/.test(lb)&&sec==='ad'){sec='ex';if(!difer)put('exclAcum',r);continue;}
       if(/^APURACAO - IRPJ/.test(lb)){sec='ir';continue;}
       if(/^APURACAO - CSLL/.test(lb)){sec='cs';continue;}
@@ -1228,12 +1232,15 @@ function lerPlanilhaLalur(wb){
         if(sec==='dir'&&/^SALDO FINAL/.test(lb))put('planDifIR',r);
         continue;
       }
-      var cod=/^(\d\.\d\.\d\.\d{2}\.\d{4,5})\b/.exec(lb);
+      var cod=/^(\d(?:\.\d+){3,6})\s*-/.exec(lb)||/^(\d\.\d\.\d\.\d{2}\.\d{4,5})\b/.exec(lb);
       if(/^RESULTADO ACUMULADO/.test(lb))put('lucroAcum',r);
       else if((sec==='ad'||sec==='ex')&&cod)put((sec==='ad'?'ad:':'ex:')+cod[1],r);
       else if(sec==='ir'){
         if(/^BASE CALCULO ANTES/.test(lb))put('baseAntes',r);
-        else if(/^BASE NEGATIVA COMPENSADA/.test(lb))put('prejComp',r);
+        else if(/^BASE NEGATIVA COMPENSADA|^PREJUIZO FISCAL COMPENSADO/.test(lb))put('prejComp',r);
+        else if(/^VALORES PAGOS/.test(lb))put('antIR',r);
+        else if(/^IR S\/ APLICA/.test(lb))put('retAplic',r);
+        else if(/^IRPJ DESTINADO PRONON/.test(lb))put('pronon',r);
         else if(/^BASE DE CALCULO DO IMPOSTO/.test(lb))put('baseIR',r);
         else if(/^IMPOSTO DE RENDA \(15%\)/.test(lb))put('ir15',r);
         else if(/^ADICIONAL DO IMPOSTO/.test(lb))put('adicIR',r);
@@ -1245,10 +1252,13 @@ function lerPlanilhaLalur(wb){
       }else if(sec==='cs'){
         if(/^CONTRIBUICAO SOCIAL APURADA/.test(lb))put('csApurado',r);
         else if(/^CSLL RETID/.test(lb))put('retCSplan',r);
+        else if(/^VALORES PAGOS/.test(lb))put('antCS',r);
         else if(/^CONTRIBUICAO SOCIAL A RECOLHER/.test(lb))put('csRecolher',r);
       }
     }
   });
+  // meses ainda não preenchidos na planilha (tudo zero) ficam de fora: seguem o balancete
+  Object.keys(out.meses).forEach(function(m){var x=out.meses[m];if(!Object.keys(x).some(function(k){return x[k];}))delete out.meses[m];});
   return Object.keys(out.meses).length?out:null;
 }
 // junta a planilha importada com o que já havia (a do diferido só traz o controle do diferido)
@@ -1281,19 +1291,22 @@ function lalurAplicarPlan(out){
   var P=lalurPlan.meses,LC=CFG.LALUR;
   out.forEach(function(c,i){
     var p=P[i];if(!c||!p||p.lucroAcum===undefined)return;
-    ['lucroAcum','adicAcum','exclAcum','baseAntes','prejComp','baseIR','ir15','adicIR','irApurado','pat','irRecolher','csApurado','csRecolher','prejTransp'].forEach(function(k){if(p[k]!==undefined)c[k]=p[k];});
+    ['lucroAcum','adicAcum','exclAcum','baseAntes','prejComp','baseIR','ir15','adicIR','irApurado','pat','irRecolher','csApurado','csRecolher','prejTransp','antIR','antCS','pronon'].forEach(function(k){if(p[k]!==undefined)c[k]=p[k];});
     if(c.auto){
       var a={adic:c.auto.adic,excl:c.auto.excl,adicD:Object.assign({},c.auto.adicD),exclD:Object.assign({},c.auto.exclD)};
       LC.temporarias.forEach(function(t){if(p['ad:'+t[0]]!==undefined)a.adicD[t[0]]=p['ad:'+t[0]];if(p['ex:'+t[0]]!==undefined)a.exclD[t[0]]=p['ex:'+t[0]];});
       LC.naoTemporarias.forEach(function(t){if(p['ad:'+t[0]]!==undefined)a.adicD['n'+t[0]]=p['ad:'+t[0]];});
+      (LC.naoTempDC||[]).forEach(function(t){if(p['ad:'+t[0]]!==undefined)a.adicD['m'+t[0]]=p['ad:'+t[0]];if(p['ex:'+t[0]]!==undefined)a.exclD['m'+t[0]]=p['ex:'+t[0]];});
+      if(LC.pat&&LC.pat.excluir&&p.pat!==undefined)a.patExcl=p.pat;
       a.adic=Object.keys(a.adicD).reduce(function(s,k){return s+(a.adicD[k]||0);},0);
-      a.excl=Object.keys(a.exclD).reduce(function(s,k){return s+(a.exclD[k]||0);},0);
+      a.excl=Object.keys(a.exclD).reduce(function(s,k){return s+(a.exclD[k]||0);},0)+(a.patExcl||0);
       c.auto=a;
     }
     if(c.retD){
       var rd=Object.assign({},c.retD);
       LC.retencoesIR.forEach(function(t){if(p['ret:'+t[0]]!==undefined)rd[t[0]]=p['ret:'+t[0]];});
       if(p.retCSplan!==undefined&&LC.retencoesCS.length)rd[LC.retencoesCS[0][0]]=p.retCSplan;
+      if(p.retAplic!==undefined&&LC.retAplicConta)rd[LC.retAplicConta]=p.retAplic;
       c.retD=rd;
       c.retIR=LC.retencoesIR.reduce(function(s,t){return s+(rd[t[0]]||0);},0);
       c.retCS=LC.retencoesCS.reduce(function(s,t){return s+(rd[t[0]]||0);},0);
@@ -1322,6 +1335,8 @@ function computeLALUR(uptoIdx){
     var auto=LC?lalAuto(i):null;
     var adicAcum=adicAcumR+(auto?auto.adic:0);
     var exclAcum=subvAcum+exclManAcum+(auto?auto.excl:0);
+    var patExcl=0;
+    if(LC&&LC.pat&&LC.pat.excluir){var X=lucroAcum+adicAcum-exclAcum,kk=LC.pat.limite*0.15;patExcl=X>0?kk*X/(1+kk):0;exclAcum+=patExcl;if(auto){auto.patExcl=patExcl;auto.excl+=patExcl;}}
     var baseAntes=lucroAcum+adicAcum-exclAcum;
     var limite30=baseAntes>0?baseAntes*0.3:0;
     var prejComp=Math.min(limite30,lalurPrejFiscalIni);
@@ -1341,17 +1356,23 @@ function computeLALUR(uptoIdx){
       // prejuízo que sobra: o do início menos o compensado, mais o prejuízo do ano se a base ficou negativa
       prejTransp=lalurPrejFiscalIni-prejComp+(baseAntes<0?-baseAntes:0);
       var patGasto=LC.pat.contas.reduce(function(t,c){return t+lalMov(i,c,'dc');},0);
-      var patInc=patGasto*LC.pat.incentivo,patLim=ir15*LC.pat.limite,pat=Math.max(0,Math.min(patInc,patLim));
+      var patInc=patGasto*LC.pat.incentivo,patLim=ir15*LC.pat.limite,pat=LC.pat.semTeto?patLim:Math.max(0,Math.min(patInc,patLim));
       // retenções do ano: saldo da conta menos o saldo de anos anteriores que ainda não foi baixado
       // (o saldo de janeiro de 2025 só sai quando é compensado; até lá não entra na apuração do ano)
       var sal=function(c){var v=lalSaldo(i,c[0]);if(v===null)return 0;var sa0=(lalSaldo(0,c[0])||0)-lalMov(0,c[0],'dc');return v-Math.max(0,sa0-lalMov(i,c[0],'c'));};
-      var retD={};LC.retencoesIR.concat(LC.retencoesCS).forEach(function(c){retD[c[0]]=sal(c);});
+      var retD={};LC.retencoesIR.concat(LC.retencoesCS).forEach(function(c){retD[c[0]]=c[2]==='debitos'?lalMov(i,c[0],'d'):sal(c);});
+      // antecipações (estimativas pagas): IRPJ/CSLL a recolher positivos dos meses anteriores (da planilha, quando o mês veio dela)
+      var antIR=0,antCS=0;
+      if(LC.antecipacoes){for(var q=0;q<i;q++){var pq=lalurPlan&&lalurPlan.meses&&lalurPlan.meses[q],oq=out[q];
+        var rIR=pq&&pq.irRecolher!==undefined?pq.irRecolher:(oq?oq.irRecolher:0),rCS=pq&&pq.csRecolher!==undefined?pq.csRecolher:(oq?oq.csRecolher:0);
+        if(rIR>0)antIR+=rIR;if(rCS>0)antCS+=rCS;}}
+      var pronon=LC.prononMensal?LC.prononMensal*(i+1):0;
       var retIR=LC.retencoesIR.reduce(function(t,c){return t+retD[c[0]];},0),retCS=LC.retencoesCS.reduce(function(t,c){return t+retD[c[0]];},0);
       // empresa sem IRPJ/CSLL diferido (LC.diferido = null): o bloco do diferido fica de fora
       var DF=LC.diferido,dI=DF&&DF.ir,dC=DF&&DF.cs,sI=dI?lalSaldo(i,dI.conta):null,sC=dC?lalSaldo(i,dC.conta):null;
       var espI=dI?prejTransp*dI.aliq:null,espC=dC?prejTransp*dC.aliq:null;
-      ext={auto:auto,retD:retD,patGasto:patGasto,patInc:patInc,patLim:patLim,pat:pat,retIR:retIR,retCS:retCS,
-        irRecolher:irApurado-pat-retIR,csRecolher:csApurado-retCS,
+      ext={auto:auto,retD:retD,patGasto:patGasto,patInc:patInc,patLim:patLim,pat:pat,retIR:retIR,retCS:retCS,antIR:antIR,antCS:antCS,pronon:pronon,
+        irRecolher:irApurado-pat-retIR-antIR-pronon,csRecolher:csApurado-retCS-antCS,
         difIRsaldo:sI,difIResp:espI,difIRdif:sI===null||espI===null?null:espI-sI,difCSsaldo:sC,difCSesp:espC,difCSdif:sC===null||espC===null?null:espC-sC,
         difIRres:dI?lalMov(i,dI.resultado,'dc'):0,difCSres:dC?lalMov(i,dC.resultado,'dc'):0,
         corrIR:LC.correnteIR?lalMov(i,LC.correnteIR,'dc'):0,corrCS:LC.correnteCS?lalMov(i,LC.correnteCS,'dc'):0};
@@ -1469,8 +1490,11 @@ function buildLalurTable(){
     h+=lalurRow('( + ) Adições automáticas (acum.)','Diferenças temporárias (CPC 32): créditos do ano nas contas abaixo. Não temporárias: débito − crédito do ano nas contas de despesa indedutível.','rst',ga('adic'),24);
     LC.temporarias.forEach(function(t){h+=lalurRow(t[0]+' · '+t[1],'Temporária: créditos acumulados no ano.','rs',gd(t[0],'adicD'),40);});
     LC.naoTemporarias.forEach(function(t){h+=lalurRow(t[0]+' · '+t[1],'Não temporária: débito − crédito acumulado no ano.','rs',gd('n'+t[0],'adicD'),40);});
+    (LC.naoTempDC||[]).forEach(function(t){h+=lalurRow(t[0]+' · '+t[1],'Não temporária: débitos acumulados no ano (os créditos entram nas exclusões).','rs',gd('m'+t[0],'adicD'),40);});
     h+=lalurRow('( − ) Exclusões automáticas (acum.)','Diferenças temporárias (CPC 32): débitos do ano nas contas abaixo.','rst',ga('excl'),24);
     LC.temporarias.forEach(function(t){h+=lalurRow(t[0]+' · '+t[1],'Temporária: débitos acumulados no ano.','rs',gd(t[0],'exclD'),40);});
+    (LC.naoTempDC||[]).forEach(function(t){h+=lalurRow(t[0]+' · '+t[1],'Créditos acumulados no ano (estornos).','rs',gd('m'+t[0],'exclD'),40);});
+    if(LC.pat&&LC.pat.excluir)h+=lalurRow('PAT — programa de alimentação','Como na planilha da empresa: o incentivo do PAT deduzido do IRPJ também entra nas exclusões.','rs',ga('patExcl'),40);
     h+=lalurRow('( + ) Adições acumuladas (manuais + automáticas)',null,'rs',g('adicAcum'),24);
   }else{
     h+=lalurRow('( + ) Adições acumuladas',null,'rs',g('adicAcum'),24);
@@ -1496,9 +1520,12 @@ function buildLalurTable(){
     var gr=function(k){return calc.map(function(c){return c&&c.retD?c.retD[k]:undefined;});};
     h+=lalurRow('( − ) IRPJ/IRRF retidos no ano','Saldo de cada conta sem a parte de anos anteriores ainda não compensada.','rs',g('retIR'),24);
     LC.retencoesIR.forEach(function(c){h+=lalurRow(c[0]+' · '+c[1],null,'rs',gr(c[0]),40);});
+    if(LC.antecipacoes)h+=lalurRow('( − ) Antecipações pagas (IRPJ)','IRPJ a recolher dos meses anteriores (estimativas pagas).','rs',g('antIR'),24);
+    if(LC.prononMensal)h+=lalurRow('( − ) IRPJ destinado ao PRONON','R$ '+LC.prononMensal.toLocaleString('pt-BR')+' por mês, acumulado.','rs',g('pronon'),24);
     h+=lalurRow('IRPJ a recolher (− = saldo negativo)',null,'rt',g('irRecolher'));
     h+=lalurRow('( − ) CSLL retida no ano','Saldo de cada conta sem a parte de anos anteriores ainda não compensada.','rs',g('retCS'),24);
     LC.retencoesCS.forEach(function(c){h+=lalurRow(c[0]+' · '+c[1],null,'rs',gr(c[0]),40);});
+    if(LC.antecipacoes)h+=lalurRow('( − ) Antecipações pagas (CSLL)','CSLL a recolher dos meses anteriores (estimativas pagas).','rs',g('antCS'),24);
     h+=lalurRow('CSLL a recolher (− = saldo negativo)',null,'rt',g('csRecolher'));
     if(LC.diferido){
     h+=lalurRow('IRPJ/CSLL DIFERIDOS (prejuízo fiscal × alíquota)',null,'rst lal-dif lal-dif-h',calc.map(function(){return undefined;}));

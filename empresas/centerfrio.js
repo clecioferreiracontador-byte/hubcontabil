@@ -162,17 +162,26 @@
         ciclo: { bom: 'baixo', f: [15, 45] }, cob: { bom: 'alto', f: [3, 1.5] }, sga: { bom: 'baixo', f: [0.18, 0.22] }, taxa: { bom: 'baixo', f: [0.28, 0.32] }
       }
     },
+    /* LALUR no padrão da planilha "Lalur - Centerfrio Dist e Logistica - 2026" (Lucro Real anual, sem diferido,
+       sem prejuízo fiscal a compensar). Jan–out vêm da planilha importada; de novembro em diante, do balancete:
+       - adições não temporárias: brindes, doações e festas (saldo do ano); multas = débitos do ano (créditos = exclusão);
+       - PAT: 3,6% do IRPJ a 15%, deduzido do IRPJ e também lançado nas exclusões (como a planilha faz);
+       - antecipações: IRPJ/CSLL a recolher positivos dos meses anteriores; IR s/ aplicações = débitos do ano;
+       - PRONON: R$ 200 por mês. */
     LALUR: {
       temporarias: [],
       naoTemporarias: [
         ['3.1.3.01.005.00002', 'Brindes'],
-        ['3.1.3.01.055.00002', 'Multas'],
-        ['3.1.3.01.055.00003', 'Doações'],
+        ['3.1.3.01.055.00003', 'Doações indedutíveis'],
         ['3.1.3.01.055.00004', 'Festas e confraternizações']
       ],
-      pat: { contas: ['3.1.3.01.001.00014'], incentivo: 0.15, limite: 0.04 },
-      retencoesIR: [['1.1.3.15.001', 'IR retido s/ aplicações'], ['1.1.3.15.013', 'IRPJ — antecipações pagas']],
-      retencoesCS: [['1.1.3.15.014', 'CSLL — antecipações pagas']],
+      naoTempDC: [['3.1.3.01.055.00002', 'Multas']],
+      pat: { contas: ['3.1.3.01.001.00014'], incentivo: 0.15, limite: 0.036, semTeto: true, excluir: true },
+      retencoesIR: [['1.1.3.15.001', 'IR s/ aplicações a compensar', 'debitos']],
+      retAplicConta: '1.1.3.15.001',
+      retencoesCS: [],
+      antecipacoes: true,
+      prononMensal: 200,
       diferido: null,
       correnteIR: '3.5.1.01.001', correnteCS: null
     }
