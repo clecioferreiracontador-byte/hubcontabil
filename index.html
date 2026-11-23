@@ -6,7 +6,7 @@
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=2"></script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=12"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=13"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -247,6 +247,9 @@ body:not(.is-admin) .adm-only{display:none!important}
 /* ===== LALUR: bloco do IRPJ/CSLL diferido em destaque (laranja, o mesmo dos campos de lançamento) ===== */
 /* (!important: as linhas rt/rst do LALUR têm fundo fixo com !important na 1ª coluna) */
 .dt tr.lal-dif td{background:#1C2129!important;color:#E9E1D3}
+.lal-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.lal-tabs .fs{cursor:pointer}.lal-tabs .fs.on{border-color:var(--gold);color:var(--gold)}
+.lal-opc{font-weight:700;letter-spacing:.02em}
+.dt tbody tr.lal-sec td{background:rgba(201,168,76,.10);color:var(--gold);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding-top:9px;padding-bottom:9px}
 .dt tbody tr.lal-dif td:first-child{border-left:3px solid rgba(230,126,34,.55)}
 .dt tr.lal-dif-h td{background:#2A2620!important;color:#E3B470;font-weight:700;letter-spacing:.02em}
 .dt tr.lal-dif.rt td{background:#252520!important;font-weight:700;color:#EBC386}
@@ -738,12 +741,17 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <!-- LALUR -->
 <section id="page-lalur" class="page">
   <div class="fbar">
-    <span class="finfo"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h4M6.5 11.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>Cada coluna mostra o acumulado de janeiro até aquele mês (Lucro Real Anual, balanço de redução/suspensão) · passe o mouse sobre uma linha para ver de qual conta ela vem</span>
+    <span class="finfo"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h4M6.5 11.5h3M8 1.5a4.5 4.5 0 0 0-2.5 8.2V11h5V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg><span id="lalurInfo">Cada coluna mostra o acumulado de janeiro até aquele mês (Lucro Real Anual, balanço de redução/suspensão) · passe o mouse sobre uma linha para ver de qual conta ela vem</span></span>
   </div>
   <div style="margin:18px 0 16px"><div class="ptitle">LALUR</div><div class="psub" id="lalurSub">Livro de Apuração do Lucro Real · Jan–Jul 2026</div></div>
+  <div id="lalurTabs" class="lal-tabs" style="display:none">
+    <button class="fs on" data-v="lalur" onclick="lalurVer('lalur')">Lucro real (balanço de suspensão)</button>
+    <button class="fs" data-v="est" onclick="lalurVer('est')">Estimativa</button>
+    <button class="fs" data-v="res" onclick="lalurVer('res')">Resumo a recolher</button>
+  </div>
   <div id="lalurAviso" class="lal-aviso" role="alert" style="display:none"></div>
   <div id="lalurTableWrap" style="margin-bottom:18px"></div>
-  <div class="cc adm-only" style="margin-top:16px">
+  <div class="cc adm-only" id="lalurParamCard" style="margin-top:16px">
     <div class="ctop"><div><div class="ctitle">Parâmetros Manuais</div><div class="cdesc">Adições e exclusões são lançadas na tabela acima, com o valor de cada mês (o LALUR acumula sozinho). Os lançamentos ficam salvos neste navegador; para que todos vejam, use “Publicar para todos”.</div></div></div>
     <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end">
       <div>
@@ -1570,8 +1578,98 @@ function showLalurAviso(){
   var h=IS_ADMIN?lalurAvisos():'';
   el.innerHTML=h;el.style.display=h?'block':'none';
 }
+/* ---------- Estimativa mensal (CFG.LALUR.estimativa) ----------
+   Como a aba ESTIMADO da planilha: base presumida sobre a receita do mês (8% IRPJ, 12% CSLL)
+   + demais receitas integrais; cada mês é independente (não acumula). */
+var LALUR_VIEW='lalur';
+function lalurVer(v){LALUR_VIEW=v;buildLalur();}
+function lalMovMes(i,code,tipo){var mv=BALHIST[i]&&BALHIST[i]._mov,t=0;if(!mv)return 0;
+  Object.keys(mv).forEach(function(c){if(!lalPref(code,c))return;var x=mv[c];t+=tipo==='d'?x[0]:tipo==='c'?x[1]:x[0]-x[1];});return t;}
+function computeEstimativa(){
+  var LE=CFG&&CFG.LALUR&&CFG.LALUR.estimativa,LC=CFG&&CFG.LALUR,out=[];if(!LE)return out;
+  var soma=function(i,lista,tipo){return (lista||[]).reduce(function(t,c){return t+lalMovMes(i,Array.isArray(c)?c[0]:c,tipo);},0);};
+  for(var i=0;i<12;i++){
+    if(!BALHIST[i]||!BALHIST[i]._mov){out.push(null);continue;}
+    var fat=soma(i,LE.faturamento,'c'),dev=-soma(i,LE.devolucoes,'d'),rl=fat+dev;
+    var dIRd={},dCSd={},dIR=0,dCS=0;
+    (LE.demaisIR||[]).forEach(function(c){var v=lalMovMes(i,c[0],'c');dIRd[c[0]]=v;dIR+=v;});
+    (LE.demaisCS||[]).forEach(function(c){var v=lalMovMes(i,c[0],'c');dCSd[c[0]]=v;dCS+=v;});
+    var pIR=rl*LE.presIR,baseIR=pIR+dIR,ir15=baseIR*0.15,adicIR=Math.max(0,baseIR-20000)*0.10,irAp=ir15+adicIR;
+    var patGasto=LC.pat?soma(i,LC.pat.contas,'dc'):0,patInc=patGasto*(LC.pat?LC.pat.incentivo:0),patLim=ir15*(LE.patLimite||0),pat=Math.min(patInc,patLim);
+    var retAplic=LC.retAplicConta?lalMovMes(i,LC.retAplicConta,'d'):0;
+    var pCS=rl*LE.presCS,baseCS=pCS+dIR+dCS,csAp=baseCS*0.09;
+    out.push({fat:fat,dev:dev,rl:rl,dIR:dIR,dIRd:dIRd,dCS:dCS,dCSd:dCSd,pIR:pIR,baseIR:baseIR,ir15:ir15,adicIR:adicIR,irAp:irAp,
+      patGasto:patGasto,patInc:patInc,patLim:patLim,pat:pat,retAplic:retAplic,irRecolher:irAp-pat-retAplic,
+      pCS:pCS,intCS:dIR+dCS,baseCS:baseCS,csAp:csAp,csRecolher:csAp});
+  }
+  return out;
+}
+function lalurCab(calc,tit,orig){var h='<table class="dt"><thead><tr><th>'+tit+'</th>';
+  for(var i=0;i<12;i++)h+='<th>'+M[i]+(calc[i]&&orig?'<div class="lal-orig">balancete</div>':'')+'</th>';return h+'</tr></thead><tbody>';}
+function buildLalurEst(){
+  var LE=CFG.LALUR.estimativa,LC=CFG.LALUR,E=computeEstimativa(),g=function(k){return E.map(function(e){return e?e[k]:undefined;});},
+    gd=function(o,k){return E.map(function(e){return e?e[o][k]:undefined;});},pc=function(x){return (x*100).toLocaleString('pt-BR')+'%';};
+  var h=lalurCab(E,'Estimativa',true);
+  h+=lalurRow('Faturamento bruto','Créditos do mês em '+LE.faturamento.join(', ')+'.','rst',g('fat'));
+  h+=lalurRow('( − ) Devoluções de vendas','Débitos do mês em '+LE.devolucoes.join(', ')+'.','rs',g('dev'),24);
+  h+=lalurRow('Receita bruta para a presunção',null,'rst',g('rl'));
+  h+=lalurRow('Demais receitas (IRPJ e CSLL)','Receitas tributadas integralmente: créditos do mês nas contas abaixo.','rst',g('dIR'));
+  LE.demaisIR.forEach(function(c){h+=lalurRow(c[0]+' · '+c[1],null,'rs',gd('dIRd',c[0]),40);});
+  h+=lalurRow('Demais receitas (só CSLL)','Créditos do mês nas contas abaixo (entram só na base da CSLL).','rst',g('dCS'));
+  LE.demaisCS.forEach(function(c){h+=lalurRow(c[0]+' · '+c[1],null,'rs',gd('dCSd',c[0]),40);});
+  h+='<tr class="lal-sec"><td colspan="13">Apuração · IRPJ</td></tr>';
+  h+=lalurRow('Receita presumida ('+pc(LE.presIR)+')',null,'rs',g('pIR'),24);
+  h+=lalurRow('Receita tributada integralmente (100%)',null,'rs',g('dIR'),24);
+  h+=lalurRow('Base de cálculo do IRPJ',null,'rst',g('baseIR'));
+  h+=lalurRow('Imposto de renda (15%)',null,'rs',g('ir15'),24);
+  h+=lalurRow('Adicional (10% sobre o que passa de R$ 20 mil)',null,'rs',g('adicIR'),24);
+  h+=lalurRow('Imposto de renda apurado',null,'rst',g('irAp'));
+  if(LC.pat)h+=lalurRow('( − ) PAT','15% do gasto do mês com o PAT, limitado a '+pc(LE.patLimite)+' do IRPJ a 15%.','rs',g('pat'),24);
+  if(LC.retAplicConta)h+=lalurRow('( − ) IR s/ aplicações a compensar','Débitos do mês em '+LC.retAplicConta+'.','rs',g('retAplic'),24);
+  h+=lalurRow('IRPJ a recolher',null,'rt',g('irRecolher'));
+  h+='<tr class="lal-sec"><td colspan="13">Apuração · CSLL</td></tr>';
+  h+=lalurRow('Receita presumida ('+pc(LE.presCS)+')',null,'rs',g('pCS'),24);
+  h+=lalurRow('Receita tributada integralmente (100%)','Demais receitas do IRPJ + as só da CSLL.','rs',g('intCS'),24);
+  h+=lalurRow('Base de cálculo da CSLL',null,'rst',g('baseCS'));
+  h+=lalurRow('CSLL a recolher (9%)',null,'rt',g('csRecolher'));
+  h+='</tbody></table>';
+  document.getElementById('lalurTableWrap').innerHTML='<div class="tw">'+h+'</div>';
+}
+function buildLalurResumo(){
+  var L=computeLALUR(11),E=computeEstimativa(),lin={li:[],lc:[],lt:[],ei:[],ec:[],et:[],ec2:[]},opc=[];
+  for(var i=0;i<12;i++){var l=L[i],e=E[i];
+    lin.li.push(l?l.irRecolher:undefined);lin.lc.push(l?l.csRecolher:undefined);var lt=l?l.irRecolher+l.csRecolher:undefined;lin.lt.push(lt);
+    lin.ei.push(e?e.irRecolher:undefined);lin.ec.push(e?e.csRecolher:undefined);var et=e?e.irRecolher+e.csRecolher:undefined;lin.et.push(et);
+    lin.ec2.push(lt!==undefined&&et!==undefined?Math.abs(lt-et):undefined);
+    opc.push(lt===undefined||et===undefined?'':lt<=et?'LALUR':'ESTIMATIVA');}
+  var h=lalurCab(L,'Resumo a recolher',false);
+  h+='<tr class="lal-sec"><td colspan="13">Lucro real · balanço de suspensão/redução</td></tr>';
+  h+=lalurRow('IRPJ a recolher / recuperar',null,'rs',lin.li,24);
+  h+=lalurRow('CSLL a recolher / recuperar',null,'rs',lin.lc,24);
+  h+=lalurRow('Total',null,'rst',lin.lt);
+  h+='<tr class="lal-sec"><td colspan="13">Estimativa mensal</td></tr>';
+  h+=lalurRow('IRPJ a recolher',null,'rs',lin.ei,24);
+  h+=lalurRow('CSLL a recolher',null,'rs',lin.ec,24);
+  h+=lalurRow('Total',null,'rst',lin.et);
+  h+='<tr class="rt"><td style="padding-left:12px"><span class="dlbl" data-tip="A opção com o menor total no mês (como na aba RESUMO da planilha).">Melhor opção de recolhimento</span></td>'+opc.map(function(o){return o?'<td class="lal-opc">'+o+'</td>':'<td class="dre-blank">—</td>';}).join('')+'</tr>';
+  h+=lalurRow('Diferença entre as opções','Quanto a melhor opção recolhe a menos no mês.','rs',lin.ec2,24);
+  h+='</tbody></table>';
+  document.getElementById('lalurTableWrap').innerHTML='<div class="tw">'+h+'</div>';
+}
 function buildLalur(){
   ensureTip();
+  var temEst=!!(CFG&&CFG.LALUR&&CFG.LALUR.estimativa);if(!temEst)LALUR_VIEW='lalur';
+  var tb=document.getElementById('lalurTabs');
+  if(tb){tb.style.display=temEst?'flex':'none';[].forEach.call(tb.querySelectorAll('button'),function(b){b.classList.toggle('on',b.getAttribute('data-v')===LALUR_VIEW);});}
+  var pc=document.getElementById('lalurParamCard');if(pc)pc.style.display=LALUR_VIEW==='lalur'?'':'none';
+  var inf=document.getElementById('lalurInfo');
+  if(inf)inf.textContent=LALUR_VIEW==='est'?'Cada coluna é só o mês (a estimativa não acumula): receita do mês × presunção, mais as demais receitas · passe o mouse sobre uma linha para ver de qual conta ela vem':
+    LALUR_VIEW==='res'?'Valores a recolher em cada mês pelas duas formas; a melhor opção é a de menor total no mês':
+    'Cada coluna mostra o acumulado de janeiro até aquele mês (Lucro Real Anual, balanço de redução/suspensão) · passe o mouse sobre uma linha para ver de qual conta ela vem';
+  if(LALUR_VIEW!=='lalur'){var av=document.getElementById('lalurAviso');if(av)av.style.display='none';
+    var pb0=document.getElementById('lalurPlanBox');if(pb0)pb0.style.display='none';
+    document.getElementById('lalurSub').textContent=LALUR_VIEW==='est'?'Estimativa mensal pela receita (presunção) · cada mês é independente · valores em R$':'Lucro real × estimativa · valores a recolher em cada mês · R$';
+    if(LALUR_VIEW==='est')buildLalurEst();else buildLalurResumo();return;}
   showLalurAviso();
   // O LALUR mostra só a tabela anual: cada coluna já é o acumulado de janeiro até o mês.
   document.getElementById('lalurPrejIniInput').value=fmtBR(lalurPrejFiscalIni);

@@ -179,6 +179,13 @@
       pat: { contas: ['3.1.3.01.001.00014'], incentivo: 0.15, limite: 0.036, semTeto: true, excluir: true },
       retencoesIR: [['1.1.3.15.001', 'IR s/ aplicações a compensar', 'debitos']],
       retAplicConta: '1.1.3.15.001',
+      // estimativa mensal (aba ESTIMADO da planilha): receita do mês × presunção + demais receitas integrais
+      estimativa: {
+        faturamento: ['3.1.1.01.001.00001'], devolucoes: ['3.1.1.01.009.00001'],
+        demaisIR: [['3.1.3.05.001.00001','Juros recebidos'],['3.1.3.05.001.00002','Descontos obtidos'],['3.1.3.05.001.00006','Atual. trib. a recuperar (Selic)']],
+        demaisCS: [['3.1.3.05.001.00003','Rendimento de aplicação financeira']],
+        presIR: 0.08, presCS: 0.12, patLimite: 0.04
+      },
       retencoesCS: [],
       antecipacoes: true,
       prononMensal: 200,
