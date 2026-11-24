@@ -15,6 +15,28 @@ var GRUPOS=CFG.grupos||[{id:'atacado',nome:'Atacado de alimentos',arq:'mercado/m
 var REFS={}, SEL=GRUPOS[0].id;
 try{var g0=localStorage.getItem('mercadoGrupo');if(GRUPOS.some(function(g){return g.id===g0;}))SEL=g0;}catch(e){}
 var REF=CFG.ref||null, erro=null, carregando=false;
+// período da NHD: acumulado (jan até o último mês), um mês ou "escolher período" (de/até)
+var PER={modo:'all',de:0,ate:null};
+var MC=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],MLc=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function nMeses(){return (typeof numMeses==='number'&&numMeses>0)?numMeses:12;}
+function periodo(){
+  var n=nMeses(),ult=n-1;
+  if(PER.modo==='all'){PER.de=0;PER.ate=ult;}
+  if(PER.ate===null||PER.ate>ult)PER.ate=ult;if(PER.de<0||PER.de>PER.ate)PER.de=0;
+  return {de:PER.de,ate:PER.ate};
+}
+function perMudar(v){if(v==='all'){PER.modo='all';PER.de=0;PER.ate=null;}else if(v==='range'){PER.modo='range';}else{PER.modo='m';PER.de=PER.ate=+v;}render();}
+function perDe(v){PER.de=+v;render();}
+function perAte(v){PER.ate=+v;render();}
+function barraPeriodo(){
+  var n=nMeses(),P=periodo(),o='<option value="all">Acumulado (Jan–'+MC[n-1]+')</option><option value="range">Escolher período…</option>';
+  for(var i=0;i<n;i++)o+='<option value="'+i+'">'+MLc[i]+'</option>';
+  var opt=function(a,b,sel){var h='';for(var i=a;i<=b;i++)h+='<option value="'+i+'"'+(i===sel?' selected':'')+'>'+MC[i]+'</option>';return h;};
+  var val=PER.modo==='m'?String(P.ate):PER.modo;
+  return '<div class="fbar"><span class="fl">Período:</span><select class="fs" id="mktPer" onchange="Mercado.periodo(this.value)">'+o.replace('value="'+val+'"','value="'+val+'" selected')+'</select>'+
+    (PER.modo==='range'?'<span class="fl">de:</span><select class="fs" onchange="Mercado.de(this.value)">'+opt(0,P.ate,P.de)+'</select><span class="fl">até:</span><select class="fs" onchange="Mercado.ate(this.value)">'+opt(P.de,n-1,P.ate)+'</select>':'')+
+    '<span class="finfo">Prazos e dívida usam o balancete do último mês do período; a dívida/EBITDA anualiza o EBITDA do período.</span></div>';
+}
 if(REF)REFS[SEL]=REF;
 
 function css(){
@@ -58,15 +80,16 @@ function css(){
   document.head.appendChild(s);
 }
 
-/* ---------- números da NHD (acumulado do ano, a partir do dash) ---------- */
+/* ---------- números da NHD (período escolhido, a partir do dash) ---------- */
 function nhd(){
   if(typeof CFG.dados==='function')return CFG.dados();
-  var n=(typeof numMeses==='number'&&numMeses>0)?numMeses:12;
-  var soma=function(k){var a=(typeof D!=='undefined'&&D[k])||[];var t=0;for(var i=0;i<n;i++)t+=a[i]||0;return t;};
+  var P=periodo(),n=P.ate-P.de+1;
+  var soma=function(k){var a=(typeof D!=='undefined'&&D[k])||[];var t=0;for(var i=P.de;i<=P.ate;i++)t+=a[i]||0;return t;};
   var rb=soma('rb'),rl=soma('rl'),mb=soma('mb'),eb=soma('eb'),ll=soma('ll'),cmv=soma('custos');
-  var ult=n-1, b=(typeof BALHIST!=='undefined'&&BALHIST[ult])||null;
-  if(!b&&typeof BALHIST!=='undefined'){var ks=Object.keys(BALHIST).map(Number).sort(function(x,y){return x-y;});if(ks.length){ult=ks[ks.length-1];b=BALHIST[ult];}}
-  var dias=n*30.4, anual=12/n, o={_n:n,_ult:ult};
+  // balanço do último mês do período (sem ele, o último balancete anterior)
+  var ult=P.ate, b=(typeof BALHIST!=='undefined'&&BALHIST[ult])||null;
+  if(!b&&typeof BALHIST!=='undefined'){var ks=Object.keys(BALHIST).map(Number).filter(function(k){return k<=P.ate;}).sort(function(x,y){return x-y;});if(ks.length){ult=ks[ks.length-1];b=BALHIST[ult];}}
+  var dias=n*30.4, anual=12/n, o={_n:n,_de:P.de,_ate:P.ate,_ult:ult};
   if(rl){o.mb=mb/rl*100;o.eb=eb/rl*100;o.ll=ll/rl*100;}
   if(b){
     if(b.pc)o.liq=b.ac/b.pc;
@@ -148,7 +171,7 @@ function tabelaPares(o){
   var P=REF.pares; if(!P||!P.linhas||!P.linhas.length)return '';
   var inds=REF.indicadores.filter(function(r){return P.linhas.some(function(l){return l.v&&l.v[r.k]!=null;});});
   var h='<div class="cc mkt-sec"><div class="ctop"><div><div class="ctitle">'+esc(P.titulo||'Empresas de referência')+'</div>'+
-    '<div class="cdesc">Números publicados pelas próprias empresas. '+esc(CURTO)+' no acumulado do ano.</div></div></div>'+
+    '<div class="cdesc">Números publicados pelas próprias empresas. '+esc(CURTO)+' no período escolhido ('+esc(periodoNHD(o))+').</div></div></div>'+
     '<div class="mkt-tw"><table class="mkt-t"><thead><tr><th>Empresa</th>'+inds.map(function(r){return '<th>'+esc(r.curto||r.nome)+'</th>';}).join('')+'</tr></thead><tbody>'+
     '<tr class="nhd"><td>'+esc(NOME)+' <small>'+esc(periodoNHD(o))+'</small></td>'+inds.map(function(r){return '<td>'+fv(o[r.k],r.un)+'</td>';}).join('')+'</tr>';
   P.linhas.forEach(function(l){
@@ -160,8 +183,8 @@ function tabelaPares(o){
 
 function periodoNHD(o){
   if(o._per)return o._per;
-  var MFn=(typeof MF!=='undefined')?MF:['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  return 'Jan–'+MFn[o._n-1].slice(0,3)+'/2026';
+  var de=o._de!=null?o._de:0,ate=o._ate!=null?o._ate:o._n-1;
+  return (de===ate?MLc[ate].toLowerCase():MC[de]+'–'+MC[ate])+'/2026';
 }
 
 function notas(){
@@ -191,8 +214,8 @@ function render(){
   var bom=0,tot=0;
   REF.indicadores.forEach(function(r){var s=situacao(o[r.k],r);if(s.cls!=='na'){tot++;if(s.cls!=='ruim')bom++;}});
   root.innerHTML=
-    '<div class="mkt-head"><div><div class="ptitle">Mercado</div>'+seletor()+'<div class="psub">'+esc(NOME)+' comparada com referências publicadas do setor · '+esc(REF.setor||'')+'</div></div>'+
-    '<div class="mkt-chips"><span class="mkt-chip">'+esc(CURTO)+': acumulado '+esc(periodoNHD(o))+'</span><span class="mkt-chip">Setor: '+esc(REF.periodo||'')+'</span><span class="mkt-chip">'+bom+' de '+tot+' indicadores na faixa ou melhor</span></div></div>'+
+    barraPeriodo()+'<div class="mkt-head"><div><div class="ptitle">Mercado</div>'+seletor()+'<div class="psub">'+esc(NOME)+' comparada com referências publicadas do setor · '+esc(REF.setor||'')+'</div></div>'+
+    '<div class="mkt-chips"><span class="mkt-chip">'+esc(CURTO)+': '+(o._n>1?'acumulado ':'')+esc(periodoNHD(o))+'</span><span class="mkt-chip">Setor: '+esc(REF.periodo||'')+'</span><span class="mkt-chip">'+bom+' de '+tot+' indicadores na faixa ou melhor</span></div></div>'+
     '<div class="mkt-leg"><span><i style="width:12px;height:12px;border-radius:50%;background:#5DADE2;border:2px solid var(--white)"></i>'+esc(NOME)+'</span><span><i style="width:22px;height:6px;border-radius:99px;background:rgba(201,168,76,.45)"></i>Faixa de referência do setor</span><span><i style="width:2px;height:12px;background:var(--g2)"></i>Mediana</span></div>'+
     '<div class="mkt-grid">'+REF.indicadores.map(function(r){return card(r,o);}).join('')+'</div>'+
     tabelaPares(o)+notas();
@@ -210,6 +233,6 @@ function carregar(){
 if(typeof window.adminApply==='function'){var aa=window.adminApply;window.adminApply=function(){var r=aa.apply(this,arguments);try{var p=document.getElementById('page-mercado');if(p&&p.classList.contains('active'))render();}catch(e){}return r;};}
 
 function ativo(){if(typeof CFG.ativo==='function')return CFG.ativo();var p=document.getElementById('page-mercado');return !!(p&&p.classList.contains('active'));}
-window.Mercado={render:render,nhd:nhd,grupo:grupoTrocar};
+window.Mercado={render:render,nhd:nhd,grupo:grupoTrocar,periodo:perMudar,de:perDe,ate:perAte};
 if(!REF)carregar();
 })();

@@ -7,7 +7,7 @@
     "As referências são do setor como um todo. Nenhuma fonte publica dados só da CNAE 4637; a mais próxima é o grupo 463 do IBGE (atacado de alimentos, bebidas e fumo).",
     "A faixa vai do menor ao maior valor de referência entre as fontes; a marca dourada é a mediana escolhida.",
     "As empresas listadas são muito maiores que a NHD e algumas são indústrias ou atacarejos. Servem como referência, não como meta.",
-    "A NHD é medida no acumulado do ano. Prazos usam o saldo do último balancete; dívida líquida/EBITDA usa o EBITDA anualizado.",
+    "A NHD é medida no período escolhido no topo (padrão: acumulado do ano). Prazos usam o saldo do balancete do último mês do período; dívida líquida/EBITDA usa o EBITDA do período anualizado.",
     "Os critérios variam entre fontes (ajustado x reportado, antes ou depois do IFRS 16, base de 360 ou 365 dias). As diferenças pequenas não devem ser lidas como exatas."
   ],
   "fontes": {
