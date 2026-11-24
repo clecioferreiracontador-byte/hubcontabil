@@ -259,13 +259,29 @@ body:not(.is-admin) .adm-only{display:none!important}
 .dre-oz{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
 .dre-oz input{width:15px;height:15px;accent-color:#C9A84C;cursor:pointer}
 /* ---------- modo claro (botão no topo; escolha salva no navegador) ----------
-   Clareia a área de conteúdo; topo e menu lateral continuam escuros (os logos dos clientes são brancos). */
+   Clareia o painel todo: conteúdo, topo e menu lateral. */
 .tb-tema{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid rgba(201,168,76,.35);background:transparent;color:var(--g2);cursor:pointer;padding:0}
 .tb-tema:hover,.tb-tema:focus-visible{background:rgba(201,168,76,.12);outline:none}
 .tb-tema svg{width:17px;height:17px}
 .tb-tema .t-lua{display:none}
 html[data-theme="light"] .tb-tema .t-sol{display:none}
 html[data-theme="light"] .tb-tema .t-lua{display:block}
+html[data-theme="light"],html[data-theme="light"] body{background:#F2F0EB}
+html[data-theme="light"] .topbar,html[data-theme="light"] .sidebar{--n3:#FFFFFF;--gold:#A8842E;--g2:#8C6D1F;--white:#1E2A38;--gray:#66727F;--gray2:#46525F;--green2:#1E9E57;--bdr:rgba(26,58,107,.14);color:#1E2A38}
+html[data-theme="light"] .topbar{box-shadow:0 1px 3px rgba(16,24,40,.06)}
+html[data-theme="light"] .nav-item{color:#4A5563}
+html[data-theme="light"] .nav-item:hover{background:rgba(168,132,46,.10);color:#1E2A38}
+html[data-theme="light"] .nav-item.active{background:rgba(168,132,46,.16);color:#7A5E17}
+html[data-theme="light"] .skpi{background:#F6F5F1}
+html[data-theme="light"] .tb-title.emp-troca:hover,html[data-theme="light"] .tb-title.emp-troca:focus-visible{background:rgba(26,58,107,.07)}
+/* logos dos clientes são brancos: no claro ficam escuros para aparecer no fundo branco */
+html[data-theme="light"] .tb-logo,html[data-theme="light"] .tb-aud-logo,html[data-theme="light"] .sb-aud-img{filter:brightness(0) opacity(.82)}
+html[data-theme="light"] #empMenu{background:#FFFFFF;border-color:rgba(26,58,107,.18);box-shadow:0 10px 30px rgba(16,24,40,.18)}
+html[data-theme="light"] #empMenu button{color:#1E2A38}
+html[data-theme="light"] #empMenu button:hover,html[data-theme="light"] #empMenu button:focus-visible{background:rgba(168,132,46,.12)}
+html[data-theme="light"] #empMenu button.atual{color:#7A5E17}
+html[data-theme="light"] #empMenu button small{color:#66727F}
+html[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(26,58,107,.2)}
 html[data-theme="light"] .main{--navy:#F2F0EB;--n3:#FFFFFF;--n4:#EEF1F5;--gold:#A8842E;--g2:#8C6D1F;--white:#1E2A38;--gray:#66727F;--gray2:#46525F;
   --green:#1E8E4E;--green2:#1E9E57;--red:#B83227;--red2:#D23C2C;--amber:#B9650E;--blue:#1E6BA3;--blue2:#2A7FBF;--bdr:rgba(26,58,107,.14);color:var(--white)}
 html[data-theme="light"] .main .fbar{background:#FFFFFF}
