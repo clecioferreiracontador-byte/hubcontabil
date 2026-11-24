@@ -4460,6 +4460,13 @@ function flxTab(cab,linhas,ms,acum){
 }
 function flxCard(t,v,sub,cls){return '<div class="kcard"><div class="klbl">'+t+'</div><div class="kval'+(cls?' '+cls:'')+'">'+v+'</div>'+(sub?'<div class="ksub">'+sub+'</div>':'')+'</div>';}
 function flxVer(a){FLX.aba=a;buildFluxo();}
+// legenda dos gráficos: linha = traço contínuo na cor da linha; barras = quadrado (sem a caixinha tracejada do Chart.js)
+function flxLegenda(){return {display:true,position:'top',align:'end',labels:{usePointStyle:true,pointStyleWidth:18,boxHeight:8,font:{size:11},
+  generateLabels:function(ch){var it=Chart.defaults.plugins.legend.labels.generateLabels(ch);
+    it.forEach(function(l){var ds=ch.data.datasets[l.datasetIndex];if(!ds)return;
+      if(ds.type==='line'){l.pointStyle='line';l.lineDash=[];l.lineWidth=3;l.strokeStyle=ds.borderColor;l.fillStyle=ds.borderColor;}
+      else{l.pointStyle='rectRounded';l.lineWidth=0;}});
+    return it;}}};}
 function buildFluxo(){
   var box=document.getElementById('flxBox');if(!box)return;
   [].forEach.call(document.querySelectorAll('#flxTabs button'),function(b){b.classList.toggle('on',b.getAttribute('data-v')===FLX.aba);});
@@ -4535,7 +4542,7 @@ function buildFluxo(){
       {l:'Conferência',txt:true,cls:'rst',v:mv.map(function(i){return st(F[i].difCx);}),t:st(difP)}
     ])),mv,accLbl);
     box.innerHTML=h;
-    var lab=mv.map(function(i){return M[i];}),o=bopt('val');o.plugins.legend={display:true,position:'top',align:'end',labels:{boxWidth:10,font:{size:11}}};
+    var lab=mv.map(function(i){return M[i];}),o=bopt('val');o.plugins.legend=flxLegenda();
     mkC('cFlx','bar',lab,[
       {type:'line',label:'Caixa no fim do mês (DFC)',data:v('cxDFC'),borderColor:'#C9A84C',backgroundColor:'#C9A84C',tension:.3,pointRadius:3,order:0},
       {label:'Operacional',data:v('fco'),backgroundColor:'rgba(46,204,113,.75)',borderRadius:3,order:1},
@@ -4572,7 +4579,7 @@ function buildFluxo(){
     h+=flxTab('Ponto de equilíbrio',lin,ms,accLbl);
     h+='<div class="cdesc" style="margin-top:8px">Custos variáveis: custos das mercadorias e operações, despesas comerciais'+(cvx.length?' e '+cvx.map(function(c){return c[1].toLowerCase();}).join(', '):'')+'. Os demais gastos operacionais são tratados como fixos.</div>';
     box.innerHTML=h;
-    var o2=bopt('val');o2.plugins.legend={display:true,position:'top',align:'end',labels:{boxWidth:10,font:{size:11}}};
+    var o2=bopt('val');o2.plugins.legend=flxLegenda();
     mkC('cPE','bar',ms.map(function(i){return M[i];}),[
       {type:'line',label:'Ponto de equilíbrio contábil',data:pv('pec'),borderColor:'#E74C3C',backgroundColor:'#E74C3C',borderDash:[5,4],tension:.25,pointRadius:3,order:0},
       {label:'Receita líquida',data:pv('rl'),backgroundColor:'rgba(52,152,219,.7)',borderRadius:3,order:1}],o2);
