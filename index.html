@@ -274,8 +274,11 @@ html[data-theme="light"] .nav-item:hover{background:rgba(168,132,46,.10);color:#
 html[data-theme="light"] .nav-item.active{background:rgba(168,132,46,.16);color:#7A5E17}
 html[data-theme="light"] .skpi{background:#F6F5F1}
 html[data-theme="light"] .tb-title.emp-troca:hover,html[data-theme="light"] .tb-title.emp-troca:focus-visible{background:rgba(26,58,107,.07)}
-/* logos dos clientes são brancos: no claro ficam escuros para aparecer no fundo branco */
-html[data-theme="light"] .tb-logo,html[data-theme="light"] .tb-aud-logo,html[data-theme="light"] .sb-aud-img{filter:brightness(0) opacity(.82)}
+/* logo do cliente: fica exatamente como é (versão para fundo escuro), sobre um selo azul-marinho no topo claro.
+   A marca da Audicon fica escura para aparecer no fundo branco. */
+html[data-theme="light"] .tb-logo{filter:none;background:#0F2035;border-radius:8px;padding:5px 10px}
+html[data-theme="light"] .tb-aud-logo,html[data-theme="light"] .sb-aud-img{filter:brightness(0) opacity(.82)}
+@media(max-width:860px){html[data-theme="light"] .tb-logo{padding:3px 7px;border-radius:6px;height:28px!important}}
 html[data-theme="light"] #empMenu{background:#FFFFFF;border-color:rgba(26,58,107,.18);box-shadow:0 10px 30px rgba(16,24,40,.18)}
 html[data-theme="light"] #empMenu button{color:#1E2A38}
 html[data-theme="light"] #empMenu button:hover,html[data-theme="light"] #empMenu button:focus-visible{background:rgba(168,132,46,.12)}
