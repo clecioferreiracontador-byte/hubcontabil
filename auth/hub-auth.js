@@ -177,8 +177,7 @@ const PONTOS = [
   ['M2 14h14M4 11V6h3v5M9 11V3h3v8', 'Balanço & Índices', 'Saldos finais, liquidez, endividamento e capital de giro.'],
   ['M4 2h7l3 3v11H4zM7 8h5M7 11h5', 'LALUR', 'Apuração acumulada de IRPJ e CSLL no Lucro Real.'],
   ['M3 4h12v11H3zM3 7h12M7 2v3M11 2v3', 'Agenda de fechamento', 'Tarefas do cliente e da contabilidade, com prazos e andamento.'],
-  EMP === 'nhd' ? ['M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2zM2 9h14M9 2c2 2 3 4.5 3 7s-1 5-3 7c-2-2-3-4.5-3-7s1-5 3-7z', 'Mercado e vendas', 'Comparação com o setor e mapa de vendas por estado e cidade.']
-    : ['M3 3h12v12H3zM6 7l2 2 4-4M6 12h6', 'Book de conciliação', 'Cada conta do balancete com o suporte e a conferência do mês.'],
+  ['M3 3h12v12H3zM6 7l2 2 4-4M6 12h6', 'Book de conciliação', 'Cada conta do balancete com o suporte e a conferência do mês.'],
   ['M4 2h10v14H4zM7 6h4M7 9h4M7 12h2', 'Relatório consolidado', 'DRE, balanço e indicadores em PDF e Excel para a diretoria.']
 ];
 const ic = d => '<svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="' + d + '" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -293,15 +292,34 @@ window.HubTransicao = { mostrar: mostrarTrans, esconder: esconderTrans };
 
 const raiz = document.createElement('div');
 raiz.id = 'hubLogin'; raiz.setAttribute('role', 'main');
+// A tela de login é neutra: só a marca da Audicon, sem nome nem logo de cliente (a empresa só aparece depois de
+// entrar, já a liberada para o usuário). O título e o ícone da aba também ficam neutros até liberar o painel.
 function logos(){
-  const a = document.querySelector('.tb-logo'), b = document.querySelector('.tb-aud-logo');
-  const temA = a && a.style.display !== 'none', nomeEmp = (window.HubEmpresa && HubEmpresa.info.nome) || 'NHD Foods';
-  return (temA ? '<img src="' + a.src + '" alt="' + nomeEmp + '">' : '') + (temA && b ? '<i></i>' : '') + (b ? '<img src="' + b.src + '" alt="Audicon Contadores">' : '');
+  const b = document.querySelector('.tb-aud-logo');
+  return '<img src="' + (b ? b.src : logoAud) + '" alt="Audicon Contadores">';
+}
+const FAV_NEUTRO = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0F2035"/><path d="M18 50L32 14l14 36M23.5 37h17" fill="none" stroke="#C9A84C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+const neutro = { titulo: null, fav: null, obs: null };
+function abaNeutra(){
+  const lk = () => document.querySelector('link[rel~="icon"]');
+  const aplica = () => {
+    if (document.title !== 'Hub Contábil · Audicon'){ neutro.titulo = document.title; document.title = 'Hub Contábil · Audicon'; }
+    const l = lk(); if (l && l.href !== FAV_NEUTRO){ neutro.fav = l.href; l.href = FAV_NEUTRO; }
+  };
+  aplica();
+  // o painel ainda pode trocar o título/ícone para os da empresa enquanto carrega: guarda e mantém neutro
+  neutro.obs = new MutationObserver(aplica);
+  neutro.obs.observe(document.head, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ['href'] });
+}
+function abaDaEmpresa(){
+  if (neutro.obs){ neutro.obs.disconnect(); neutro.obs = null; }
+  if (neutro.titulo) document.title = neutro.titulo;
+  const l = document.querySelector('link[rel~="icon"]'); if (l && neutro.fav) l.href = neutro.fav;
 }
 function montar(){
   raiz.innerHTML = '<section class="hl-side" aria-label="O que tem no Hub">' +
     '<div class="hl-logos">' + logos() + '</div>' +
-    '<div><div class="hl-kick">Hub Contábil · ' + ((window.HubEmpresa && HubEmpresa.info.nome) || 'NHD Foods') + '</div><h1>O fechamento do mês, <b>num lugar só</b>.</h1>' +
+    '<div><div class="hl-kick">Hub Contábil · Audicon Contadores</div><h1>O fechamento do mês, <b>num lugar só</b>.</h1>' +
     '<p class="hl-lead">Resultado, balanço, impostos e o andamento do fechamento, atualizados pela Audicon a cada balancete.</p></div>' +
     '<div class="hl-grid">' + PONTOS.map(p => '<div class="hl-pt">' + ic(p[0]) + '<div><b>' + p[1] + '</b><span>' + p[2] + '</span></div></div>').join('') + '</div>' +
     '<div class="hl-foot">Audicon Contadores · acesso restrito a usuários liberados</div></section>' +
@@ -389,7 +407,7 @@ async function verificar(forcar){
     if (liberado) return;
     liberado = true;
     mostrarTrans('Carregando o seu painel');
-    raiz.hidden = true; document.body.classList.remove('hub-locked');
+    raiz.hidden = true; document.body.classList.remove('hub-locked'); abaDaEmpresa();
     window.__hubPronto && window.__hubPronto({ email: emailDe(USER), papel: ACESSO.papel, nome: ACESSO.nome || '', book: podeBook() });
   } catch (e) {
     tela(USER && USER.emailVerified ? 'semacesso' : 'entrar', { msg: erroMsg(e) });
@@ -397,7 +415,7 @@ async function verificar(forcar){
 }
 
 document.body.classList.add('hub-locked');
-montar(); tela('carregando');
+montar(); abaNeutra(); tela('carregando');
 onAuthStateChanged(auth, u => {
   USER = u;
   if (!u){ if (liberado) location.reload(); else tela('entrar'); return; }
