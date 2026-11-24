@@ -158,8 +158,8 @@
     // tela da DRE no layout da planilha "DRE CONTÁBIL" do cliente (todas as analíticas; crédito +, débito −)
     dreLayoutBase: 'flo',
     dreLayout: [
-      { g: '3.1.1.01.001', l: 'FATURAMENTO BRUTO OPERACIONAL' },
-      { g: '3.1.1.01.009', l: '(-) DEVOLUÇÕES E CANCELAMENTOS' },
+      { g: '3.1.1.01.001', l: 'FATURAMENTO BRUTO OPERACIONAL', semPct: true },
+      { g: '3.1.1.01.009', l: '(-) DEVOLUÇÕES E CANCELAMENTOS', semPct: true },
       { t: 'FATURAMENTO LÍQUIDO OPERACIONAL', code: '', f: ['3.1.1.01.001', '3.1.1.01.009'], key: 'flo' },
       { g: '3.1.1.01.010', l: '(-) TRIBUTOS S/ RECEITA' },
       { t: 'RECEITA LÍQUIDA OPERACIONAL', code: '3.1.1.01', f: ['flo', '3.1.1.01.010'], key: 'rlq' },
