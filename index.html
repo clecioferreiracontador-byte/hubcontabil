@@ -7,7 +7,7 @@
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=3"></script>
 <script>try{if(localStorage.getItem('hubTema')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=21"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=22"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=9"></script>
@@ -274,11 +274,13 @@ html[data-theme="light"] .nav-item:hover{background:rgba(168,132,46,.10);color:#
 html[data-theme="light"] .nav-item.active{background:rgba(168,132,46,.16);color:#7A5E17}
 html[data-theme="light"] .skpi{background:#F6F5F1}
 html[data-theme="light"] .tb-title.emp-troca:hover,html[data-theme="light"] .tb-title.emp-troca:focus-visible{background:rgba(26,58,107,.07)}
-/* logo do cliente: fica exatamente como é (versão para fundo escuro), sobre um selo azul-marinho no topo claro.
-   A marca da Audicon fica escura para aparecer no fundo branco. */
-html[data-theme="light"] .tb-logo{filter:none;background:#0F2035;border-radius:8px;padding:5px 10px}
+/* logo do cliente: fica exatamente como é, do mesmo tamanho do noturno. A da Belive já tem fundo próprio; as
+   logos brancas com fundo transparente (CFG.logoSeloClaro: Landix, Centerfrio) ganham um selo azul-marinho para
+   aparecer no topo claro. A marca da Audicon fica escura para aparecer no fundo branco. */
+html[data-theme="light"] .tb-logo{filter:none}
+html[data-theme="light"] .tb-logo.logo-selo{background:#0F2035;border-radius:8px;padding:5px 10px}
 html[data-theme="light"] .tb-aud-logo,html[data-theme="light"] .sb-aud-img{filter:brightness(0) opacity(.82)}
-@media(max-width:860px){html[data-theme="light"] .tb-logo{padding:3px 7px;border-radius:6px;height:28px!important}}
+@media(max-width:860px){html[data-theme="light"] .tb-logo.logo-selo{padding:3px 7px;border-radius:6px;height:28px!important}}
 html[data-theme="light"] #empMenu{background:#FFFFFF;border-color:rgba(26,58,107,.18);box-shadow:0 10px 30px rgba(16,24,40,.18)}
 html[data-theme="light"] #empMenu button{color:#1E2A38}
 html[data-theme="light"] #empMenu button:hover,html[data-theme="light"] #empMenu button:focus-visible{background:rgba(168,132,46,.12)}
@@ -4793,6 +4795,7 @@ function aplicarCfgEmpresa(){
   var ft=document.getElementById('ftEmp');if(ft)ft.textContent=CFG.rodape||CFG.titulo;
   var lg=document.querySelector('.tb-logo');
   if(lg&&CFG.logo){lg.src=CFG.logo;lg.alt=CFG.titulo;if(CFG.logoAltura)lg.style.height=CFG.logoAltura+'px';}
+  if(lg)lg.classList.toggle('logo-selo',!!CFG.logoSeloClaro);   // logo branca transparente: selo no modo claro
   else if(lg&&CFG.semLogo)lg.style.display='none';
   document.querySelectorAll('[data-rot]').forEach(function(el){el.textContent=rot(el.getAttribute('data-rot'));});
   if(CFG.analiseResultado)montarPaginaARes();
