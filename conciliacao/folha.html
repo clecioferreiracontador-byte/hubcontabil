@@ -281,7 +281,7 @@ tr.inferido td{background:#FFF8E6}
 <div class="box">
   <div class="upl" id="recImport" data-recolher="Importação (resumo da folha e das rescisões)">
     <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h8v13l-2-1.2-2 1.2-2-1.2-2 1.2zM6 5h4M6 8h4"/></svg>Resumo da folha (PDF)</h3>
-    <div class="muted small">Folha Analítica do Protheus com a página <b>TOTAL GERAL</b>: o resumo <b>Geral</b> da competência e, se houver, o <b>Resumo de rescisões</b> (o nome do arquivo com “RESC” indica rescisões). PDF com texto é lido direto; PDF em imagem é lido por OCR neste computador (leva uns 15 segundos por página e os dados não saem daqui). O mês vem do “Comp:” do relatório.</div>
+    <div class="muted small">Folha Analítica do Protheus com a página <b>TOTAL GERAL</b> — de preferência a <b>com resumo por centro de custo</b>, em PDF com texto (leitura exata e a folha por área). O tipo é reconhecido pelo conteúdo: <b>folha mensal</b>, <b>1ª parcela do 13º</b> (só a verba da 1ª parcela) ou <b>rescisões</b> (nome do arquivo com “RESC”). PDF com texto é lido direto; PDF em imagem é lido por OCR neste computador (leva uns 15 segundos por página e os dados não saem daqui). O mês vem do “Comp:” do relatório.</div>
     <div class="paste-actions"><button class="primary" type="button" onclick="$('inFol').click()">Importar resumo da folha (PDF)</button></div>
     <div class="prog" id="prog"></div>
     <div class="chips" id="chFol"></div>
@@ -300,7 +300,7 @@ tr.inferido td{background:#FFF8E6}
   <div class="box"><h2>Objetivo</h2><p>Conferir todo mês se as contas da folha no balancete — <b>obrigações trabalhistas</b>, <b>adiantamento a empregados</b>, <b>antecipação de férias e 13º</b> e <b>provisões</b> — estão com o saldo que a folha indica.</p></div>
   <div class="box"><h2>Passo a passo</h2><ol class="steps">
     <li>No <b>Book de conciliação</b>, importar o balancete e o razão do mês (o mês escolhido lá abre aqui).</li>
-    <li>Aqui, importar o PDF do <b>resumo da folha (Geral)</b> e o do <b>resumo de rescisões</b>.</li>
+    <li>Aqui, importar o PDF da <b>Folha Analítica com resumo por centro de custo</b> (folha mensal), o do <b>resumo de rescisões</b> e, quando houver, o da <b>1ª parcela do 13º</b>.</li>
     <li>Na etapa <b>3 · Resumo da folha</b>, conferir se as somas fecham com os totais (proventos, descontos e líquido). Linha que o OCR não leu aparece em amarelo, calculada pela diferença do total; qualquer valor pode ser corrigido.</li>
     <li>Na etapa <b>2 · Conferência</b>, ver para cada conta o valor da folha, o que foi lançado no mês, o saldo esperado, o saldo do balancete e a diferença.</li>
     <li>As provisões de férias e 13º são conciliadas na tela <b>Provisões Trab.</b> e aparecem aqui só para conferência.</li>
@@ -313,7 +313,9 @@ tr.inferido td{background:#FFF8E6}
     <tr><td>R4</td><td><b>INSS</b> (2.1.10.1004) e <b>IRRF</b> (2.1.10.1005) da folha: o lançado no mês tem de bater com a folha (INSS dos empregados + INSS empresa/SAT/terceiros − salário-família − salário-maternidade; IRRF dos descontos). O saldo é transferido para a DCTFWeb (2.1.15.1011, conciliada no painel DCTFWeb).</td></tr>
     <tr><td>R5</td><td><b>Adiantamento a empregados</b> (1.1.02.2002): o adiantamento pago no mês é descontado na folha do mesmo mês — saldo esperado zero.</td></tr>
     <tr><td>R6</td><td><b>Antecipação de férias e 13º</b> (1.1.02.2003): saldo esperado = férias do mês seguinte já pagas (férias + 1/3 no próximo mês − INSS/IRRF dessas férias). O desconto “Adiantamento conf. recibo” baixa as férias pagas no mês anterior.</td></tr>
-    <tr><td>R7</td><td>Diferença até R$ 0,01 é arredondamento.</td></tr>
+    <tr><td>R7</td><td><b>1ª parcela do 13º</b>: o líquido é pago a débito da antecipação (1.1.02.2003) e fica lá até a folha de dezembro; o FGTS dela entra no FGTS a recolher do mês.</td></tr>
+    <tr><td>R8</td><td><b>Folha por área</b>: a participação de cada área (centros de custo 11 e 12 = despesas 3.2.01; 13 = fábrica 3.9.02) na folha tem de ser parecida com a da contabilidade — diferença acima de 5 p.p. indica lançamento na área errada.</td></tr>
+    <tr><td>R9</td><td>Diferença até R$ 0,01 é arredondamento.</td></tr>
   </tbody></table></div>
 </section>
 
@@ -326,6 +328,10 @@ tr.inferido td{background:#FFF8E6}
       <tbody id="confBody"></tbody>
     </table></div>
     <div class="muted small" id="confInfo" style="margin-top:8px"></div>
+  </div>
+  <div class="box">
+    <h2>Folha por área × contabilidade <span class="muted small">· custo da fábrica × despesas</span></h2>
+    <div id="areaBox"></div>
   </div>
 </section>
 
@@ -422,7 +428,7 @@ function montarLinhas(pal, larg){
   pal.sort((a, b) => a.y - b.y || a.x - b.x);
   const L = [];
   pal.forEach(w => { const l = L.find(x => Math.abs(x.y - w.y) <= x.h * 0.6); if (l) l.w.push(w); else L.push({ y: w.y, h: Math.max(w.h, 4), w: [w] }); });
-  return L.map(l => { l.w.sort((a, b) => a.x - b.x); const esq = l.w.filter(w => w.x < larg * 0.495).map(w => w.s).join(' '), dir = l.w.filter(w => w.x >= larg * 0.495).map(w => w.s).join(' '); return { esq, dir, txt: l.w.map(w => w.s).join(' ') }; });
+  return L.map(l => { l.w.sort((a, b) => a.x - b.x); const esq = l.w.filter(w => w.x < larg * 0.495).map(w => w.s).join(' '), dir = l.w.filter(w => w.x >= larg * 0.495).map(w => w.s).join(' '); return { esq, dir, txt: l.w.map(w => w.s).join(' '), w: l.w, larg }; });
 }
 async function palavrasTexto(page){
   const vp = page.getViewport({ scale: 1 }), c = await page.getTextContent();
@@ -439,7 +445,8 @@ async function palavrasOCR(page, worker){
   return { pal, larg: cv.width, texto: r.data.text };
 }
 const VAL = '(\\d{1,3}(?:\\.\\d{3})*,\\d{2})';
-const RE_ITEM = new RegExp('^\\D{0,3}(\\d{4})\\s*[^A-Za-z0-9À-ú]*\\s*(.+?)\\s+(\\d{1,4})\\s+' + VAL + '\\s+' + VAL + '\\s*$');
+// referência com ou sem centavos (no resumo por centro de custo vem "998"; no total geral, "1.532,00")
+const RE_ITEM = new RegExp('^\\D{0,3}(\\d{4})\\s*[^A-Za-z0-9À-ú]*\\s*(.+?)\\s+(\\d{1,4})\\s+(\\d{1,3}(?:\\.\\d{3})*(?:,\\d{2})?)\\s+' + VAL + '\\s*$');
 function lerItem(t){
   t = String(t || '').replace(/[|]/g, ' ').replace(/\s+/g, ' ').trim(); if (!t) return null;
   const m = t.match(RE_ITEM); if (!m) return null;
@@ -481,10 +488,38 @@ function fechar(R){
   R.chk = { prov: r2(tudo('P') - (R.tot.prov || 0)), desc: r2(tudo('D') - (R.tot.desc || 0)), liq: r2((R.tot.prov || 0) - (R.tot.desc || 0) - (R.tot.liq || 0)), inferidos: R.itens.filter(i => i.inferido).length };
   return R;
 }
+// página de um centro de custo (Folha Analítica "Resumo por centro de custo"): código, nome, filial e totais
+function lerCC(linhas, R){
+  const T = linhas.map(l => l.txt).join('\n');
+  const m = T.match(/Centro Custo:\s*([0-9A-Z]{4,})/); if (!m || /^\?+$/.test(m[1])) return null;
+  const fil = (T.match(/\d{2}\.\d{3}\.\d{3}\/(\d{4})-\d{2}/) || [])[1] || '';
+  // nome: na linha do endereço, as palavras depois do endereço (a partir de ~36% da largura) até a barra "/ EMPRESA"
+  const ln = linhas.find(l => /\//.test(l.txt) && /Emiss/.test(l.txt) && l.w);
+  let nome = '';
+  if (ln){ const parts = [];
+    for (const w of ln.w.filter(w => w.x >= (ln.larg || 612) * 0.36)){ if (/^\//.test(w.s)) break; const i = w.s.indexOf('/'); if (i >= 0){ if (i) parts.push(w.s.slice(0, i)); break; } parts.push(w.s); }
+    nome = parts.join(' ').trim(); }
+  const somaL = lado => r2(R.itens.filter(i => i.lado === lado).reduce((a, i) => a + i.valor, 0));
+  return { cc: m[1], nome, filial: fil, prov: !isNaN(R.tot.prov) ? R.tot.prov : somaL('P'), desc: !isNaN(R.tot.desc) ? R.tot.desc : somaL('D'),
+    liq: R.tot.liq, fgts: r2((R.tot.fgtsSefip || 0) + (R.tot.fgts13Sefip || 0)), inss: R.tot.inssTotal || 0, itens: R.itens };
+}
 async function lerFolhaPdf(f){
   const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
   let worker = null;
   try {
+    // PDF com texto: lê todas as páginas — os centros de custo (se o relatório for por centro de custo) e o TOTAL GERAL
+    const p1 = await palavrasTexto(await pdf.getPage(1));
+    if (p1.pal.length > 30){
+      const ccs = []; let total = null;
+      for (let p = 1; p <= pdf.numPages; p++){
+        prog('Lendo a página ' + p + ' de ' + pdf.numPages + ' de “' + f.name + '”…');
+        const { pal, larg } = p === 1 ? p1 : await palavrasTexto(await pdf.getPage(p));
+        const L = montarLinhas(pal, larg), R = lerPagina(L, '');
+        if (R.temTotal && !isNaN(R.tot.liq)){ total = Object.assign(R, { ocr: false, pagina: p }); continue; }
+        const c = lerCC(L, R); if (c) ccs.push(c);
+      }
+      if (total) return fechar(Object.assign(total, ccs.length ? { ccs } : {}));
+    }
     // procura a página TOTAL GERAL do fim para o começo (até 4 páginas)
     for (let p = pdf.numPages, n = 0; p >= 1 && n < 4; p--, n++){
       const page = await pdf.getPage(p);
@@ -502,24 +537,32 @@ async function lerFolhaPdf(f){
     throw new Error('não achei a página TOTAL GERAL com o líquido');
   } finally { if (worker) await worker.terminate(); prog(''); }
 }
+// tipo do relatório: 1ª parcela do 13º (só a verba da 1ª parcela nos proventos), rescisões (nome com “RESC”) ou folha mensal
+const TIPOS = { geral: 'Folha mensal', resc: 'Rescisões', p13: '1ª parcela do 13º' };
+function tipoFolha(R, nome){
+  const P = R.itens.filter(i => i.lado === 'P');
+  if (P.length && P.every(i => /1\S? ?PARCELA 13|ADIANT\S* 13|13\S? SAL\S* 1\S? PARC/.test(norm(i.desc)))) return 'p13';
+  if (/RESC/i.test(nome)) return 'resc';
+  return 'geral';
+}
 async function importarFolha(files){
   for (const f of files){
     try {
       prog('Lendo “' + f.name + '”…');
       const R = await lerFolhaPdf(f);
       if (!R.comp) throw new Error('não achei a competência (“Comp: mm/aaaa”) no relatório');
-      const tipo = /RESC/i.test(f.name) ? 'resc' : 'geral';
+      const tipo = tipoFolha(R, f.name);
       const md = dados.meses[R.comp] = dados.meses[R.comp] || {};
       md[tipo] = Object.assign(R, { arquivo: f.name, em: new Date().toISOString() });
       if (/CAIXA/i.test(f.name)) msg('“' + esc(f.name) + '” parece ser o resumo por <b>caixa</b>; a conciliação usa o resumo <b>Geral</b> da competência — importe o Geral se ele também existir.', 'warn');
       const fecha = ok(R.chk.prov) && ok(R.chk.desc) && ok(R.chk.liq), inf = R.itens.filter(i => i.inferido).length;
-      msg(`“${esc(f.name)}” (${tipo === 'resc' ? 'rescisões' : 'folha geral'}, ${mesLbl(R.comp)}${R.ocr ? ', lido por OCR' : ''}): ${R.itens.length} verbas · líquido ${fmt(R.tot.liq)}${inf ? ` · ${inf} linha(s) calculada(s) pela diferença do total — confira na etapa 3` : ''}${fecha ? '' : ' · <b>as somas não fecham com os totais</b>, confira na etapa 3'}.`, fecha && !inf ? 'ok' : 'warn');
+      msg(`“${esc(f.name)}” (${TIPOS[tipo].toLowerCase()}, ${mesLbl(R.comp)}${R.ocr ? ', lido por OCR' : ''}${R.ccs ? ', ' + R.ccs.length + ' centros de custo' : ''}): ${R.itens.length} verbas · líquido ${fmt(R.tot.liq)}${inf ? ` · ${inf} linha(s) calculada(s) pela diferença do total — confira na etapa 3` : ''}${fecha ? '' : ' · <b>as somas não fecham com os totais</b>, confira na etapa 3'}.`, fecha && !inf ? 'ok' : 'warn');
       mesAtual = R.comp;
     } catch(e){ msg('Erro ao ler “' + esc(f.name) + '”: ' + esc(e.message), 'err'); prog(''); }
   }
   salvar(); await render();
 }
-function tirarArq(m, tipo){ const md = dados.meses[m]; if (!md || !md[tipo] || !confirm('Remover o resumo ' + (tipo === 'resc' ? 'de rescisões' : 'geral') + ' de ' + mesLbl(m) + '?')) return; delete md[tipo]; salvar(); render(); }
+function tirarArq(m, tipo){ const md = dados.meses[m]; if (!md || !md[tipo] || !confirm('Remover o resumo “' + TIPOS[tipo] + '” de ' + mesLbl(m) + '?')) return; delete md[tipo]; salvar(); render(); }
 function setValor(m, tipo, i, v){
   const R = ((dados.meses[m] || {})[tipo]); if (!R || !R.itens[i]) return;
   const n = num(v); if (isNaN(n)) { render(); return; }
@@ -533,6 +576,7 @@ const CONTAS = {
   sal: ['2.1.10.1001', 'Salários e pró-labore a pagar'], pens: ['2.1.10.1002', 'Pensão alimentícia a recolher'], fgts: ['2.1.10.1003', 'FGTS a recolher'],
   inss: ['2.1.10.1004', 'INSS folha a recolher'], irrf: ['2.1.10.1005', 'IRRF folha a recolher'], sind: ['2.1.10.1006', 'Contribuição sindical/assistencial'],
   resc: ['2.1.10.1010', 'Rescisões a pagar'], adi: ['1.1.02.2002', 'Adiantamento a empregados'], ant: ['1.1.02.2003', 'Antecipação de férias e 13º salário'],
+  p13: ['1.1.02.2003', '1ª parcela do 13º salário (antecipação)'],
   pfer: ['2.1.10.2001', 'Provisão de férias'], p13: ['2.1.10.2002', 'Provisão de 13º salário']
 };
 async function carregarMeses(){
@@ -560,7 +604,7 @@ const bc = c => balMes && balMes.contas ? (balMes.contas[c] || { sa: 0, d: 0, c:
 // ===================== conciliação =====================
 const soma = (R, lado, re) => R ? r2(R.itens.filter(i => i.lado === lado && re.test(norm(i.desc))).reduce((a, i) => a + i.valor, 0)) : NaN;
 function calcular(m){
-  const md = dados.meses[m] || {}, G = md.geral, Rs = md.resc, L = [];
+  const md = dados.meses[m] || {}, G = md.geral, Rs = md.resc, P13 = md.p13, L = [];
   const t = (R, k) => R && !isNaN(R.tot[k]) ? R.tot[k] : 0;
   // conta de passivo: valores credores positivos; ativo: devedores positivos
   const pas = c => { const b = bc(c); return b ? { sa: r2(-b.sa), d: r2(b.d), c: r2(b.c), sf: r2(-b.sf), lanc: r2(b.c) } : null; };
@@ -579,7 +623,7 @@ function calcular(m){
     L.push({ k: 'resc', folha, lanc: b ? b.lanc : NaN, dLanc: b && !isNaN(folha) ? r2(b.lanc - folha) : NaN, esp: NaN, sf: b ? b.sf : NaN, dif: NaN, info: true,
       como: (Rs ? 'Líquido do resumo de rescisões. ' : 'Importe o resumo de rescisões. ') + (G && !isNaN(totLanc) ? 'Salários + rescisões lançados ' + fmt(totLanc) + ' × líquido total da folha ' + fmt(t(G, 'liq')) + ': ' + chk(r2(totLanc - t(G, 'liq'))) + '. ' : '') + 'Saldo = rescisões pagas depois do fim do mês (confira no razão).' }); }
   linhaPas('pens', soma(G, 'D', /PENS/), 'Descontos de pensão alimentícia da folha');
-  linhaPas('fgts', G ? r2(t(G, 'fgtsSefip') + t(G, 'fgts13Sefip')) : NaN, G ? 'FGTS (SEFIP) ' + fmt(t(G, 'fgtsSefip')) + ' + FGTS 13º (SEFIP) ' + fmt(t(G, 'fgts13Sefip')) + ' · FGTS do mês na folha (com rescisões): ' + fmt(r2(t(G, 'fgtsDep') + t(G, 'fgts13Dep'))) : 'Importe o resumo da folha');
+  linhaPas('fgts', G ? r2(t(G, 'fgtsSefip') + t(G, 'fgts13Sefip') + t(P13, 'fgts13Sefip')) : NaN, G ? 'FGTS (SEFIP) ' + fmt(t(G, 'fgtsSefip')) + ' + FGTS 13º (SEFIP) ' + fmt(t(G, 'fgts13Sefip')) + (P13 ? ' + FGTS da 1ª parcela do 13º (SEFIP) ' + fmt(t(P13, 'fgts13Sefip')) : '') + ' · FGTS do mês na folha (com rescisões): ' + fmt(r2(t(G, 'fgtsDep') + t(G, 'fgts13Dep'))) : 'Importe o resumo da folha');
   // INSS e IRRF: conferidos pelo lançado no mês; o saldo vai para a DCTFWeb
   { const segurado = soma(G, 'D', /^INSS(?!.*PROXIMO)|INSS 13|INSS NAS FERIAS/), famil = soma(G, 'P', /SALARIO FAMILIA/), mater = soma(G, 'P', /SALARIO MATERNIDADE/);
     const folha = G ? r2(segurado + t(G, 'inssTotal') - famil - mater) : NaN, b = pas(CONTAS.inss[0]);
@@ -597,13 +641,58 @@ function calcular(m){
   { const b = atv(CONTAS.ant[0]), prox = soma(G, 'P', /PROXIMO MES/), dProx = soma(G, 'D', /PROXIMO MES/), recibo = soma(G, 'D', /ADIANTAMENTO CONF\.? ?RECIBO/);
     const esp = G ? r2(prox - dProx) : NaN;
     L.push({ k: 'ant', folha: recibo, lanc: b ? b.c : NaN, dLanc: b && !isNaN(recibo) ? r2(b.c - recibo) : NaN, esp, sf: b ? b.sf : NaN, dif: b && !isNaN(esp) ? r2(b.sf - esp) : NaN, ativo: true,
-      como: 'Lançado = baixa das férias pagas no mês anterior (desconto “Adiantamento conf. recibo” ' + fmt(recibo) + '). Esperado = férias do próximo mês já pagas: ' + fmt(prox) + ' − descontos delas ' + fmt(dProx) + '. 13º adiantado nas férias também fica aqui até dezembro.' }); }
+      como: 'Lançado = baixa das férias pagas no mês anterior (desconto “Adiantamento conf. recibo” ' + fmt(recibo) + '). Esperado = férias do próximo mês já pagas: ' + fmt(prox) + ' − descontos delas ' + fmt(dProx) + '. 13º adiantado nas férias também fica aqui até dezembro.' + (p13Ano(m) ? ' <b>A 1ª parcela do 13º (' + fmt(p13Ano(m).tot.liq) + ', folha de ' + mesLbl(p13Ano(m).comp) + ') também fica aqui depois de paga, até a folha de dezembro</b>: se ela já foi paga, a diferença desta linha é ela.' : '') }); }
+  // 1ª parcela do 13º: o pagamento entra a débito na antecipação (1.1.02.2003)
+  if (P13){ const b = atv(CONTAS.ant[0]);
+    L.push({ k: 'p13', folha: t(P13, 'liq'), lanc: b ? b.d : NaN, dLanc: b ? r2(b.d - t(P13, 'liq')) : NaN, esp: NaN, sf: b ? b.sf : NaN, dif: NaN, info: true, ativo: true,
+      como: 'Líquido da folha da 1ª parcela do 13º × débitos do mês na antecipação. Se a parcela for paga no mês seguinte, a conferência é na competência do pagamento (os débitos do mês também trazem as férias pagas).' }); }
   // provisões: conforme a tela Provisões Trab.
   { const sup = lsGet('aud-hub-suportes', {});
     ['pfer', 'p13'].forEach(k => { const c = CONTAS[k][0], b = pas(c), s = sup[c] && sup[c].fonte === 'Provisões Trab.' ? sup[c] : null, esp = s ? r2(-s.saldo) : NaN;
       L.push({ k, folha: NaN, lanc: b ? b.lanc : NaN, dLanc: NaN, esp, sf: b ? b.sf : NaN, dif: b && !isNaN(esp) ? r2(b.sf - esp) : NaN, prov: true,
         como: s ? 'Saldo do controle da tela Provisões Trab. (' + esc(s.detalhe || '') + ')' : 'Abra a tela Provisões Trab. deste mês para trazer o saldo do controle.' }); }); }
   return L;
+}
+// 1ª parcela do 13º do mesmo ano já importada (até o mês)
+function p13Ano(m){ const ks = Object.keys(dados.meses).filter(x => x.slice(0, 4) === m.slice(0, 4) && x <= m && dados.meses[x].p13).sort(); return ks.length ? dados.meses[ks[ks.length - 1]].p13 : null; }
+// ===================== folha por área (centros de custo) × contas de pessoal =====================
+// NHD: centro de custo 11 = administrativo, 12 = comercial, 13 = produção. Despesas com pessoal em 3.2.01 e
+// custo de pessoal da fábrica em 3.9.02. Remuneração = salários, férias, 13º, gratificações, pró-labore etc.;
+// encargos (INSS e FGTS) à parte.
+const AREAS = [
+  { id: 'desp', nome: 'Administrativo e comercial', cc: /^1[12]/, conta: '3.2.01', cc2: 'CC 11 e 12' },
+  { id: 'fab', nome: 'Produção (fábrica)', cc: /^13/, conta: '3.9.02', cc2: 'CC 13' }
+];
+const REMUN = /SALAR|ORDENAD|FERIAS|13|GRATIF|PRO.?LABORE|HORA|ADICIONA|COMISS|PREMIO|AVISO|INDENIZ|RESCIS|DSR/, ENC = /INSS|FGTS|PREVID/;
+function porArea(m){
+  const G = (dados.meses[m] || {}).geral; if (!G || !G.ccs) return null;
+  const semReemb = c => r2(c.prov - c.itens.filter(i => i.lado === 'P' && /SALARIO FAMILIA|SALARIO MATERNIDADE/.test(norm(i.desc))).reduce((a, i) => a + i.valor, 0));
+  const tot = { prov: 0, fgts: 0, rem: 0, enc: 0 };
+  const A = AREAS.map(a => {
+    const cs = G.ccs.filter(c => a.cc.test(c.cc)), contas = balMes && balMes.contas ? Object.keys(balMes.contas).filter(c => c.indexOf(a.conta + '.') === 0) : [];
+    const mov = f => r2(contas.filter(c => f(norm(balMes.contas[c].desc))).reduce((s, c) => s + (balMes.contas[c].d || 0) - (balMes.contas[c].c || 0), 0));
+    const ehRem = d => REMUN.test(d) && !ENC.test(d), ehEnc = d => ENC.test(d);
+    const x = { a, ccs: cs, prov: r2(cs.reduce((s, c) => s + semReemb(c), 0)), fgts: r2(cs.reduce((s, c) => s + c.fgts, 0)), rem: balMes ? mov(ehRem) : NaN, enc: balMes ? mov(ehEnc) : NaN,
+      contas: contas.filter(c => ehRem(norm(balMes.contas[c].desc)) || ehEnc(norm(balMes.contas[c].desc))) };
+    tot.prov += x.prov; tot.fgts += x.fgts; tot.rem += x.rem || 0; tot.enc += x.enc || 0; return x; });
+  const fora = G.ccs.filter(c => !AREAS.some(a => a.cc.test(c.cc)));
+  return { A, tot, fora };
+}
+function renderAreas(){
+  const box = $('areaBox'); if (!box) return;
+  const md = dados.meses[mesAtual] || {}, G = md.geral;
+  if (!G){ box.innerHTML = '<div class="empty">Importe a folha mensal de ' + mesLbl(mesAtual) + '.</div>'; return; }
+  const X = porArea(mesAtual);
+  if (!X){ box.innerHTML = '<div class="empty">A folha de ' + mesLbl(mesAtual) + ' foi importada sem os centros de custo. Importe a <b>Folha Analítica com resumo por centro de custo</b> (PDF com texto) para ver a folha por área.</div>'; return; }
+  const pc = (v, t) => t ? (v / t * 100).toFixed(1).replace('.', ',') + '%' : '—';
+  const dpp = (a, ta, b, tb) => { if (!ta || !tb) return '<span class="muted small">—</span>'; const d = (a / ta - b / tb) * 100; return Math.abs(d) <= 5 ? '<span class="dok">✓ ' + (d >= 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + ' p.p.</span>' : '<span class="dbad">' + (d >= 0 ? '+' : '') + d.toFixed(1).replace('.', ',') + ' p.p.</span>'; };
+  const T = X.tot;
+  box.innerHTML = `<div class="tscroll" style="max-height:none"><table class="pc"><thead><tr><th class="left">Área</th><th>Proventos da folha</th><th>% da folha</th><th>Remuneração na contabilidade</th><th>% na contabilidade</th><th>Diferença de participação</th><th>FGTS da folha</th><th>INSS e FGTS na contabilidade</th></tr></thead><tbody>` +
+    X.A.map(x => `<tr><td class="left"><b>${esc(x.a.nome)}</b><div class="muted small">${x.a.cc2} · contas ${x.a.conta}: ${x.contas.map(c => esc(c + ' ' + (balMes.contas[c].desc || ''))).join(', ') || 'sem balancete'}</div><div class="muted small">${x.ccs.map(c => esc(c.cc + (c.nome ? ' ' + c.nome : '') + (c.filial ? ' (fil. ' + c.filial + ')' : ''))).join(' · ')}</div></td>` +
+      `<td>${fmt(x.prov)}</td><td>${pc(x.prov, T.prov)}</td><td>${fmt(x.rem)}</td><td>${pc(x.rem, T.rem)}</td><td>${dpp(x.prov, T.prov, x.rem, T.rem)}</td><td>${fmt(x.fgts)}</td><td>${fmt(x.enc)}</td></tr>`).join('') +
+    `</tbody><tfoot><tr><td class="left">Total</td><td>${fmt(T.prov)}</td><td>100%</td><td>${fmt(T.rem)}</td><td>100%</td><td></td><td>${fmt(T.fgts)}</td><td>${fmt(T.enc)}</td></tr></tfoot></table></div>` +
+    (X.fora.length ? '<div class="msg warn" style="margin-top:8px">Centros de custo sem área definida: ' + X.fora.map(c => esc(c.cc)).join(', ') + ' (não entram na tabela).</div>' : '') +
+    '<div class="muted small" style="margin-top:8px">Proventos da folha por centro de custo, sem salário-família e salário-maternidade (reembolsados pelo INSS). Remuneração na contabilidade = débitos − créditos do mês nas contas de salários, férias, 13º, gratificações e pró-labore de cada área. Os valores não precisam ser iguais (férias e 13º podem vir da provisão), mas a <b>participação de cada área</b> tem de ser parecida: diferença acima de 5 p.p. indica lançamento na área errada (custo × despesa).</div>';
 }
 
 // ===================== telas =====================
@@ -612,11 +701,11 @@ async function render(){
   const L = calcular(mesAtual), md = dados.meses[mesAtual] || {};
   $('stTopo').textContent = (balMes ? 'Balancete de ' + mesLbl(mesAtual) + ' carregado do Book' : 'Sem balancete de ' + mesLbl(mesAtual) + ' no Book') + ' · ' + (RAZ.__ok ? 'razão do mês carregado' : 'sem razão do mês') + '.';
   $('titConf').textContent = '· ' + mesLbl(mesAtual) + ' · data-base ' + br(fimMes(mesAtual));
-  renderChips(); renderConf(L, md); renderKpis(L); renderResumo(md); renderRazao(); publicarSuportes(L);
+  renderChips(); renderConf(L, md); renderKpis(L); renderAreas(); renderResumo(md); renderRazao(); publicarSuportes(L);
 }
 function renderChips(){
   const ch = [];
-  Object.keys(dados.meses).sort().reverse().forEach(m => ['geral', 'resc'].forEach(t => { const R = dados.meses[m][t]; if (R) ch.push(`<span class="chip" title="${esc(R.arquivo)}">${mesLbl(m)} · ${t === 'resc' ? 'Rescisões' : 'Geral'}${R.ocr ? ' (OCR)' : ''}<button type="button" onclick="tirarArq('${m}','${t}')" aria-label="Remover">×</button></span>`); }));
+  Object.keys(dados.meses).sort().reverse().forEach(m => ['geral', 'resc', 'p13'].forEach(t => { const R = dados.meses[m][t]; if (R) ch.push(`<span class="chip" title="${esc(R.arquivo)}">${mesLbl(m)} · ${TIPOS[t]}${R.ccs ? ' · por centro de custo' : ''}${R.ocr ? ' (OCR)' : ''}<button type="button" onclick="tirarArq('${m}','${t}')" aria-label="Remover">×</button></span>`); }));
   $('chFol').innerHTML = ch.join('') || '<span class="muted small">Nenhum resumo importado.</span>';
 }
 function renderKpis(L){
@@ -633,13 +722,13 @@ function renderConf(L){
     return `<tr><td><b>${c}</b><div class="muted small">${esc((b && b.desc) || n)}</div></td><td>${v(l.folha)}</td><td>${v(l.lanc)}</td><td>${l.prov ? '<span class="muted small">—</span>' : chk(l.dLanc, 'sem dados')}</td><td>${l.info ? '<span class="muted small">—</span>' : v(l.esp)}</td><td>${v(l.sf)}</td><td>${l.info ? '<span class="muted small">—</span>' : chk(l.dif, !balMes ? 'sem balancete' : l.prov ? 'sem controle' : 'sem folha')}</td><td class="ex">${l.como || ''}</td></tr>`; };
   const by = k => L.filter(l => l.k === k);
   $('confBody').innerHTML = grupo('Obrigações trabalhistas (passivo: saldo credor positivo)') + ['sal', 'resc', 'pens', 'fgts', 'inss', 'irrf', 'sind'].flatMap(by).map(row).join('') +
-    grupo('Adiantamentos (ativo: saldo devedor positivo)') + ['adi', 'ant'].flatMap(by).map(row).join('') +
+    grupo('Adiantamentos (ativo: saldo devedor positivo)') + ['adi', 'ant', 'p13'].flatMap(by).map(row).join('') +
     grupo('Provisões da folha (conciliadas na tela Provisões Trab.)') + ['pfer', 'p13'].flatMap(by).map(row).join('');
   $('confInfo').innerHTML = '“Lançado no mês” = créditos no mês (passivo) ou baixas do mês (adiantamentos), pelo balancete. O saldo esperado de cada conta vai sozinho para o Book de conciliação como suporte (fonte “Fol. Pag.”).';
 }
 function renderResumo(md){
   $('titRes').textContent = '· ' + mesLbl(mesAtual);
-  const blocos = ['geral', 'resc'].filter(t => md[t]);
+  const blocos = ['geral', 'resc', 'p13'].filter(t => md[t]);
   if (!blocos.length){ $('resBox').innerHTML = `<div class="empty">Sem resumo da folha de ${mesLbl(mesAtual)}. Importe o PDF no topo.</div>`; return; }
   $('resBox').innerHTML = blocos.map(t => { const R = md[t];
     const tab = lado => { const I = R.itens.map((it, i) => [it, i]).filter(([it]) => it.lado === lado);
@@ -647,16 +736,19 @@ function renderResumo(md){
         I.map(([it, i]) => `<tr class="${it.inferido ? 'inferido' : ''}"><td>${esc(it.cod)}</td><td class="left">${it.inferido ? `<input type="text" value="${esc(it.desc)}" style="width:100%;font-size:.78rem;padding:2px 6px" onchange="setDesc('${mesAtual}','${t}',${i},this.value)">` : esc(it.desc)}</td><td>${it.nf || ''}</td><td><input type="text" class="vv" value="${fmt(it.valor)}" onchange="setValor('${mesAtual}','${t}',${i},this.value)"></td></tr>`).join('') +
         `</tbody><tfoot><tr><td colspan="3">Soma × total do relatório ${fmt(R.tot[lado === 'P' ? 'prov' : 'desc'])}</td><td>${chk(R.chk[lado === 'P' ? 'prov' : 'desc'])}</td></tr></tfoot></table></div>`; };
     const tot = [['Proventos', 'prov'], ['Descontos', 'desc'], ['Líquido', 'liq'], ['FGTS Dep.', 'fgtsDep'], ['FGTS 13º Dep.', 'fgts13Dep'], ['FGTS Dep. (SEFIP)', 'fgtsSefip'], ['FGTS 13º Dep. (SEFIP)', 'fgts13Sefip'], ['FGTS Rescisão (SEFIP)', 'fgtsResc'], ['INSS Empresa', 'inssEmp'], ['INSS SAT', 'inssSat'], ['INSS Terceiro', 'inssTerc'], ['INSS Total (Emp+SAT+Terc)', 'inssTotal'], ['Base INSS - GPS', 'baseInss'], ['Base FGTS', 'baseFgts']];
-    return `<h3>${t === 'resc' ? 'Rescisões' : 'Folha geral'} · “${esc(R.arquivo)}”${R.ocr ? ' <span class="pill info">lido por OCR</span>' : ''}</h3>
+    const tabCC = R.ccs ? `<h3>Centros de custo (${R.ccs.length})</h3><div class="tscroll" style="max-height:none"><table class="pc"><thead><tr><th>Centro de custo</th><th class="left">Nome</th><th>Filial</th><th>Proventos</th><th>Descontos</th><th>Líquido</th><th>FGTS (SEFIP)</th></tr></thead><tbody>` +
+      R.ccs.map(c => `<tr><td>${esc(c.cc)}</td><td class="left">${esc(c.nome)}</td><td>${esc(c.filial)}</td><td>${fmt(c.prov)}</td><td>${fmt(c.desc)}</td><td>${fmt(c.liq)}</td><td>${fmt(c.fgts)}</td></tr>`).join('') +
+      `</tbody><tfoot><tr><td colspan="3">Soma dos centros × total geral (líquido ${fmt(R.tot.liq)})</td><td>${fmt(r2(R.ccs.reduce((a, c) => a + c.prov, 0)))}</td><td>${fmt(r2(R.ccs.reduce((a, c) => a + c.desc, 0)))}</td><td>${chk(r2(R.ccs.reduce((a, c) => a + (c.liq || 0), 0) - R.tot.liq))}</td><td>${fmt(r2(R.ccs.reduce((a, c) => a + c.fgts, 0)))}</td></tr></tfoot></table></div>` : '';
+    return `<h3>${TIPOS[t]} · “${esc(R.arquivo)}”${R.ocr ? ' <span class="pill info">lido por OCR</span>' : ''}</h3>
       <div class="muted small" style="margin-bottom:8px">Proventos − descontos = líquido: ${chk(R.chk.liq)}${R.itens.some(i => i.inferido) ? ' · <b>linha em amarelo</b>: o OCR não leu a linha, o valor foi calculado pela diferença do total — confira no PDF e digite a descrição/valor certos.' : ''}</div>
       <div class="cols2">${tab('P')}${tab('D')}</div>
-      <h3>Totais</h3><div class="tscroll" style="max-height:none"><table class="pc"><tbody>${tot.map(([n, k]) => `<tr><td>${n}</td><td>${fmt(R.tot[k])}</td></tr>`).join('')}</tbody></table></div>`;
+      <h3>Totais</h3><div class="tscroll" style="max-height:none"><table class="pc"><tbody>${tot.map(([n, k]) => `<tr><td>${n}</td><td>${fmt(R.tot[k])}</td></tr>`).join('')}</tbody></table></div>${tabCC}`;
   }).join('<hr style="margin:18px 0;border:0;border-top:2px solid var(--aud-gold-soft)">');
 }
 function renderRazao(){
   $('titRaz').textContent = '· ' + mesLbl(mesAtual);
   const sel = $('fContaR'), atual = sel.value || CONTAS.sal[0];
-  sel.innerHTML = Object.values(CONTAS).map(([c, n]) => `<option value="${c}" ${c === atual ? 'selected' : ''}>${c} · ${n}${RAZ[c] ? ' (' + RAZ[c].length + ')' : ''}</option>`).join('');
+  sel.innerHTML = Object.values(CONTAS).filter(([c], i, a) => a.findIndex(x => x[0] === c) === i).map(([c, n]) => `<option value="${c}" ${c === atual ? 'selected' : ''}>${c} · ${n}${RAZ[c] ? ' (' + RAZ[c].length + ')' : ''}</option>`).join('');
   const L = RAZ[sel.value] || [];
   if (!L.length){ $('razBody').innerHTML = `<tr><td colspan="4" class="empty">${RAZ.__ok ? 'Sem lançamentos desta conta no mês.' : 'Sem razão de ' + mesLbl(mesAtual) + ' no Book de conciliação.'}</td></tr>`; $('razFoot').innerHTML = ''; return; }
   $('razBody').innerHTML = L.slice(0, 2000).map(l => `<tr><td>${br(l.data)}</td><td class="left wrap" style="max-width:560px">${esc(l.hist)}${l.cp ? ' <span class="muted small">· contrap. ' + esc(l.cp) + '</span>' : ''}</td><td>${l.deb ? fmt(l.deb) : ''}</td><td>${l.cred ? fmt(l.cred) : ''}</td></tr>`).join('');
