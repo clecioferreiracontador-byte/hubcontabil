@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "atualizado": "2026-11",
+  "setor": "Alimentação saudável (better-for-you: proteína, low carb, zero açúcar)",
+  "periodo": "empresas: exercício 2025 · Damodaran jan/2026",
+  "avisos": [
+    "No Brasil não há empresa listada só de alimentação saudável: as marcas do nicho foram compradas por grupos grandes ou são de capital fechado e não publicam balanço. Por isso as referências são empresas listadas nos EUA e a indústria de alimentos no Damodaran.",
+    "Simply Good Foods (Atkins, Quest) e BellRing (Premier Protein) são as mais próximas de snacks proteicos e low carb. São muito maiores que a NHD e vendem no varejo americano: servem como referência, não como meta.",
+    "Hain Celestial (naturais e orgânicos) está em reestruturação e teve baixas contábeis grandes em 2025 (margem líquida negativa): fica na faixa, mas como referência do que acontece quando a operação perde escala.",
+    "A margem EBITDA das empresas é o EBITDA ajustado que elas divulgam; a do Damodaran é o EBITDA contábil. Os exercícios terminam em meses diferentes (Hain jun/25, Simply Good ago/25, BellRing set/25).",
+    "Faixa = do 2º ao 4º valor das referências em ordem; a marca dourada é a mediana. Prazos de pagamento e de estoque sobre o custo das vendas, como na NHD.",
+    "Contexto Brasil: a Euromonitor estima o mercado de alimentos saudáveis em cerca de R$ 100 bilhões por ano (dado de 2020/2021 citado na imprensa); não há números públicos de margem do setor no país."
+  ],
+  "fontes": {
+    "smpl": {"nome": "The Simply Good Foods Company · release do exercício 2025", "ano": "ago/2025", "url": "https://www.sec.gov/Archives/edgar/data/1702744/000170274425000043/a991_pressreleasexq4x2025.htm", "obs": "Vendas US$ 1.450,9 mi; dívida líquida/EBITDA ajustado informada pela empresa (0,5x)"},
+    "brbr": {"nome": "BellRing Brands · release e 10-K do exercício 2025", "ano": "set/2025", "url": "https://www.sec.gov/Archives/edgar/data/1772016/000162828025052773/brbrexh991-q42025earningsr.htm", "obs": "Vendas US$ 2.316,6 mi; dívida líquida = dívida total do 10-K menos caixa"},
+    "hain": {"nome": "The Hain Celestial Group · release do exercício 2025", "ano": "jun/2025", "url": "https://www.sec.gov/Archives/edgar/data/910406/000119312525202787/hain-ex99_1.htm", "obs": "Vendas US$ 1.559,8 mi; prejuízo com cerca de US$ 496 mi de baixas contábeis"},
+    "damo": {"nome": "Damodaran (NYU) · Food Processing, mercados emergentes e global", "ano": "jan/2026", "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datacurrent.html", "obs": "1.030 empresas em emergentes e 1.450 no global; prazos = índices sobre vendas × 365, estoque e fornecedores convertidos para o custo das vendas"},
+    "euro": {"nome": "Euromonitor, citado por Mercado & Consumo (jan/2023)", "ano": "2020", "url": "https://mercadoeconsumo.com.br/19/01/2023/foodservice/brasileiros-adotam-novos-habitos-e-venda-de-alimentos-saudaveis-na-pandemia-chega-r-100-bilhoes/", "obs": "Só contexto do tamanho do mercado; não entra nas faixas"}
+  },
+  "indicadores": [
+    {"k": "mb", "nome": "Margem bruta", "curto": "Mg. bruta", "un": "%", "melhor": "alto", "p25": 23.5, "med": 25.9, "p75": 33.3, "fontes": ["smpl", "brbr", "hain", "damo"], "nota": "Simply Good 36,2% e BellRing 33,3%: marcas próprias com preço premium."},
+    {"k": "eb", "nome": "Margem EBITDA", "curto": "Mg. EBITDA", "un": "%", "melhor": "alto", "p25": 10.8, "med": 11.4, "p75": 19.2, "fontes": ["smpl", "brbr", "hain", "damo"], "nota": "Empresas: EBITDA ajustado; Damodaran: contábil."},
+    {"k": "ll", "nome": "Margem líquida", "curto": "Mg. líquida", "un": "%", "melhor": "alto", "p25": 4.7, "med": 5.1, "p75": 7.1, "fontes": ["smpl", "brbr", "hain", "damo"], "nota": "A Hain (−34,0%) fica fora da faixa por causa das baixas contábeis."},
+    {"k": "dlEb", "nome": "Dívida líquida / EBITDA", "curto": "DL/EBITDA", "un": "x", "melhor": "baixo", "p25": 0.54, "med": 2.11, "p75": 5.7, "fontes": ["smpl", "brbr", "hain"], "nota": "Só as três empresas. Quanto menor, menos anos de geração de caixa para quitar a dívida."},
+    {"k": "pmr", "nome": "Prazo médio de recebimento", "curto": "PMR", "un": "d", "melhor": "baixo", "p25": 31, "med": 35, "p75": 36, "fontes": ["smpl", "brbr", "hain", "damo"]},
+    {"k": "pmp", "nome": "Prazo médio de pagamento", "curto": "PMP", "un": "d", "melhor": "alto", "p25": 31, "med": 39, "p75": 53, "fontes": ["smpl", "brbr", "hain", "damo"]},
+    {"k": "pme", "nome": "Prazo médio de estoque", "curto": "PME", "un": "d", "melhor": "baixo", "p25": 67, "med": 72, "p75": 74, "fontes": ["smpl", "brbr", "hain", "damo"]}
+  ],
+  "pares": {
+    "titulo": "Empresas de referência — alimentação saudável (exercício 2025)",
+    "linhas": [
+      {"nome": "Simply Good Foods", "seg": "Atkins, Quest · low carb e proteína", "ano": "ago/2025", "fonte": "smpl", "v": {"mb": 36.2, "eb": 19.2, "ll": 7.1, "dlEb": 0.54, "pmr": 41.5, "pmp": 30.9, "pme": 66.0}},
+      {"nome": "BellRing Brands", "seg": "Premier Protein · proteína", "ano": "set/2025", "fonte": "brbr", "v": {"mb": 33.3, "eb": 20.8, "ll": 9.3, "dlEb": 2.11, "pmr": 35.2, "pmp": 28.2, "pme": 78.0}},
+      {"nome": "Hain Celestial", "seg": "naturais e orgânicos · em reestruturação", "ano": "jun/2025", "fonte": "hain", "v": {"mb": 21.4, "eb": 7.3, "ll": -34.0, "dlEb": 5.7, "pmr": 36.1, "pmp": 56.1, "pme": 74.1}},
+      {"nome": "Damodaran · indústria de alimentos", "seg": "emergentes (1.030 empresas)", "ano": "jan/2026", "fonte": "damo", "v": {"mb": 23.47, "eb": 10.79, "ll": 5.09, "pmr": 25.8, "pmp": 39.4, "pme": 67.4}},
+      {"nome": "Damodaran · indústria de alimentos", "seg": "global (1.450 empresas)", "ano": "jan/2026", "fonte": "damo", "v": {"mb": 25.85, "eb": 11.38, "ll": 4.65, "pmr": 31.3, "pmp": 53.2, "pme": 72.1}}
+    ]
+  }
+}

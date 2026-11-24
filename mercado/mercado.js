@@ -4,12 +4,18 @@
    (uma vez por ano, ou a cada trimestre para as empresas listadas). Cada número traz fonte e ano.
    Formato do JSON: {v, atualizado, setor, periodo, avisos:[], fontes:{id:{nome,url,ano}},
      indicadores:[{k,nome,un:'%'|'x'|'d',melhor:'alto'|'baixo',min,p25,med,p75,max,fontes:[id],nota}],
-     pares:{titulo, linhas:[{nome,seg,ano,v:{k:valor},fonte:id}]}} */
+     pares:{titulo, linhas:[{nome,seg,ano,v:{k:valor},fonte:id}]}}
+   Pode haver mais de um grupo de comparação (ex.: atacado de alimentos e alimentação saudável), cada um no seu
+   arquivo JSON, no mesmo formato: um seletor no topo troca o grupo (a escolha fica salva neste navegador). */
 (function(){
 'use strict';
 var CFG=window.MERCADO_CFG||{};
 var NOME=CFG.nome||'NHD Foods', CURTO=CFG.curto||'NHD', ROOT=CFG.root||'mercadoRoot';
+var GRUPOS=CFG.grupos||[{id:'atacado',nome:'Atacado de alimentos',arq:'mercado/mercado.json'},{id:'saudavel',nome:'Alimentação saudável',arq:'mercado/saudavel.json'}];
+var REFS={}, SEL=GRUPOS[0].id;
+try{var g0=localStorage.getItem('mercadoGrupo');if(GRUPOS.some(function(g){return g.id===g0;}))SEL=g0;}catch(e){}
 var REF=CFG.ref||null, erro=null, carregando=false;
+if(REF)REFS[SEL]=REF;
 
 function css(){
   if(document.getElementById('mkt-css'))return;
@@ -38,6 +44,7 @@ function css(){
   '.mkt-leg{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--gray2);margin:0 0 12px}'+
   '.mkt-leg i{display:inline-block;vertical-align:middle;margin-right:5px}'+
   '.mkt-sec{margin-top:16px}'+
+  '.mkt-grupos{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.mkt-grupos .fs{cursor:pointer}.mkt-grupos .fs.on{border-color:var(--gold);color:var(--g2);background:rgba(201,168,76,.13)}'+
   '.mkt-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}'+
   '.mkt-t{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}'+
   '.mkt-t th,.mkt-t td{padding:7px 8px;border-bottom:1px solid rgba(201,168,76,.08);text-align:right;white-space:nowrap}'+
@@ -166,11 +173,17 @@ function notas(){
   return h+'</ul></div>';
 }
 
+function grupoTrocar(id){SEL=id;try{localStorage.setItem('mercadoGrupo',id);}catch(e){}REF=REFS[SEL]||null;erro=null;render();}
+function seletor(){
+  if(GRUPOS.length<2)return '';
+  return '<div class="mkt-grupos" role="tablist" aria-label="Grupo de comparação">'+GRUPOS.map(function(g){return '<button type="button" class="fs'+(g.id===SEL?' on':'')+'" role="tab" aria-selected="'+(g.id===SEL)+'" onclick="Mercado.grupo(\''+g.id+'\')">'+esc(g.nome)+'</button>';}).join('')+'</div>';
+}
 function render(){
   var root=document.getElementById(ROOT); if(!root)return;
   css();
+  REF=REFS[SEL]||null;
   if(!REF){
-    root.innerHTML='<div style="margin:18px 0"><div class="ptitle">Mercado</div><div class="psub">'+(erro?'Não foi possível carregar as referências do setor ('+esc(erro)+').':'Carregando referências do setor…')+'</div></div>';
+    root.innerHTML='<div style="margin:18px 0"><div class="ptitle">Mercado</div>'+seletor()+'<div class="psub">'+(erro?'Não foi possível carregar as referências do setor ('+esc(erro)+').':'Carregando referências do setor…')+'</div></div>';
     if(!carregando&&!erro)carregar();
     return;
   }
@@ -178,7 +191,7 @@ function render(){
   var bom=0,tot=0;
   REF.indicadores.forEach(function(r){var s=situacao(o[r.k],r);if(s.cls!=='na'){tot++;if(s.cls!=='ruim')bom++;}});
   root.innerHTML=
-    '<div class="mkt-head"><div><div class="ptitle">Mercado</div><div class="psub">'+esc(NOME)+' comparada com referências publicadas do setor · '+esc(REF.setor||'')+'</div></div>'+
+    '<div class="mkt-head"><div><div class="ptitle">Mercado</div>'+seletor()+'<div class="psub">'+esc(NOME)+' comparada com referências publicadas do setor · '+esc(REF.setor||'')+'</div></div>'+
     '<div class="mkt-chips"><span class="mkt-chip">'+esc(CURTO)+': acumulado '+esc(periodoNHD(o))+'</span><span class="mkt-chip">Setor: '+esc(REF.periodo||'')+'</span><span class="mkt-chip">'+bom+' de '+tot+' indicadores na faixa ou melhor</span></div></div>'+
     '<div class="mkt-leg"><span><i style="width:12px;height:12px;border-radius:50%;background:#5DADE2;border:2px solid var(--white)"></i>'+esc(NOME)+'</span><span><i style="width:22px;height:6px;border-radius:99px;background:rgba(201,168,76,.45)"></i>Faixa de referência do setor</span><span><i style="width:2px;height:12px;background:var(--g2)"></i>Mediana</span></div>'+
     '<div class="mkt-grid">'+REF.indicadores.map(function(r){return card(r,o);}).join('')+'</div>'+
@@ -186,16 +199,17 @@ function render(){
 }
 
 function carregar(){
+  var g=GRUPOS.filter(function(x){return x.id===SEL;})[0]||GRUPOS[0],id=g.id;
   carregando=true;
-  fetch('mercado/mercado.json?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-    .then(function(j){REF=j;carregando=false;if(ativo())render();})
-    .catch(function(e){erro=e.message||String(e);carregando=false;render();});
+  fetch(g.arq+'?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(j){REFS[id]=j;carregando=false;if(ativo())render();})
+    .catch(function(e){if(id===SEL)erro=e.message||String(e);carregando=false;render();});
 }
 
 /* quando o admin aplica uma base nova, os números da NHD mudam */
 if(typeof window.adminApply==='function'){var aa=window.adminApply;window.adminApply=function(){var r=aa.apply(this,arguments);try{var p=document.getElementById('page-mercado');if(p&&p.classList.contains('active'))render();}catch(e){}return r;};}
 
 function ativo(){if(typeof CFG.ativo==='function')return CFG.ativo();var p=document.getElementById('page-mercado');return !!(p&&p.classList.contains('active'));}
-window.Mercado={render:render,nhd:nhd};
+window.Mercado={render:render,nhd:nhd,grupo:grupoTrocar};
 if(!REF)carregar();
 })();
