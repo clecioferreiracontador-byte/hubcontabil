@@ -213,7 +213,7 @@ tr.clickable{cursor:pointer}
     </div>
     <div class="upl">
       <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 6L8 2l6.5 4zM3 7v5M6.5 7v5M9.5 7v5M13 7v5M1.5 13.5h13"/></svg>Extratos bancários</h3>
-      <div class="muted small">Excel (Itaú, BB, Safra), PDF (Banco do Brasil, Safra, Itaú, Sicoob/Sisbr — Credicitrus, Credicopa, Sicoob —, aplicações Itaú e XP Performance) ou OFX de qualquer banco. Pode selecionar vários arquivos de uma vez.</div>
+      <div class="muted small">Excel (Itaú, BB, Safra), PDF (Banco do Brasil, Safra, Itaú, Sicoob/Sisbr — Credicitrus, Credicopa, Sicoob —, aplicações Itaú, Safra e XP Performance) ou OFX de qualquer banco. Pode selecionar vários arquivos de uma vez.</div>
       <div class="paste-actions"><button class="primary" type="button" onclick="document.getElementById('inExt').click()">Carregar extratos</button></div>
       <input type="file" id="inExt" accept=".xlsx,.xls,.pdf,.ofx" multiple onchange="carregar(this.files,'extrato');this.value=''">
       <div class="chips" id="chExt"></div>
@@ -465,7 +465,7 @@ function lerExtratoXlsx(wb, arquivo){
   };
   // Safra e Itaú: aplicação/resgate automático (CDB automático, Aplic Aut Mais) não é lançado no
   // razão; o saldo do dia é o total (conta corrente + aplicação automática)
-  const safra = e.banco === 'Safra', itau = e.banco === 'Itaú', dias = {};
+  const safra = e.banco === 'Safra', itau = e.banco === 'Itaú', dias = {}, autoL = [];
   const ehAuto = H => safra ? /CDB AUTOMATICO|RESGATE.*CDB|APLIC.*AUTOMAT/.test(H) : itau ? /^(APL|RES) APLIC AUT/.test(H) : false;
   for (let i = hi + 1; i < rows.length; i++){
     const r = rows[i]; if (!r) continue;
@@ -475,7 +475,7 @@ function lerExtratoXlsx(wb, arquivo){
     if (cInf >= 0 && !isNaN(v)) v = /D/i.test(String(r[cInf])) ? -Math.abs(v) : Math.abs(v);
     else if (cTipo >= 0 && !isNaN(v) && /D[EÉ]BITO/i.test(String(r[cTipo]))) v = -Math.abs(v);
     const H1 = norm(hist.split(' · ')[0]);
-    if (ehAuto(H1) && !ehSaldo(H1)) continue;
+    if (ehAuto(H1) && !ehSaldo(H1)){ if (safra && !isNaN(v) && Math.abs(v) >= 0.005) autoL.push({ id: uid('x'), data, hist, valor: r2(v), auto: true }); continue; }
     if ((safra || itau) && /^(SALDO TOTAL|CONTA VINCULADA$|(SALDO|SDO) APLIC|SALDO (CONTA CORRENTE|MOVIMENTACAO CONTA|EM CONTA CORRENTE))/.test(H1)){
       const val = !isNaN(s) ? s : v, D = dias[data] = dias[data] || {};
       if (isNaN(val)) continue;
@@ -499,7 +499,39 @@ function lerExtratoXlsx(wb, arquivo){
     e.saldoFin = r2(fimDia(dn) + e.linhas.filter(l => l.data > dn).reduce((a, l) => a + l.valor, 0));
   }
   completarSaldos(e);
+  if (safra) variaCdbAuto(e, dias, autoL);
   return e;
+}
+// Safra: o CDB Automático pode ou não ser lançado na contabilidade (a NHD passou a lançar em set/2026, na conta
+// "Aplicações Banco Safra"). O extrato guarda as duas leituras: a padrão (sem as aplicações/resgates automáticos e
+// saldo = conta corrente + aplicação) e, em e.auto, a da conta corrente pura (com esses movimentos e saldo só da conta).
+// Na conferência vale a que o razão da conta mostra (ver usarCdbAuto).
+function variaCdbAuto(e, dias, autoL){
+  // mesmo sem movimento automático no arquivo (ex.: PDF diário), guarda o saldo só da conta corrente
+  // dia só com o "SALDO TOTAL" (sem a separação conta/aplicação, ex.: PDF diário sem aplicação no dia): não serve
+  const cc = d => { const D = dias[d] || {}; if (D.cc !== undefined && !isNaN(D.cc)) return D.cc; if (D.total !== undefined && !isNaN(D.total) && D.aplic !== undefined && !isNaN(D.aplic)) return r2(D.total - D.aplic); return NaN; };
+  const ds = Object.keys(dias).filter(d => !isNaN(cc(d))).sort();
+  if (!ds.length){ e.auto = { linhas: autoL, saldoAnt: NaN, saldoFin: NaN }; return; }
+  const todas = e.linhas.concat(autoL), soma = L => L.reduce((a, l) => a + l.valor, 0);
+  const d0 = ds[0], dn = ds[ds.length - 1];
+  e.auto = { linhas: autoL, saldoAnt: r2(cc(d0) - soma(todas.filter(l => l.data <= d0))), saldoFin: r2(cc(dn) + soma(todas.filter(l => l.data > dn))) };
+}
+function comCdbAuto(e){
+  if (!e.auto) return e;
+  const linhas = e.linhas.concat(e.auto.linhas).sort((a, b) => a.data.localeCompare(b.data));
+  return Object.assign({}, e, { linhas, saldoAnt: e.auto.saldoAnt, saldoFin: e.auto.saldoFin, cdbAuto: true,
+    fechaSaldo: Math.abs(r2(e.auto.saldoAnt + linhas.reduce((a, l) => a + l.valor, 0) - e.auto.saldoFin)) < 0.01 });
+}
+// o razão tem as aplicações/resgates do CDB Automático (a maioria dos valores aparece nele): a conta é conferida com
+// o CDB Automático como movimento
+function usarCdbAuto(ex, R, rFin, tol){
+  const com = ex.filter(e => e.auto && e.auto.linhas.length);
+  if (!com.length) return false;
+  // movimentos automáticos sem repetição entre arquivos (o do mês e os diários trazem os mesmos)
+  const autos = unificarExtratos(com.map(e => Object.assign({}, e, { linhas: e.auto.linhas }))).linhas, usados = new Set();
+  let acha = 0;
+  autos.forEach(a => { const j = R.findIndex((l, i) => !usados.has(i) && Math.round(l.valor * 100) === Math.round(a.valor * 100) && Math.abs(dias(l.data, a.data)) <= Math.max(tol, 1)); if (j >= 0){ usados.add(j); acha++; } });
+  return acha * 2 > autos.length;
 }
 function completarSaldos(e){
   e.linhas.sort((a, b) => a.data.localeCompare(b.data));
@@ -596,7 +628,7 @@ function lerPdfSafra(itens, tudo, file){
   const ano = e.periodo ? +e.periodo.slice(0, 4) : new Date().getFullYear(), mesIni = e.periodo ? +e.periodo.slice(5, 7) : 1;
   const L = linhasPdf(itens);
   const cab = L.findIndex(l => /^Data\s+Lan[cç]amento/i.test(l.txt));
-  const saldos = {}, movDia = {}; let ult = null;
+  const saldos = {}, movDia = {}, autoL = []; let ult = null;
   L.slice(cab >= 0 ? cab + 1 : 0).forEach(l => {
     const d = l.itens[0];
     if (/^\d{2}\/\d{2}$/.test(d.s) && d.x < 50){
@@ -614,7 +646,7 @@ function lerPdfSafra(itens, tudo, file){
       if (/^SALDO APLIC/.test(H)){ S.aplic = v; return; }
       if (/^SALDO CONTA CORRENTE/.test(H)){ S.cc = v; return; }
       if (/^SALDO/.test(H)) return;
-      if (/CDB AUTOMATICO|RESGATE.*CDB|APLIC.*AUTOMAT/.test(H)) return; // aplicação automática: não é lançada no razão
+      if (/CDB AUTOMATICO|RESGATE.*CDB|APLIC.*AUTOMAT/.test(H)){ autoL.push({ id: uid('x'), data, hist, valor: r2(v), auto: true }); return; } // aplicação automática: à parte (e.auto)
       ult = { id: uid('x'), data, hist, valor: r2(v) };
       e.linhas.push(ult); movDia[data] = r2((movDia[data] || 0) + v);
     } else if (ult && l.itens[0].x > 50 && !/Banco Safra|P[aá]gina|CENTRAL DE SUPORTE/i.test(l.txt)) ult.hist += ' · ' + l.txt;
@@ -631,6 +663,7 @@ function lerPdfSafra(itens, tudo, file){
     if (ultMov > dias[dias.length - 1]) e.saldoFin = calc;
     e.fechaSaldo = Math.abs(calc - e.saldoFin) < 0.01;
   }
+  variaCdbAuto(e, saldos, autoL);
   return e;
 }
 
@@ -721,6 +754,37 @@ function lerPdfAplicacao(itens, tudo, file){
     e.obs = ops.length + ' operação(ões)' + (vencidas ? ', ' + vencidas + ' vencida(s) no período (saldo zero)' : '');
     return e;
   }
+  // Safra: relatório mensal de investimentos (Marcação Mercado e/ou Marcação Curva). Saldo = saldo bruto da carteira
+  // (fundos + CDB Automático), que é o que a conta "Aplicações Banco Safra" registra. Com as duas marcações no mesmo
+  // arquivo, vale a da curva.
+  if (/Safra/i.test(tudo) && /Relat[oó]rio Mensal/i.test(tudo) && /Marca[cç][aã]o\s+(Mercado|Curva)/i.test(tudo)){
+    e.banco = 'Safra Aplicações';
+    m = tudo.match(/Ag[eê]ncia:\s*(\d+)\s*\/\s*Conta:\s*([X\d.\-]+)/i); if (m){ e.ag = m[1]; e.conta = m[2]; }
+    m = tudo.match(/Data da posi[cç][aã]o:\s*(\d{2}\/\d{2}\/\d{4})/i); if (m) e.periodo = mesDe(dataBr(m[1]));
+    const L = linhasPdf(itens);
+    const iCurva = L.findIndex(l => /Marca[cç][aã]o\s+Curva/i.test(l.txt));
+    const pIni = iCurva >= 0 ? L[iCurva].p : 0;
+    const LS = L.filter(l => l.p >= pIni);
+    e.marcacao = iCurva >= 0 ? 'curva' : 'mercado';
+    // saldo bruto da carteira: linha "Carteira <bruto R$> <bruto U$> <impostos> <líquido> ..."
+    const lc = LS.find(l => /^Carteira\s+[\d.]+,\d{2}\s/.test(l.txt));
+    if (!lc) throw new Error('não encontrei o saldo da carteira no relatório do Safra');
+    const vc = lc.txt.match(/[\d.]+,\d{2}/g).map(dinheiro);
+    e.saldoFin = r2(vc[0]);
+    // produtos da "Posição de Investimentos" (só para mostrar a composição)
+    const pPos = (LS.find(l => /Posi[cç][aã]o de Investimentos/i.test(l.txt)) || {}).p;
+    const CATS = /^(RENDA FIXA|CURTO PRAZO|RENDA VARI[AÁ]VEL|MULTIMERCADO|PREVID[EÊ]NCIA|CAMBIAL|COE|FUNDOS?( .*)?|ALTERNATIVOS?|INTERNACIONAL|CORRETORA|A[CÇ][OÕ]ES)$/i;
+    const prods = [];
+    LS.filter(l => l.p === pPos).forEach(l => {
+      const m2 = l.txt.match(/^(.*?[A-Za-zÀ-ú].*?)\s+([\d.]+,\d{2})\s+(?:-|[\d.]+,\d{2})\s+([\d.]+,\d{2})\s+[\d.]+,\d{2}/);
+      if (!m2 || CATS.test(m2[1].trim())) return;
+      // o PDF perde a ligadura "ti" ("Automá co"): o nome é recomposto
+      prods.push(m2[1].replace(/[\s\u0000]+/g, ' ').trim().replace(/Autom[aá] ?co\b/i, 'Automático') + ' ' + fmt(dinheiro(m2[2])));
+    });
+    const liq = vc.length >= 4 ? vc[3] : NaN;
+    e.obs = 'Saldo bruto da carteira (marcação ' + e.marcacao + ')' + (prods.length ? ': ' + prods.join(' + ') : '') + (!isNaN(liq) ? ' · líquido estimado ' + fmt(liq) : '');
+    return e;
+  }
   return null;
 }
 async function lerPdfSicoob(file){
@@ -736,7 +800,7 @@ async function lerPdfSicoob(file){
   if (/BB Cash|Banco do Brasil/i.test(tudo) && /Dt\.\s*balancete/i.test(tudo)) return lerPdfBB(itens, tudo, file);
   if (/Banco Safra/i.test(tudo) && /LAN[CÇ]AMENTOS|Lan[cç]amentos/.test(tudo)) return lerPdfSafra(itens, tudo, file);
   const ap = lerPdfAplicacao(itens, tudo, file); if (ap) return ap;
-  if (!/SISBR|SICOOB/i.test(tudo) || !/HIST[OÓ]RICO DE MOVIMENTA/i.test(tudo)) throw new Error('PDF não reconhecido (aceitos: Banco do Brasil, Safra, Sicoob/Sisbr, Itaú conta corrente, aplicações Itaú — fundos, CDB e compromissadas — e XP Performance; para outros bancos use Excel ou OFX)');
+  if (!/SISBR|SICOOB/i.test(tudo) || !/HIST[OÓ]RICO DE MOVIMENTA/i.test(tudo)) throw new Error('PDF não reconhecido (aceitos: Banco do Brasil, Safra, Sicoob/Sisbr, Itaú conta corrente, aplicações Itaú — fundos, CDB e compromissadas —, relatório mensal de investimentos do Safra e XP Performance; para outros bancos use Excel ou OFX)');
   const e = { id: uid('e'), arquivo: file.name, banco: 'Sicoob', ag: '', conta: '', periodo: '', saldoAnt: NaN, saldoFin: NaN, linhas: [] };
   let m = tudo.match(/Cooperativa:\s*([\d-]+)\s*\/\s*([^\n]+?)\s+Conta:/i); if (m){ e.ag = m[1]; e.banco = m[2].replace(/^SICOOB\s*/i, 'Sicoob ').trim(); }
   m = tudo.match(/Conta:\s*([\d.\-]+)/i); if (m) e.conta = m[1];
@@ -982,17 +1046,19 @@ function processar(){
   Object.keys(razao).forEach(k => { contas[k] = contas[k] || { ext: [] }; });
   const linhas = [];
   Object.keys(contas).sort().forEach(k => {
-    const C = razao[k], ex = contas[k].ext;
+    const C = razao[k], ex0 = contas[k].ext;
     // O razão pode ter vários meses (ex.: ago a out). Só entram os lançamentos dos meses
     // dos extratos desta conta; os de antes viram saldo anterior e os de depois são ignorados.
-    const per = periodoExtratos(ex);
+    const per = periodoExtratos(ex0);
     const todos = C ? C.linhas.filter(l => Math.abs(l.valor) > 0.004) : [];
     const R = per ? todos.filter(l => l.data >= per.ini && l.data <= per.fim) : todos;
     const antes = per ? todos.filter(l => l.data < per.ini).reduce((a, l) => a + l.valor, 0) : 0;
     const fora = per ? todos.filter(l => l.data < per.ini || l.data > per.fim).length : 0;
+    const rAnt = C ? r2(C.saldoAnt + antes) : NaN, rFin = C ? r2(rAnt + R.reduce((a, l) => a + l.valor, 0)) : NaN;
+    const cdbAuto = C ? usarCdbAuto(ex0, R, rFin, tol) : false;
+    const ex = cdbAuto ? ex0.map(comCdbAuto) : ex0;
     const U = unificarExtratos(ex), E = U.linhas;
     const modo = ex.length ? modoConta(k, ex) : 'itens';
-    const rAnt = C ? r2(C.saldoAnt + antes) : NaN, rFin = C ? r2(rAnt + R.reduce((a, l) => a + l.valor, 0)) : NaN;
     const eAnt = ex.length ? U.eAnt : NaN, eFin = ex.length ? U.eFin : NaN;
     const dif = r2(rFin - eFin), difAnt = r2(rAnt - eAnt);
     // conta conferida por saldo: se o saldo não bate, os movimentos são cruzados para mostrar de onde vem a diferença
@@ -1005,7 +1071,7 @@ function processar(){
     if (!C) status = 'semrazao'; else if (!ex.length) status = 'semext';
     else if (porSaldo) status = Math.abs(dif) < 0.01 ? 'ok' : 'saldodif';
     else if (Math.abs(naoExp) >= 0.01) status = 'naoexp'; else if (Math.abs(dif) >= 0.01 || c.soR.length || c.soE.length || c.casados.some(g => /^lançado em outra data/.test(g.regra))) status = 'div';
-    linhas.push(Object.assign({ conta: k, desc: C ? C.desc : '', ex, rAnt, rFin, eAnt, eFin, dif, difAnt, tR, tE, naoExp, status, modo, per, fora, U }, c));
+    linhas.push(Object.assign({ conta: k, desc: C ? C.desc : '', ex, cdbAuto, rAnt, rFin, eAnt, eFin, dif, difAnt, tR, tE, naoExp, status, modo, per, fora, U }, c));
   });
   // extratos ainda sem conta contábil: aparecem no resumo para não passarem despercebidos
   extratos.filter(e => !e.__lig.conta).forEach(e => linhas.push({ conta: 'sem conta', desc: 'Ligue na etapa 4 ou carregue o razão desta conta', ex: [e],
@@ -1045,6 +1111,7 @@ function render(){
     T.nE += l.soE.length; T.nR += l.soR.length; T.cas += l.casados.length;
     const st = STATUS[l.status];
     const perTxt = (l.per ? `<div class="muted small">Razão de ${br(l.per.ini)} a ${br(l.per.fim)}${l.fora ? ` · ${l.fora} lanç. de outros meses ignorados` : ''}</div>` : '')
+      + (l.cdbAuto ? `<div class="muted small">CDB Automático lançado no razão: aplicações e resgates entram como movimento e o saldo é só o da conta corrente</div>` : '')
       + (l.U && l.U.juntos ? `<div class="muted small">${l.U.juntos} arquivos do mesmo banco unificados${l.U.repetidos ? ` · ${l.U.repetidos} movimento(s) repetido(s) ignorado(s)` : ''}</div>` : '');
     return `<tr class="clickable" onclick="verConta('${l.conta}')"><td>${esc(l.conta)}<div class="muted small">${esc(l.desc)}</div>${perTxt}</td>
       <td class="wrap" style="min-width:160px">${l.ex.map(e => esc(e.banco + ' ' + e.conta)).join('<br>') || '—'}</td>
