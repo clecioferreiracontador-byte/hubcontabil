@@ -7,7 +7,7 @@
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
 <script src="empresa.js?v=3"></script>
 <script>try{if(localStorage.getItem('hubTema')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
-<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=19"><\/script>');</script>
+<script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=20"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
 window.HubAuthPronto=new Promise(function(r){window.__hubPronto=r;});</script>
 <script type="module" src="auth/hub-auth.js?v=8"></script>
@@ -2447,7 +2447,7 @@ function doImport(mIdx,codeMap,soMovimento){
     var mv={},cods=Object.keys(codeMap);
     cods.forEach(function(c){var m=codeMap[c];if((!m.d&&!m.c)||cods.some(function(o){return o!==c&&o.indexOf(c)===0;}))return;mv[c]=[Math.round(m.d*100)/100,Math.round(m.c*100)/100];});
     bal._mov=mv;
-    cods.forEach(function(c){var n=codeMap[c].n;if(n&&/^[3-9]/.test(c))CONTA_NOMES[c]=n;});
+    cods.forEach(function(c){var n=codeMap[c].n;if(n&&/^[1-9]/.test(c))CONTA_NOMES[c]=n;});
   }
   BALHIST[mIdx]=bal;
   balSelMes=mIdx;
@@ -4368,12 +4368,13 @@ function flxPerChange(){
   buildFluxo();
 }
 function flxMeses(){return Object.keys(BALHIST).map(Number).filter(function(i){return BALHIST[i];}).sort(function(a,b){return a-b;});}
+// hierarquia pelo começo do código (a NHD não separa os níveis com ponto: 1.1.01.2 → 1.1.01.2002)
 function flxAbertura(){
   var b=BALHIST[0];if(!b||!b._sf||!b._mov)return null;
   var sf=b._sf,mv=b._mov,cods=Object.keys(sf);
   var sal=function(code){if(typeof sf[code]==='number')return sf[code];
-    return cods.reduce(function(t,c){return c.indexOf(code+'.')===0&&!cods.some(function(o){return o!==c&&o.indexOf(c+'.')===0;})?t+sf[c]:t;},0);};
-  var mov=function(code){var t=0;Object.keys(mv).forEach(function(c){if(c===code||c.indexOf(code+'.')===0)t+=mv[c][0]-mv[c][1];});return t;};
+    return cods.reduce(function(t,c){return c.indexOf(code)===0&&!cods.some(function(o){return o!==c&&o.indexOf(c)===0;})?t+sf[c]:t;},0);};
+  var mov=function(code){var t=0;Object.keys(mv).forEach(function(c){if(c===code||c.indexOf(code)===0)t+=mv[c][0]-mv[c][1];});return t;};
   var o={};
   Object.keys(BAL_RECIPE).forEach(function(k){var rc=BAL_RECIPE[k],codes=Array.isArray(rc[0])?rc[0]:[rc[0]],t=0;
     codes.forEach(function(code){if(code)t+=sal(code)-mov(code);});o[k]=Math.round(t*rc[1]*100)/100;});
@@ -4385,11 +4386,11 @@ function flxForaMap(i){
   var rec=[];Object.keys(BAL_RECIPE).forEach(function(k){var rc=BAL_RECIPE[k];(Array.isArray(rc[0])?rc[0]:[rc[0]]).forEach(function(c){if(c)rec.push(c);});});
   var o={};
   cods.forEach(function(c){
-    if(cods.some(function(x){return x!==c&&x.indexOf(c+'.')===0;}))return;   // só as analíticas
-    if(rec.some(function(p){return c===p||c.indexOf(p+'.')===0;}))return;     // já está numa linha do balanço
+    if(cods.some(function(x){return x!==c&&x.indexOf(c)===0;}))return;   // só as analíticas
+    if(rec.some(function(p){return c===p||c.indexOf(p)===0;}))return;     // já está numa linha do balanço
     var v=sf[c];if(i<0&&b._mov){var m=b._mov[c];if(m)v-=m[0]-m[1];}
     o[c]=v;});
-  if(i<0&&b._mov)Object.keys(b._mov).forEach(function(c){if(/^[12]/.test(c)&&o[c]===undefined&&!rec.some(function(p){return c===p||c.indexOf(p+'.')===0;})){var m=b._mov[c];o[c]=-(m[0]-m[1]);}});
+  if(i<0&&b._mov)Object.keys(b._mov).forEach(function(c){if(/^[12]/.test(c)&&o[c]===undefined&&!rec.some(function(p){return c===p||c.indexOf(p)===0;})){var m=b._mov[c];o[c]=-(m[0]-m[1]);}});
   return o;
 }
 function flxDFC(){
@@ -4411,7 +4412,16 @@ function flxDFC(){
     var fc=fora[i],fp=i>0?fora[i-1]:foraAb;x.det={};x.foraT=0;
     if(fc&&fp){var ks={};Object.keys(fc).concat(Object.keys(fp)).forEach(function(c){ks[c]=1;});
       Object.keys(ks).forEach(function(c){var v=-((fc[c]||0)-(fp[c]||0));if(Math.abs(v)>=0.005){x.det[c]=v;x.foraT+=v;}});}
-    x.outras=x.dcx-(x.fco0+x.foraT+x.fci+x.fcf);x.fco=x.fco0+x.foraT+x.outras;
+    // grupos da empresa: somam numa linha já existente (add) ou numa linha própria (g0, g1...)
+    var GR=(CFG&&CFG.dfcGrupos)||[];GR.forEach(function(gr,gi){if(!gr.add)x['g'+gi]=0;});
+    Object.keys(x.det).forEach(function(c){
+      var gi=-1;GR.forEach(function(gr,j){if(gi<0&&gr.p.some(function(pp){return c===pp||c.indexOf(pp+'.')===0;}))gi=j;});
+      if(gi<0)return;var gr=GR[gi],v=x.det[c];
+      if(gr.add)x[gr.add]+=v;else x['g'+gi]+=v;
+      x.fco0+=v;x.foraT-=v;delete x.det[c];});
+    x.fco=x.fco0+x.foraT;                       // nada é forçado: a DFC sai só do resultado e das contas do balancete fechado
+    x.dcxDFC=x.fco+x.fci+x.fcf;x.cxDFC=x.cxIni+x.dcxDFC;
+    x.outras=x.dcx-x.dcxDFC;x.difCx=Math.round(x.outras*100)/100||0;   // diferença com o balancete (só para a conferência)
     out[i]=x;});
   return out;
 }
@@ -4467,8 +4477,7 @@ function buildFluxo(){
     if(!mv.length){box.innerHTML='<p class="muted" style="padding:16px">Falta o saldo de abertura (saldo anterior de janeiro) para montar o fluxo.</p>';return;}
     var cxI=F[mv[0]].cxIni,cxF=F[mv[mv.length-1]].cxFim;
     // conferência: caixa final calculado pela DFC (sem a linha de arredondamento) × disponibilidades do balancete
-    mv.forEach(function(i){var x=F[i];x.cxDFC=x.cxIni+(x.fco-x.outras)+x.fci+x.fcf;x.difCx=Math.round((x.cxFim-x.cxDFC)*100)/100||0;});
-    var cxDFCp=cxI+mv.reduce(function(a,i){return a+(F[i].fco-F[i].outras)+F[i].fci+F[i].fcf;},0),difP=Math.round((cxF-cxDFCp)*100)/100||0;
+    var cxDFCp=cxI+mv.reduce(function(a,i){return a+F[i].dcxDFC;},0),difP=Math.round((cxF-cxDFCp)*100)/100||0;
     var st=function(d){return Math.abs(d)<1?{t:'✓ bate',c:'flx-ok'}:{t:'⚠︎ '+fmt(d),c:'flx-dif'};};
     var detCx=(BAL_DET&&BAL_DET.caixa)||[];
     var linCx=detCx.map(function(d){var vv=mv.map(function(i){var b=BALHIST[i];return b&&typeof b[d[1]]==='number'?b[d[1]]:null;});
@@ -4476,14 +4485,15 @@ function buildFluxo(){
     document.getElementById('flxSub').textContent='Demonstração do fluxo de caixa pelo método indireto · '+(mv.length>1?M[mv[0]]+'–'+M[mv[mv.length-1]]:MF[mv[0]])+' '+DRE_ANO+' · saldos dos balancetes importados';
     h+='<div class="kgrid flx-k">'+flxCard('Caixa inicial ('+M[mv[0]]+')',fmt(cxI),'disponibilidades')+flxCard('Operacional',fmt(t('fco')),'caixa gerado pela operação',t('fco')<0?'neg':'pos')+
       flxCard('Investimento',fmt(t('fci')),'imobilizado e intangível',t('fci')<0?'neg':'pos')+flxCard('Financiamento',fmt(t('fcf')),'empréstimos e sócios',t('fcf')<0?'neg':'pos')+
-      flxCard('Caixa final ('+M[mv[mv.length-1]]+')',fmt(cxF),'variação '+fmt(cxF-cxI),cxF-cxI<0?'neg':'pos')+
+      flxCard('Caixa final pela DFC ('+M[mv[mv.length-1]]+')',fmt(cxDFCp),'variação '+fmt(cxDFCp-cxI),cxDFCp-cxI<0?'neg':'pos')+
       flxCard('Conferência com o fechamento',Math.abs(difP)<1?'✓ Bate':'⚠︎ '+fmt(difP),Math.abs(difP)<1?'DFC = balancete':'diferença DFC × balancete',Math.abs(difP)<1?'pos':'neg')+'</div>';
     h+='<div class="cc" style="margin:14px 0"><div class="ctop"><div><div class="ctitle">Geração de caixa por atividade</div><div class="cdesc">Barras: caixa de cada atividade no mês · linha: saldo de caixa no fim do mês</div></div></div><div style="position:relative;height:260px"><canvas id="cFlx"></canvas></div></div>';
     // contas fora das linhas do balanço: as que mexeram ≥ R$ 1 mil em algum mês viram linha própria
     var cF={};mv.forEach(function(i){Object.keys(F[i].det).forEach(function(c){if(Math.abs(F[i].det[c])>=1000)cF[c]=1;});});
     var linFora=Object.keys(cF).sort().map(function(c){var vv=mv.map(function(i){return F[i].det[c]||0;});
-      return {l:c+(CONTA_NOMES[c]?' · '+relEsc(CONTA_NOMES[c]):' · conta do balanço'),tip:'Conta do balanço fora dos grupos acima: aumento de ativo consome caixa; aumento de passivo gera caixa.',v:vv,t:vv.reduce(function(a,b){return a+b;},0),pad:24};});
-    var dem=mv.map(function(i){var t=F[i].outras;Object.keys(F[i].det).forEach(function(c){if(!cF[c])t+=F[i].det[c];});return t;});
+      var nm=CONTA_NOMES[c]||(CFG&&CFG.nomesContas&&CFG.nomesContas[c]);
+      return {l:c+(nm?' · '+relEsc(nm):' · conta do balanço'),tip:'Conta do balanço fora dos grupos acima: aumento de ativo consome caixa; aumento de passivo gera caixa.',v:vv,t:vv.reduce(function(a,b){return a+b;},0),pad:24};});
+    var dem=mv.map(function(i){var t=0;Object.keys(F[i].det).forEach(function(c){if(!cF[c])t+=F[i].det[c];});return t;});
     h+=flxTab('Fluxo de caixa',[
       {sec:'Atividades operacionais'},
       {l:'Lucro líquido do mês',v:v('ll'),t:t('ll'),pad:24},
@@ -4497,8 +4507,8 @@ function buildFluxo(){
       {l:'Obrigações tributárias',v:v('obrTrib'),t:t('obrTrib'),pad:24},
       {l:'Outras contas a pagar',v:v('outrosPC'),t:t('outrosPC'),pad:24},
       {l:'Tributos parcelados (longo prazo)',v:v('tribLP'),t:t('tribLP'),pad:24},
-    ].concat(linFora,[
-      {l:'Demais variações e arredondamentos',tip:'Diferenças pequenas que mantêm o caixa final igual ao do balancete.',v:dem,t:dem.reduce(function(a,b){return a+b;},0),pad:24},
+    ].concat(((CFG&&CFG.dfcGrupos)||[]).map(function(gr,gi){return gr.add?null:{l:gr.l,tip:gr.tip||('Contas '+gr.p.join(', ')+'.'),v:v('g'+gi),t:t('g'+gi),pad:24};}).filter(Boolean),linFora,
+      dem.some(function(x){return Math.abs(x)>=0.005;})?[{l:'Outras contas do balanço (menores)',tip:'Contas fora dos grupos acima com movimento abaixo de R$ 1 mil em cada mês.',v:dem,t:dem.reduce(function(a,b){return a+b;},0),pad:24}]:[],[
       {l:'Caixa líquido das atividades operacionais',cls:'rst',v:v('fco'),t:t('fco')},
       {sec:'Atividades de investimento'},
       {l:'Imobilizado, intangível e investimentos',tip:'Variação do saldo líquido + depreciação do mês (aquisições menos baixas).',v:v('inv'),t:t('inv'),pad:24},
@@ -4508,11 +4518,10 @@ function buildFluxo(){
       {l:'Patrimônio líquido (fora o resultado)',tip:'Aportes, distribuição de lucros e ajustes no PL.',v:v('pl'),t:t('pl'),pad:24},
       {l:'Caixa líquido das atividades de financiamento',cls:'rst',v:v('fcf'),t:t('fcf')},
       {sec:'Caixa'},
-      {l:'Variação do caixa',cls:'rt',v:v('dcx'),t:t('dcx')},
-      {l:'Caixa no início do mês',v:v('cxIni'),t:cxI,pad:24},
-      {l:'Caixa no fim do mês',cls:'rst',v:v('cxFim'),t:cxF},
+      {l:'Variação do caixa pela DFC',cls:'rt',v:v('dcxDFC'),t:cxDFCp-cxI},
+      {l:'Caixa no início do mês (balancete do mês anterior)',v:v('cxIni'),t:cxI,pad:24},
+      {l:'Caixa no fim do mês pela DFC',cls:'rst',v:v('cxDFC'),t:cxDFCp},
       {sec:'Conferência com o fechamento'},
-      {l:'Caixa final pela DFC',tip:'Caixa no início + fluxos operacional, de investimento e de financiamento (sem a linha de arredondamento).',v:v('cxDFC'),t:cxDFCp,pad:24},
       {l:'Disponibilidades no balancete do fechamento',tip:'Saldo de caixa, bancos e aplicações no balancete do mês.',cls:'rst',v:v('cxFim'),t:cxF}
     ].concat(linCx,[
       {l:'Diferença (balancete − DFC)',v:v('difCx'),t:difP,pad:24},
@@ -4521,7 +4530,7 @@ function buildFluxo(){
     box.innerHTML=h;
     var lab=mv.map(function(i){return M[i];}),o=bopt('val');o.plugins.legend={display:true,position:'top',align:'end',labels:{boxWidth:10,font:{size:11}}};
     mkC('cFlx','bar',lab,[
-      {type:'line',label:'Caixa no fim do mês',data:v('cxFim'),borderColor:'#C9A84C',backgroundColor:'#C9A84C',tension:.3,pointRadius:3,order:0},
+      {type:'line',label:'Caixa no fim do mês (DFC)',data:v('cxDFC'),borderColor:'#C9A84C',backgroundColor:'#C9A84C',tension:.3,pointRadius:3,order:0},
       {label:'Operacional',data:v('fco'),backgroundColor:'rgba(46,204,113,.75)',borderRadius:3,order:1},
       {label:'Investimento',data:v('fci'),backgroundColor:'rgba(52,152,219,.75)',borderRadius:3,order:1},
       {label:'Financiamento',data:v('fcf'),backgroundColor:'rgba(231,76,60,.7)',borderRadius:3,order:1}],o);

@@ -193,6 +193,13 @@
       { t: 'RESULTADO APÓS IR/CS', code: '3', f: ['rai', '3.5.1', '3.3'], key: 'rf' },
       { p: 'RESULTADO (em %)', k: 'rf' }
     ],
+    // DFC: contas do balanço fora das linhas do balanço (BAL_RECIPE), encaixadas num grupo
+    dfcGrupos: [
+      { p: ['1.1.7'], l: 'Despesas pagas antecipadamente', tip: '1.1.7 · seguros, aluguéis e outras despesas a apropriar.' },
+      { p: ['2.1.1.02'], add: 'obrT' },   // benefícios a funcionários (consignação Bradesco) → obrigações trabalhistas
+      { p: ['2.2.6'], l: 'Receitas diferidas (Unilever)', tip: '2.2.6.01.001 · receitas diferidas diversas: recebimentos da Unilever tirados do resultado (R$ 660.232,74).' }
+    ],
+    nomesContas: { '1.1.7.02.002': 'Seguros a apropriar', '2.1.1.02.001': 'Bradesco – consignação funcionários', '2.2.6.01.001': 'Receitas diferidas diversas' },
     // ponto de equilíbrio: contas tratadas como custo variável além dos custos e das despesas comerciais
     pe: { contasVariaveis: [['3.1.3.01.045.00016', 'Fretes diversos']] },
     // bloco "Ajuste realizado" no fim da DRE (como na planilha DRE CONTÁBIL do cliente)
