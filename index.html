@@ -861,6 +861,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <span class="fl">Balanço:</span><select class="fs" id="relBalNiv" onchange="buildRelatorio()"><option value="anal">Com contas analíticas</option><option value="res">Resumido</option></select>
     <span class="fl">Valores:</span><select class="fs" id="relUnit" onchange="buildRelatorio()"><option value="rs">R$</option><option value="mil">R$ mil</option></select>
     <label class="fl" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="relLalur" checked onchange="buildRelatorio()">Incluir LALUR</label>
+    <label class="fl" id="relCmpLbl" style="display:none;align-items:center;gap:5px;cursor:pointer" title="Resultado, indicadores, gastos e naturezas do ano comparados com o ano anterior (o relatório do Comparativo)"><input type="checkbox" id="relCmp" checked onchange="buildRelatorio()">Incluir comparativo</label>
     <span class="sp"></span>
     <button class="fs" onclick="printRelatorio()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6V2h8v4M4 11H2V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4h-2M4.5 9.5h7v4.5h-7z"/></svg>Imprimir / PDF</button>
     <button class="fs" onclick="exportRelatorioExcel()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V3M13 13V6M2 13.5h12"/></svg>Excel consolidado</button>
@@ -3160,6 +3161,154 @@ function relSecLalur(d){
   return {html:h,xl:{name:'LALUR',rows:xr.concat(xm),w:[50,18,18,16,16,16,20,14]}};
 }
 
+/* ---------- 8+. Comparativo com o ano anterior (empresas com CFG.comparativo) ----------
+   O mesmo conteúdo do relatório à diretoria do Comparativo (resumo, DRE acumulada, tendência, indicadores, gastos
+   por grupo, naturezas, ICV dos gestores, glossário e anexo), no layout do Consolidado e no período escolhido aqui.
+   As funções do Comparativo leem o período de COMP: ele é trocado só durante a montagem e volta ao que era. */
+function relNoPeriodo(d,fn){
+  var sv={de:COMP.de,mes:COMP.mes};
+  COMP.de=d.ci[0];COMP.mes=d.ci[d.ci.length-1];
+  try{return fn(relDirDados());}finally{COMP.de=sv.de;COMP.mes=sv.mes;}
+}
+function relCmpPct(v,dec){return v===null||v===undefined||!isFinite(v)?'—':(v>=0?'+':'')+(v*100).toFixed(dec===undefined?1:dec).replace('.',',')+'%';}
+function relCmpPc(v,b){return v===null||!b?'—':(v/b*100).toFixed(1).replace('.',',')+'%';}
+var REL_CMP_DRE=[[6,'Receita Bruta'],[7,'Deduções (devoluções + tributos)'],[14,'Receita Líquida'],[703,'CMV'],[60,'Lucro Bruto'],[61,'Despesas operacionais (c/ depreciação)'],[90,'EBITDA'],[84,'Despesas Financeiras'],[85,'Lucro antes de IRPJ/CSLL'],[86,'IRPJ/CSLL'],[89,'Lucro Líquido']];
+function relSecCmpRes(d){return relNoPeriodo(d,function(R){
+  var ano=R.ano,anoA=R.anoA,I={};R.ind.forEach(function(x){I[x[0]]=x;});
+  var mb=I.mb,rbV=R.rb,ebV=R.a(90),llV=R.a(89),ebA=R.p(90),llA=R.p(89);
+  var vs=function(v,b){return b?relCmpPct(v/b-1)+' vs '+anoA:'sem '+anoA;};
+  var K=[['Receita Bruta',relR(rbV),vs(rbV,R.rbA),R.rbA&&rbV<R.rbA],['EBITDA',relR(ebV),vs(ebV,ebA),ebA&&ebV<ebA],['Lucro Líquido',relR(llV),vs(llV,llA),llA&&llV<llA],
+    ['Margem Bruta',compFmtInd(mb[5],'%'),mb[4]===null?'sem '+anoA:((mb[5]-mb[4])*100>=0?'+':'')+((mb[5]-mb[4])*100).toFixed(1).replace('.',',')+' p.p. vs '+anoA,mb[4]!==null&&mb[5]<mb[4]]];
+  // mensagens: as mesmas do relatório à diretoria
+  var cmvV=R.a(703)||R.a(15),cmvA=R.p(703)!==null?R.p(703):R.p(15),dtV=R.a(61),dtA=R.p(61),dfV=R.a(84),dfA=R.p(84),msgs=[];
+  if(R.rbA!==null&&cmvA)msgs.push('<b>Vendemos '+(rbV>=R.rbA?'mais':'menos')+', '+(mb[5]<mb[4]?'ganhamos menos':'com margem maior')+'.</b> A receita bruta '+(rbV>=R.rbA?'cresceu ':'caiu ')+relCmpPct(rbV/R.rbA-1)+', o CMV '+(cmvV>=cmvA?'subiu ':'caiu ')+relCmpPct(cmvV/cmvA-1)+'. A margem bruta foi de '+compFmtInd(mb[4],'%')+' para '+compFmtInd(mb[5],'%')+'.');
+  if(I.ebitda[4]!==null)msgs.push('<b>A operação gera '+(ebV>=ebA?'mais':'menos')+' caixa.</b> O EBITDA foi de '+relR(ebA)+' para '+relR(ebV)+' ('+relCmpPct(ebA?ebV/ebA-1:null)+'); margem EBITDA de '+compFmtInd(I.ebitda[4],'%')+' para '+compFmtInd(I.ebitda[5],'%')+'.');
+  if(dtA)msgs.push('<b>A estrutura '+(dtV/dtA-1>rbV/R.rbA-1?'cresceu mais que a venda':'cresceu menos que a venda')+'.</b> As despesas operacionais (com depreciação) variaram '+relCmpPct(dtV/dtA-1)+', contra '+relCmpPct(rbV/R.rbA-1)+' da receita bruta.');
+  if(dfA)msgs.push('<b>Despesas financeiras '+(dfV<dfA?'caíram':'subiram')+'.</b> Foram de '+relR(dfA)+' para '+relR(dfV)+' ('+relCmpPct(dfV/dfA-1)+'). Cobertura de juros: '+compFmtInd(I.cob[5],'x')+'.');
+  if(I.giro[5]!==null)msgs.push('<b>Capital de giro.</b> Giro de estoque de '+compFmtInd(I.giro[5],'d')+', recebimento em '+compFmtInd(I.pmr[5],'d')+' e pagamento em '+compFmtInd(I.pmp[5],'d')+': ciclo de caixa de '+compFmtInd(I.ciclo[5],'d')+'.');
+  // DRE acumulada: custos e despesas negativos; variação positiva sempre melhora o resultado
+  var neg={7:1,703:1,61:1,84:1,86:1},lin=REL_CMP_DRE.filter(function(x){return compNo(x[0]);});
+  var h='<div class="rp-note" style="margin:0 0 8px">Acumulado '+R.per+' de '+ano+' comparado com o mesmo período de '+anoA+(R.aj?' · <b>visão com ajuste</b>':'')+'. Valores em '+d.unitLbl+'.</div>'+
+    '<div class="rp-kpis">'+K.map(function(k){return '<div class="rp-k'+(k[3]?' neg':'')+'"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="p">'+k[2]+'</div></div>';}).join('')+'</div>'+
+    (msgs.length?'<div class="rp-sub">O que a diretoria precisa saber</div><ul class="rp-dest">'+msgs.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>':'');
+  var xr=[['Indicador',anoA,ano,'Variação']];
+  K.forEach(function(k){xr.push([k[0],'',relTxt(k[1]),k[2]]);});
+  xr.push([],['DRE acumulada — '+R.per],['Conta',anoA,ano,'Variação (R$)','Variação %']);
+  h+='<div class="rp-sub">DRE acumulada — do faturamento ao lucro</div><table class="rp-t"><thead><tr><th>Conta</th><th>'+anoA+'</th><th>'+ano+'</th><th>Variação</th><th>Var. %</th></tr></thead><tbody>'+
+    lin.map(function(x){var s=neg[x[0]]?-1:1,v=R.a(x[0])*s,b=R.p(x[0]),bs=b===null?null:b*s,df=bs===null?null:v-bs,vp=bs?v/bs-1:null;
+      xr.push([x[1],bs===null?'':bs,v,df===null?'':df,vp===null||!isFinite(vp)?'':{p:vp}]);
+      return '<tr class="'+([14,60,90,89].indexOf(x[0])>=0?'rst':'rs')+'"><td>'+relEsc(x[1])+'</td><td'+(bs<0?' class="neg"':'')+'>'+(bs===null?'—':relN(bs))+'</td><td'+(v<0?' class="neg"':'')+'>'+relN(v)+'</td>'+
+        '<td style="color:'+(df===null?'inherit':df>=0?'#1E8E4E':'#C0392B')+';font-weight:700">'+(df===null?'—':(df>=0?'+':'')+relN(df))+'</td><td>'+relCmpPct(vp)+'</td></tr>';}).join('')+
+    '</tbody></table><div class="rp-note">Verde = melhorou o resultado; vermelho = piorou. Custos e despesas aparecem negativos. EBITDA = resultado operacional + outras receitas operacionais + depreciação.</div>';
+  // tendência de 14 meses
+  var lab=[],rl=[],cmv=[],me=[];
+  for(var k=13;k>=0;k--){var m=R.ate-k,prev=m<0,mm=prev?m+12:m;lab.push(M[mm]+'/'+String(prev?anoA:ano).slice(2));
+    var g=function(r){return prev?compMesAnt(r,mm):compMesAtual(r,mm);},vrl=g(14),vcmv=g(703)!==null?g(703):g(15),veb=g(90);
+    rl.push(vrl);cmv.push(vcmv===null?null:Math.abs(vcmv));me.push(vrl&&veb!==null?+(veb/vrl*100).toFixed(1):null);}
+  var ln=function(l,v,c){return {label:l,data:v,borderColor:c,backgroundColor:c,borderWidth:2,pointRadius:3,tension:.3,fill:false,spanGaps:true};};
+  var c1=relChart('line',lab,[ln('Receita Líquida',rl,'#2980B9'),ln('CMV',cmv,'#C0392B')],relOpt('val'),490,220);
+  var c2=relChart('line',lab,[ln('Margem EBITDA mensal',me,'#C9A84C')],relOpt('pct'),490,220);
+  h+='<div class="rp-sub">Tendência de 14 meses</div><div class="rp-charts c2">'+relBox('Receita Líquida × CMV (R$)',c1)+relBox('Margem EBITDA mês a mês (%)',c2)+'</div>';
+  return {html:h,xl:{name:'Comparativo',rows:xr,w:[40,18,18,18,12]}};
+});}
+function relSecCmpInd(d){return relNoPeriodo(d,function(R){
+  var ano=R.ano,anoA=R.anoA,nomeCls={ok:'Saudável',at:'Atenção',rs:'Risco'},pill={ok:'ok',at:'warn',rs:'bad'};
+  var ord=['mb','ebitda','ml','cob','sga','taxa','giro','pmr','pmp','ciclo'],I={};R.ind.forEach(function(x){I[x[0]]=x;});
+  var xr=[['Indicador',anoA,ano,'Avaliação','Fórmula']];
+  var cell=function(v,u){return v===null||!isFinite(v)?'n/d':u==='%'?{p:v}:u==='x'?{x:v}:Math.round(v);};
+  var h='<table class="rp-t"><thead><tr><th>Indicador</th><th>'+anoA+'</th><th>'+ano+'</th><th style="text-align:center">Avaliação</th><th style="text-align:left">Fórmula</th></tr></thead><tbody>'+
+    ord.filter(function(k){return I[k];}).map(function(k,n){var x=I[k],c=compClasse(k,x[5]);
+      xr.push([x[1],cell(x[4],x[3]),cell(x[5],x[3]),nomeCls[c]||'',x[2]]);
+      return (n===6?'<tr class="rt"><td colspan="5">Capital de giro — quanto tempo o dinheiro fica preso</td></tr>':n===0?'<tr class="rt"><td colspan="5">Rentabilidade, juros, estrutura e impostos</td></tr>':'')+
+        '<tr class="rs"><td><b>'+relEsc(x[1])+'</b></td><td>'+compFmtInd(x[4],x[3])+'</td><td><b>'+compFmtInd(x[5],x[3])+'</b></td><td style="text-align:center">'+(c?'<span class="pill '+pill[c]+'">'+nomeCls[c]+'</span>':'—')+'</td><td style="text-align:left;color:#5B6B7C">'+relEsc(x[2])+'</td></tr>';}).join('')+
+    '</tbody></table><div class="rp-note">Prazos calculados com o estoque do início do período e os saldos do balancete de '+MF[R.ate].toLowerCase()+' de cada ano.</div>';
+  // gastos por grupo (% da receita bruta)
+  var G=(CFG.gruposDespesa||[]).filter(function(x){return compNo(x[0]);});
+  if(G.length){
+    var o=relOpt('pct');o.indexAxis='y';
+    o.scales={x:{type:'logarithmic',grid:{color:'#E6EAEE'},ticks:{color:'#4A5868',font:{family:'Calibri',size:10},callback:function(v){return [0.1,0.5,1,5,10,50].indexOf(+v)>=0?String(v).replace('.',',')+'%':'';}}},
+      y:{grid:{display:false},ticks:{color:'#4A5868',font:{family:'Calibri',size:10},autoSkip:false}}};
+    var gi=relChart('bar',G.map(function(x){return x[1];}),[{label:anoA,data:G.map(function(x){var v=R.p(x[0]);return v===null||!R.rbA?null:+(Math.abs(v)/R.rbA*100).toFixed(2);}),backgroundColor:'#AEB6BF',borderRadius:2},
+      {label:ano,data:G.map(function(x){return R.rb?+(Math.abs(R.a(x[0]))/R.rb*100).toFixed(2):null;}),backgroundColor:'rgba(41,128,185,.85)',borderRadius:2}],o,490,Math.max(220,G.length*26+60));
+    xr.push([],['Gastos por grupo (% da receita bruta)'],['Grupo','% RB '+anoA,'% RB '+ano,'Var. p.p.']);
+    var tg='<table class="rp-t"><thead><tr><th>Grupo</th><th>% RB '+anoA+'</th><th>% RB '+ano+'</th><th>Var. p.p.</th></tr></thead><tbody>'+G.map(function(x){
+      var b=R.p(x[0]),v=R.a(x[0]),pb=b===null||!R.rbA?null:b/R.rbA,pa=R.rb?v/R.rb:null,dp=pa===null||pb===null?null:(pa-pb)*100;
+      xr.push([x[1],pb===null?'':{p:pb},pa===null?'':{p:pa},dp===null?'':Math.round(dp*100)/100]);
+      return '<tr class="rs"><td>'+relEsc(x[1])+'</td><td>'+relCmpPc(b,R.rbA)+'</td><td>'+relCmpPc(v,R.rb)+'</td><td style="color:'+(dp===null?'inherit':dp>0?'#C0392B':'#1E8E4E')+';font-weight:700">'+(dp===null?'—':(dp>=0?'+':'')+dp.toFixed(2).replace('.',','))+'</td></tr>';}).join('')+'</tbody></table>';
+    h+='<div class="rp-sub">Gastos por grupo — onde cada real da receita está indo</div><div class="rp-grid2"><div>'+tg+'</div>'+relBox('% da receita bruta (escala logarítmica)',gi)+'</div>';
+  }
+  // recomendações (as registradas no Comparativo para o mês; sem elas, os indicadores em risco)
+  var recs=R.rec?R.rec.split(/\n+/).map(function(t){return t.trim();}).filter(Boolean):[],autos=[];
+  R.ind.forEach(function(x){if(compClasse(x[0],x[5])==='rs')autos.push(x[1]+' em risco ('+compFmtInd(x[5],x[3])+').');});
+  var lr=recs.length?recs:autos;
+  if(lr.length){
+    h+='<div class="rp-sub">Recomendações</div><div class="rp-interp">'+lr.map(function(t,k){var p=t.split(/:\s+/);return (k+1)+'. '+(p.length>1?'<b>'+relEsc(p[0])+':</b> '+relEsc(p.slice(1).join(': ')):relEsc(t));}).join('<br>')+'</div>'+
+      (recs.length?'':'<div class="rp-note">Pontos gerados a partir dos indicadores. O plano de ação registrado no Comparativo (Recomendações) sai aqui.</div>');
+    xr.push([],['Recomendações']);lr.forEach(function(t,k){xr.push([(k+1)+'. '+t]);});
+  }
+  return {html:h,xl:{name:'Comp. indicadores',rows:xr,w:[40,14,14,12,60]}};
+});}
+function relCmpTabNat(l,ini,R,cols){
+  var cres=R.rbA?R.rb/R.rbA-1:null;
+  return '<table class="rp-t'+(l.length>24?' dense':'')+'"><thead><tr><th style="width:26px">#</th><th style="text-align:left">Natureza</th><th>'+R.anoA+'</th><th>'+R.ano+'</th><th>Var.</th><th>% RB</th></tr></thead><tbody>'+l.map(function(x,k){
+    var v=x.b>0.5?x.a/x.b-1:null;
+    return '<tr class="rs"><td>'+(ini+k+1)+'</td><td style="text-align:left">'+relEsc(x.n)+(x.g?'<div style="font-size:9.5px;color:#7A8896">'+relEsc(x.g)+'</div>':'')+'</td><td>'+relN(x.b)+'</td><td>'+relN(x.a)+'</td><td'+(v!==null&&cres!==null&&v>cres?' class="neg"':'')+'>'+relCmpPct(v,0)+'</td><td>'+relCmpPc(x.a,R.rb)+'</td></tr>';}).join('')+'</tbody></table>';
+}
+function relSecCmpNat(d){return relNoPeriodo(d,function(R){
+  var ano=R.ano,anoA=R.anoA,cres=R.rbA?R.rb/R.rbA-1:null;
+  var semCmv=R.lista.filter(function(x){return !/^3\.1\.1\.03\.001/.test(x.c);}).map(function(x){return Object.assign({d:x.a-x.b},x);});
+  var altas=semCmv.slice().sort(function(x,y){return y.d-x.d;}).filter(function(x){return x.d>0;}).slice(0,8),quedas=semCmv.slice().sort(function(x,y){return x.d-y.d;}).filter(function(x){return x.d<0;}).slice(0,8);
+  var tabAQ=function(l,t){return '<table class="rp-t"><thead><tr><th>'+t+'</th><th>'+anoA+'</th><th>'+ano+'</th><th>Var. ('+d.unitLbl+')</th></tr></thead><tbody>'+l.map(function(x){
+    return '<tr class="rs"><td>'+relEsc(x.n)+'<div style="font-size:9.5px;color:#7A8896">'+relEsc(x.g)+'</div></td><td>'+relN(x.b)+'</td><td>'+relN(x.a)+'</td><td style="color:'+(x.d>0?'#C0392B':'#1E8E4E')+';font-weight:700">'+(x.d>0?'+':'')+relN(x.d)+'<div style="font-size:9.5px;font-weight:400;color:#7A8896">'+relCmpPct(x.b>0.5?x.a/x.b-1:null)+'</div></td></tr>';}).join('')+'</tbody></table>';};
+  var h='<div class="rp-sub" style="margin-top:0">Naturezas que mais mudaram (sem CMV)</div><div class="rp-grid2">'+tabAQ(altas,'Maiores altas')+tabAQ(quedas,'Maiores quedas')+'</div>'+
+    '<div class="rp-sub">Ranking de saídas — as 20 maiores naturezas de '+ano+'</div>'+relCmpTabNat(R.lista.slice(0,20),0,R)+
+    '<div class="rp-note">Var. em vermelho = cresceu acima da receita bruta ('+relCmpPct(cres)+'). Valores em '+d.unitLbl+'; a lista completa das '+R.lista.length+' naturezas está no anexo.</div>';
+  var xr=[['Maiores altas (sem CMV)'],['Natureza','Grupo',anoA,ano,'Var. R$','Var. %']];
+  altas.forEach(function(x){xr.push([x.n,x.g,x.b,x.a,x.d,x.b>0.5?{p:x.a/x.b-1}:'']);});
+  xr.push([],['Maiores quedas (sem CMV)'],['Natureza','Grupo',anoA,ano,'Var. R$','Var. %']);
+  quedas.forEach(function(x){xr.push([x.n,x.g,x.b,x.a,x.d,x.b>0.5?{p:x.a/x.b-1}:'']);});
+  return {html:h,xl:{name:'Comp. naturezas',rows:xr,w:[40,30,16,16,16,10]}};
+});}
+function relSecCmpICV(d){return relNoPeriodo(d,function(R){
+  var V=R.icv,ano=R.ano,anoA=R.anoA;
+  if(!V)return {html:'<p>Sem contas do ICV configuradas.</p>',xl:{name:'ICV gestores',rows:[['Sem contas do ICV configuradas.']],w:[60]}};
+  var ganho=V.a!==null&&V.b!==null?(V.a-V.b)*R.rb:null,metaV=V.meta!==null?V.meta:V.b;
+  var K=[['ICV '+ano,compFmtInd(V.a,'%'),V.a!==null&&V.b!==null?((V.a-V.b)*100>=0?'+':'')+((V.a-V.b)*100).toFixed(2).replace('.',',')+' p.p. vs '+compFmtInd(V.b,'%'):'',V.a>V.b],
+    ['Saídas dos gestores',relR(V.ta),relCmpPct(V.tb?V.ta/V.tb-1:null)+' vs '+anoA,V.ta>V.tb],['Receita Bruta',relR(R.rb),relCmpPct(R.rbA?R.rb/R.rbA-1:null)+' vs '+anoA,false],
+    [ganho>0?'Ganho se o ICV de '+anoA+' fosse mantido':'Economia sobre o ICV de '+anoA,ganho===null?'—':relR(Math.abs(ganho)),'meta '+compFmtInd(metaV,'%'),false]];
+  var porG={};V.lin.forEach(function(x){var g=porG[x.g]=porG[x.g]||{a:0,b:0};g.a+=x.a;g.b+=x.b;});
+  var gs=Object.keys(porG).sort(function(x,y){return porG[y].a-porG[x].a;}),nm=function(g){return g.replace(/^DESPESAS C\/ /i,'').toLowerCase().replace(/(^|\s)\S/g,function(c){return c.toUpperCase();});};
+  var o=relOpt('pct');o.indexAxis='y';
+  o.scales={x:{grid:{color:'#E6EAEE'},ticks:{color:'#4A5868',font:{family:'Calibri',size:10},callback:function(v){return String(v).replace('.',',')+'%';}}},y:{grid:{display:false},ticks:{color:'#4A5868',font:{family:'Calibri',size:10},autoSkip:false}}};
+  var gi=relChart('bar',gs.map(nm),[{label:anoA,data:gs.map(function(g){return R.rbA?+(porG[g].b/R.rbA*100).toFixed(2):null;}),backgroundColor:'#AEB6BF',borderRadius:2},{label:ano,data:gs.map(function(g){return R.rb?+(porG[g].a/R.rb*100).toFixed(2):null;}),backgroundColor:'rgba(41,128,185,.85)',borderRadius:2}],o,1000,Math.max(200,gs.length*24+60));
+  var lin=V.lin.slice().sort(function(x,y){return y.a-x.a;});
+  var h='<div class="rp-kpis">'+K.map(function(k){return '<div class="rp-k'+(k[3]?' neg':'')+'"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="p">'+k[2]+'</div></div>';}).join('')+'</div>'+
+    '<div class="rp-note">ICV (índice de custo sobre vendas): saídas em que os gestores atuam ÷ receita bruta. Mostra quantos reais de gasto controlável a empresa consome a cada R$ 100 vendidos. Quanto menor, melhor.</div>'+
+    '<div class="rp-sub">ICV por grupo (% da receita bruta)</div>'+relBox('',gi)+
+    '<div class="rp-sub">As '+lin.length+' naturezas do ICV</div><table class="rp-t'+(lin.length>24?' dense':'')+'"><thead><tr><th>Natureza</th><th>'+anoA+'</th><th>'+ano+'</th><th>Var. ('+d.unitLbl+')</th><th>p.p. ICV</th></tr></thead><tbody>'+
+    lin.map(function(x){var dd=x.a-x.b,pp=R.rb&&R.rbA?(x.a/R.rb-x.b/R.rbA)*100:null;
+      return '<tr class="rs"><td>'+relEsc(x.n)+'<div style="font-size:9.5px;color:#7A8896">'+relEsc(x.g)+'</div></td><td>'+relN(x.b)+'</td><td>'+relN(x.a)+'</td><td style="color:'+(dd>0?'#C0392B':'#1E8E4E')+';font-weight:700">'+(dd>0?'+':'')+relN(dd)+'</td><td>'+(pp===null?'—':(pp>=0?'+':'')+pp.toFixed(2).replace('.',','))+'</td></tr>';}).join('')+
+    '<tr class="rst"><td>Total ICV gestores</td><td>'+relN(V.tb)+'</td><td>'+relN(V.ta)+'</td><td>'+((V.ta-V.tb)>0?'+':'')+relN(V.ta-V.tb)+'</td><td>'+(V.a!==null&&V.b!==null?((V.a-V.b)*100>=0?'+':'')+((V.a-V.b)*100).toFixed(2).replace('.',','):'—')+'</td></tr></tbody></table>';
+  var xr=[['ICV '+anoA,V.b===null?'':{p:V.b},'ICV '+ano,V.a===null?'':{p:V.a},'Meta',metaV===null?'':{p:metaV}],[],['Conta','Natureza','Grupo',anoA,ano,'Var. R$','% RB '+anoA,'% RB '+ano]];
+  lin.forEach(function(x){xr.push([x.c,x.n,x.g,x.b,x.a,x.a-x.b,R.rbA?{p:x.b/R.rbA}:'',R.rb?{p:x.a/R.rb}:'']);});
+  xr.push(['','Total ICV gestores','',V.tb,V.ta,V.ta-V.tb,V.b===null?'':{p:V.b},V.a===null?'':{p:V.a}]);
+  return {html:h,xl:{name:'ICV gestores',rows:xr,w:[20,40,30,16,16,16,10,10]}};
+});}
+function relSecCmpAnexo(d){return relNoPeriodo(d,function(R){
+  var h=relCmpTabNat(R.lista,0,R)+'<div class="rp-note">Valores em '+d.unitLbl+', '+R.per+'. Valores negativos = estorno ou ganho. % RB = sobre a receita bruta de '+R.ano+'.</div>';
+  if(CFG.glossario){
+    var I={};R.ind.forEach(function(x){I[x[0]]=x;});
+    var valG=function(ref){if(ref.indexOf('r:')===0){var r=+ref.slice(2);return [relN(R.p(r)),relN(R.a(r))];}if(ref.indexOf('i:')===0){var x=I[ref.slice(2)];return x?[compFmtInd(x[4],x[3]),compFmtInd(x[5],x[3])]:['—','—'];}
+      if(ref==='icv'&&R.icv)return [compFmtInd(R.icv.b,'%'),compFmtInd(R.icv.a,'%')];return ['—','—'];};
+    h+='<div class="rp-sub">Glossário — entenda cada número</div><table class="rp-t"><thead><tr><th>Termo</th><th style="text-align:left">O que é e por que importa</th><th>'+R.anoA+'</th><th>'+R.ano+'</th></tr></thead><tbody>'+
+      CFG.glossario.map(function(g){var v=valG(g[3]);return '<tr class="rs"><td><b>'+relEsc(g[0])+'</b></td><td style="text-align:left;white-space:normal">'+relEsc(g[1])+' <span style="color:#5B6B7C">'+relEsc(g[2])+'</span></td><td>'+v[0]+'</td><td>'+v[1]+'</td></tr>';}).join('')+'</tbody></table>';
+  }
+  var xr=[['#','Conta','Natureza','Grupo',R.anoA,R.ano,'Var. R$','Var. %','% RB '+R.ano]];
+  R.lista.forEach(function(x,i){xr.push([i+1,x.c,x.n,x.g,x.b,x.a,x.a-x.b,x.b>0.5?{p:x.a/x.b-1}:'',R.rb?{p:x.a/R.rb}:'']);});
+  if(CFG.glossario){xr.push([],['Glossário'],['Termo','O que é','Por que importa']);CFG.glossario.forEach(function(g){xr.push([g[0],g[1],g[2]]);});}
+  return {html:h,xl:{name:'Naturezas',rows:xr,w:[5,20,40,30,16,16,16,10,10]}};
+});}
+
 /* ---------- montagem ---------- */
 function relHead(d){
   return '<div class="rp-head">'+(d.emp.logoCli?'<img src="'+d.emp.logoCli+'" alt="">':'<span></span>')+
@@ -3172,6 +3321,15 @@ function buildRelatorio(){
   var secs=[['Visão Geral — Resumo Executivo',relSecOV],['Análise Vertical',relSecAV],['Indicadores de Desempenho',relSecInd],['Demonstração do Resultado (DRE)',relSecDRE],
             ['Balanço Patrimonial',relSecBal],['Índices de Liquidez e Endividamento',relSecIdx]];
   if(relEl('relLalur').checked)secs.push(['LALUR — Apuração do IRPJ e da CSLL',relSecLalur]);
+  // relatório do Comparativo (ano atual × anterior), no layout do Consolidado
+  var cmp=relEl('relCmp'),cmpLbl=relEl('relCmpLbl'),temCmp=!!(CFG&&CFG.comparativo);
+  if(cmpLbl)cmpLbl.style.display=temCmp?'flex':'none';
+  if(temCmp&&cmp&&cmp.checked){
+    var aA=String(+DRE_ANO-1);
+    secs.push(['Comparativo '+DRE_ANO+' × '+aA+' — Resultado',relSecCmpRes],['Indicadores, gastos por grupo e recomendações — '+DRE_ANO+' × '+aA,relSecCmpInd],['Naturezas de gasto — '+DRE_ANO+' × '+aA,relSecCmpNat]);
+    if(CFG.icv)secs.push(['ICV dos gestores',relSecCmpICV]);
+    secs.push(['Anexo — Todas as naturezas de saída'+(CFG.glossario?' e glossário':''),relSecCmpAnexo]);
+  }
   d.secNames=secs.map(function(x){return x[0].split(' — ')[0];});
   var out=secs.map(function(x){return x[1](d);});
   var N=secs.length;
