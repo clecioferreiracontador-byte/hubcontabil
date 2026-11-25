@@ -23,7 +23,7 @@
   var atual = ler();
   var PREF = atual === 'nhd' ? '' : 'emp:' + atual + ':';
   // chaves que valem para o Hub inteiro (não são dado de empresa)
-  var GLOBAL = /^(hubEmpresa|firebase|hubTema$|nhdGhToken$|nhdFullVals$|nhdSkpiCollapsed$)/;
+  var GLOBAL = /^(hubEmpresa|firebase|hubTema$|hubSbRecolhido$|nhdGhToken$|nhdFullVals$|nhdSkpiCollapsed$)/;
   if (PREF && proto && ls){
     var k = function(st, key){ key = String(key); return st === ls && !GLOBAL.test(key) ? PREF + key : key; };
     proto.getItem = function(key){ return get0.call(this, k(this, key)); };

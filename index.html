@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Belive · Hub Contábil</title>
 <style>body.hub-locked>*:not(#hubLogin):not(#hubTrans){display:none!important}body.hub-locked{background:#0B1626}</style>
-<script src="empresa.js?v=3"></script>
+<script src="empresa.js?v=4"></script>
 <script>try{if(localStorage.getItem('hubTema')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
 <script>if(window.HubEmpresa&&HubEmpresa.id!=='nhd')document.write('<script src="empresas/'+HubEmpresa.id+'.js?v=22"><\/script>');</script>
 <script>/* o painel só carrega os dados depois do login (auth/hub-auth.js resolve esta promessa) */
@@ -47,6 +47,8 @@ html,body{height:100%;background:var(--navy);color:var(--white);font-family:Cali
 .niv{width:14px;height:14px;flex-shrink:0;opacity:.65}
 .nav-item.active .niv{opacity:1}
 .sdiv{margin:6px 14px;border:none;border-top:1px solid var(--bdr)}
+.ssec.sb-tog{cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}.ssec.sb-tog:hover,.ssec.sb-tog:focus-visible{color:var(--g2);outline:none}
+.sb-chev{transition:transform .2s;flex-shrink:0}.sb-oculto{display:none!important}
 .skpi{margin:4px 9px;background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:8px;padding:9px 12px}
 .skpi-l{font-size:11.5px;color:var(--gray);margin-bottom:2px;font-weight:500;letter-spacing:.02em}
 .skpi-v{font-family:Calibri,"Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums;font-weight:500;font-size:18px;color:var(--white);letter-spacing:-.02em}
@@ -213,6 +215,7 @@ body:not(.is-admin) .adm-only{display:none!important}
   .bal-grid{grid-template-columns:1fr}
   .igrid{grid-template-columns:1fr}
   .ssec,.sdiv,.skpi,.sb-bottom{display:none}
+  .nav-item.sb-oculto{display:flex!important}   /* no celular o menu é a barra: mostra tudo */
   .topbar{padding:0 10px;gap:8px}
   .tb-logo{height:40px}
   .tb-aud-logo{height:40px}
@@ -531,7 +534,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 <nav class="sidebar">
   <div class="sb-nav">
-    <div class="ssec">Análise</div>
+    <div class="ssec sb-tog" data-sec="analise" role="button" tabindex="0" aria-expanded="true" onclick="sbToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sbToggle(this);}"><span>Análise</span><svg class="sb-chev" width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="nav-item active" onclick="setPage('ov',this)"><svg class="niv" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>Visão Geral</div>
     <div class="nav-item" onclick="setPage('dre',this)"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>DRE</div>
     <div class="nav-item" onclick="setPage('av',this)"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M8 14V6M4 14V9M12 14V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Análise Vertical</div>
@@ -544,12 +547,12 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="nav-item" id="bookNav" style="display:none" onclick="setPage('bookv',this)" title="Book de conciliação dos meses fechados (somente visualização)"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h7.5l2.5 2.5v8.5H3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5.5 7.5l1.6 1.6 3.4-3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Book de conciliação</div>
     <div id="adminNav" style="display:none">
       <hr class="sdiv">
-      <div class="ssec"><span>Admin</span></div>
+      <div class="ssec sb-tog" data-sec="admin" role="button" tabindex="0" aria-expanded="true" onclick="sbToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sbToggle(this);}"><span>Admin</span><svg class="sb-chev" width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div class="nav-item" id="concNavItem" onclick="setPage('conc',this)"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" stroke-width="1.2" opacity=".6"/></svg>Conciliação</div>
       <div class="nav-item" id="verCliNav" onclick="verComoCliente(true)" title="Mostra o dash exatamente como o cliente vê, sem as áreas e recursos de admin"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/></svg>Ver como cliente</div>
     </div>
     <hr class="sdiv">
-    <div class="ssec"><span>Exibição e Exportação</span></div>
+    <div class="ssec sb-tog" data-sec="exib" role="button" tabindex="0" aria-expanded="true" onclick="sbToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sbToggle(this);}"><span>Exibição e Exportação</span><svg class="sb-chev" width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="nav-item" id="fullBtn" onclick="toggleFullValues()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M6.2 2L4.6 14M11.4 2L9.8 14M2.5 5.5h11.5M2 10.5h11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span id="fullBtnLbl">Valores completos</span></div>
     <div class="nav-item" onclick="openRelatorio()"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M5.5 1.5h7a1 1 0 0 1 1 1V12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><rect x="2.5" y="3.5" width="8.5" height="11" rx="1.2" stroke="currentColor" stroke-width="1.4"/><path d="M4.8 7h4M4.8 9.5h4M4.8 12h2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Relatório consolidado</div>
     <div class="nav-item" id="adminBtn" onclick="adminLoginToggle()" style="display:none" title="Libera e remove os usuários do Hub e guarda o token do GitHub do portal do Book"><svg class="niv" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span id="adminBtnLbl">Usuários e acessos</span></div>
@@ -4846,9 +4849,20 @@ function initSkpiState(){
     document.getElementById('skpiChevron').style.transform='rotate(-90deg)';
   }
 }
+/* seções do menu lateral (Análise, Admin, Exibição e Exportação): clicar no título recolhe ou expande os itens dela,
+   como nos KPIs Anuais; a escolha fica salva no navegador. No celular o menu vira barra e mostra tudo. */
+var SB_REC={};try{SB_REC=JSON.parse(localStorage.getItem('hubSbRecolhido')||'{}')||{};}catch(e){}
+function sbItens(t){var o=[],n=t.nextElementSibling;while(n&&!n.classList.contains('ssec')&&!n.classList.contains('sdiv')){o.push(n);n=n.nextElementSibling;}return o;}
+function sbAplicar(t){var k=t.getAttribute('data-sec'),rec=!!SB_REC[k];
+  sbItens(t).forEach(function(n){n.classList.toggle('sb-oculto',rec);});
+  var ch=t.querySelector('.sb-chev');if(ch)ch.style.transform=rec?'rotate(-90deg)':'rotate(0deg)';
+  t.setAttribute('aria-expanded',rec?'false':'true');}
+function sbToggle(t){var k=t.getAttribute('data-sec');SB_REC[k]=!SB_REC[k];try{localStorage.setItem('hubSbRecolhido',JSON.stringify(SB_REC));}catch(e){}sbAplicar(t);}
+function initSbSecoes(){document.querySelectorAll('.ssec[data-sec]').forEach(sbAplicar);}
 aplicarCfgEmpresa();
 montarPaginaFluxo();
 initSkpiState();
+initSbSecoes();
 loadLalurParams();
 migrarSubvDed();migrarDeprFabrica();rebuildMonthSelectors();updateOV();buildDRE();buildAV();buildInd();
 refreshFullBtn();
