@@ -32,7 +32,8 @@ var MODELO=[
   ['cliente','Reunião de resultado e aprovação do fechamento',10],
   ['contador','Reunião de resultado com o cliente',10]
 ];
-var RESP={cliente:'Cliente (NHD)',contador:'Contabilidade (Audicon)'};
+var CLI_NOME=(window.HubEmpresa&&HubEmpresa.info&&HubEmpresa.info.curto)||'NHD';
+var RESP={cliente:'Cliente ('+CLI_NOME+')',contador:'Contabilidade (Audicon)'};
 var ST={pendente:'Pendente',andamento:'Em andamento',concluida:'Concluída'};
 
 var A=null, publicado=null, dirty=false, comp=null, calMes=null, diaSel=null, view='todas';
@@ -222,7 +223,7 @@ function editar(id,data){
   m.innerHTML='<form class="ag-dlg" onsubmit="Agenda.salvar(event)"><div class="ctitle">'+(id?'Editar tarefa':'Nova tarefa')+'</div>'+
     '<input type="hidden" id="agfId" value="'+esc(t.id||'')+'">'+
     '<label>Tarefa<input class="fs" id="agfT" required maxlength="160" value="'+esc(t.titulo)+'"></label>'+
-    '<div class="ag-2"><label>Responsável<select class="fs" id="agfR"><option value="cliente"'+(t.resp==='cliente'?' selected':'')+'>Cliente (NHD)</option><option value="contador"'+(t.resp==='contador'?' selected':'')+'>Contabilidade (Audicon)</option></select></label>'+
+    '<div class="ag-2"><label>Responsável<select class="fs" id="agfR"><option value="cliente"'+(t.resp==='cliente'?' selected':'')+'>'+RESP.cliente+'</option><option value="contador"'+(t.resp==='contador'?' selected':'')+'>Contabilidade (Audicon)</option></select></label>'+
     '<label>Data<input class="fs" type="date" id="agfD" required value="'+esc(t.data)+'"></label></div>'+
     '<label>Status<select class="fs" id="agfS">'+Object.keys(ST).map(function(k){return '<option value="'+k+'"'+(t.status===k?' selected':'')+'>'+ST[k]+'</option>';}).join('')+'</select></label>'+
     '<label>Observação<textarea class="fs" id="agfO" rows="3" maxlength="600">'+esc(t.obs||'')+'</textarea></label>'+

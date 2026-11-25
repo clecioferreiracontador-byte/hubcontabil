@@ -152,6 +152,55 @@ window.HubAuth = { lerDoc, gravarDoc, listarAcessos, salvarAcesso, removerAcesso
   get empresa(){ return EMP; }, get empresas(){ return empresasDe(ACESSO); }, empresasDe, todasEmpresas: TODAS_EMP,
   get email(){ return emailDe(USER); }, get papel(){ return ACESSO && ACESSO.papel; }, get nome(){ return (ACESSO && ACESSO.nome) || ''; } };
 
+/* ---------------- demonstração comercial (?demo) ----------------
+   Empresa e números fictícios (empresas/demo.js + demo/dados/*.json). Nada é lido nem gravado no Firebase:
+   o que o visitante publica fica só no navegador dele (chaves "emp:demo:..."), e "Sair" volta tudo ao original. */
+const DEMO = !!(window.HubEmpresa && HubEmpresa.demo);
+const DEMO_PERFIS = {
+  cliente: { email: 'diretoria@sabordocampo.demo', papel: 'cliente', nome: 'Marina Albuquerque', rot: 'Diretoria do cliente' },
+  admin: { email: 'contabil@audicon.demo', papel: 'admin', nome: 'Equipe Audicon', rot: 'Audicon (administrador)' }
+};
+const DEMO_ACESSOS = [
+  { email: 'contabil@audicon.demo', papel: 'admin', nome: 'Equipe Audicon' },
+  { email: 'diretoria@sabordocampo.demo', papel: 'cliente', nome: 'Marina Albuquerque (Diretoria)' },
+  { email: 'controladoria@sabordocampo.demo', papel: 'cliente', nome: 'Rafael Costa (Controladoria)' },
+  { email: 'financeiro@sabordocampo.demo', papel: 'cliente', nome: 'Juliana Prado (Financeiro)' }
+];
+const dLer = (k, d) => { try { const v = localStorage.getItem('demoHub:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const dGrava = (k, v) => { try { localStorage.setItem('demoHub:' + k, JSON.stringify(v)); } catch (e) {} };
+if (DEMO){
+  const soAdmin = () => { if (!ACESSO || ACESSO.papel !== 'admin') throw new Error('só o administrador publica'); };
+  const indisponivel = async () => { throw new Error('não disponível na demonstração'); };
+  Object.assign(window.HubAuth, {
+    lerDoc: async nome => {
+      const local = dLer('doc:' + nome, null); if (local) return local;
+      const r = await fetch('demo/dados/' + nome + '.json?v=1', { cache: 'no-cache' });
+      return r.ok ? r.json() : null;
+    },
+    gravarDoc: async (nome, obj) => { soAdmin(); const savedAt = (obj && obj.savedAt) || new Date().toISOString(); dGrava('doc:' + nome, obj); return savedAt; },
+    listarAcessos: async () => dLer('acessos', DEMO_ACESSOS).slice(),
+    salvarAcesso: async (email, papel, nome, book) => {
+      soAdmin(); email = String(email || '').trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('e-mail inválido');
+      const l = dLer('acessos', DEMO_ACESSOS).filter(a => a.email !== email);
+      l.push({ email, papel, nome: String(nome || '').trim(), book: !!book }); dGrava('acessos', l);
+    },
+    removerAcesso: async email => {
+      soAdmin(); if (email === emailDe(USER)) throw new Error('você não pode remover o seu próprio acesso');
+      dGrava('acessos', dLer('acessos', DEMO_ACESSOS).filter(a => a.email !== email));
+    },
+    lerBooks: async () => ({}), lerRazaoMes: async () => null, gravarBook: indisponivel, gravarRazaoMes: indisponivel,
+    sair: async () => {
+      /* apaga tudo o que o visitante mudou (chaves "emp:demo:...") e volta para a tela de entrada */
+      const pref = 'emp:demo:', ks = [];
+      try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.indexOf(pref) === 0) ks.push(k.slice(pref.length)); } } catch (e) {}
+      ks.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+      try { sessionStorage.removeItem('hubDemoPerfil'); sessionStorage.removeItem('nhdVerCliente'); } catch (e) {}
+      location.reload();
+    }
+  });
+}
+
 /* ---------------- mensagens de erro ---------------- */
 function erroMsg(e){
   const c = (e && e.code) || '';
@@ -172,6 +221,14 @@ function erroMsg(e){
 }
 
 /* ---------------- tela ---------------- */
+const PONTOS_DEMO = [
+  ['M3 13V7M7 13V4M11 13V9M15 13V2', 'DRE gerencial', 'Mês a mês, com análise vertical, indicadores e o resultado acumulado do ano.'],
+  ['M2 14h14M4 11V6h3v5M9 11V3h3v8', 'Balanço & Índices', 'Saldos finais, liquidez, endividamento, capital de giro e prazos médios.'],
+  ['M2 9h3l2-5 4 10 2-5h3', 'Fluxo de caixa e PE', 'De onde veio e para onde foi o caixa, e o ponto de equilíbrio do mês.'],
+  ['M4 2h7l3 3v11H4zM7 8h5M7 11h5', 'LALUR', 'Apuração acumulada de IRPJ e CSLL no Lucro Real, mês a mês.'],
+  ['M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2zM2 9h14M9 2c2 2 3 4.5 3 7s-1 5-3 7c-2-2-3-4.5-3-7s1-5 3-7z', 'Mercado e vendas', 'Comparação com o setor e mapa de vendas por estado e cidade.'],
+  ['M3 4h12v11H3zM3 7h12M7 2v3M11 2v3', 'Agenda e relatório', 'Agenda do fechamento e relatório consolidado em PDF e Excel.']
+];
 const PONTOS = [
   ['M3 13V7M7 13V4M11 13V9M15 13V2', 'DRE gerencial', 'Mês a mês, com análise vertical sobre a receita bruta e a líquida.'],
   ['M2 14h14M4 11V6h3v5M9 11V3h3v8', 'Balanço & Índices', 'Saldos finais, liquidez, endividamento e capital de giro.'],
@@ -321,8 +378,8 @@ function montar(){
     '<div class="hl-logos">' + logos() + '</div>' +
     '<div><div class="hl-kick">Hub Contábil · Audicon Contadores</div><h1>O fechamento do mês, <b>num lugar só</b>.</h1>' +
     '<p class="hl-lead">Resultado, balanço, impostos e o andamento do fechamento, atualizados pela Audicon a cada balancete.</p></div>' +
-    '<div class="hl-grid">' + PONTOS.map(p => '<div class="hl-pt">' + ic(p[0]) + '<div><b>' + p[1] + '</b><span>' + p[2] + '</span></div></div>').join('') + '</div>' +
-    '<div class="hl-foot">Audicon Contadores · acesso restrito a usuários liberados</div></section>' +
+    '<div class="hl-grid">' + (DEMO ? PONTOS_DEMO : PONTOS).map(p => '<div class="hl-pt">' + ic(p[0]) + '<div><b>' + p[1] + '</b><span>' + p[2] + '</span></div></div>').join('') + '</div>' +
+    '<div class="hl-foot">' + (DEMO ? 'Demonstração com empresa e números fictícios · Audicon Contadores' : 'Audicon Contadores · acesso restrito a usuários liberados') + '</div></section>' +
     '<section class="hl-form"><div class="hl-card" id="hlCard"></div></section>';
   document.body.appendChild(raiz);
 }
@@ -352,6 +409,13 @@ function tela(m, extra){
   else if (m === 'confirmar') c.innerHTML = '<h2>Confirme o seu e-mail</h2><p class="hl-sub">Enviamos um link de confirmação para <b>' + emailDe(USER) + '</b>. Abra o e-mail (confira também o spam), clique no link e volte aqui.</p>' +
     '<div id="hlMsg" class="hl-msg" role="alert"></div><button class="hl-btn" data-acao="jaconfirmei">Já confirmei</button><button class="hl-btn sec" data-acao="reenviar">Reenviar o e-mail</button>' +
     '<div class="hl-links"><button type="button" class="hl-lk" data-acao="sair">Entrar com outro e-mail</button></div>';
+  else if (m === 'demo') c.innerHTML = '<div class="hl-card"><div class="hl-kick">Demonstração</div><h2>Conheça o Hub Contábil</h2>' +
+    '<p class="hl-sub">Navegue pelo painel da <b>Sabor do Campo Alimentos</b>, uma indústria fictícia. Todos os nomes e números são ilustrativos.</p>' +
+    '<button class="hl-btn" data-demo="cliente">Entrar como diretoria do cliente</button>' +
+    '<p class="hl-sub" style="margin:-6px 0 4px;font-size:13px">O que o cliente vê: resultado, balanço, indicadores, mercado, agenda e relatórios.</p>' +
+    '<button class="hl-btn sec" data-demo="admin">Entrar como Audicon (administrador)</button>' +
+    '<p class="hl-sub" style="margin:-6px 0 4px;font-size:13px">Inclui a importação do balancete, a publicação para o cliente e a liberação de usuários.</p>' +
+    '<div class="hl-sec">' + ic('M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2zM9 8v4M9 5.5v.01') + 'Nada do que você fizer aqui sai deste navegador. Ao sair, a demonstração volta ao original.</div></div>';
   else if (m === 'semacesso') c.innerHTML = '<h2>Acesso não liberado</h2><p class="hl-sub">O e-mail <b>' + emailDe(USER) + '</b> entrou, mas ainda não foi liberado para o Hub. Peça para a Audicon incluir este e-mail na lista de acessos e entre de novo.</p>' +
     '<div id="hlMsg" class="hl-msg" role="alert"></div><button class="hl-btn" data-acao="jaconfirmei">Verificar de novo</button><div class="hl-links"><button type="button" class="hl-lk" data-acao="sair">Sair</button></div>';
   if (extra && extra.msg) msg(extra.msg, extra.tipo);
@@ -362,6 +426,7 @@ raiz.addEventListener('click', ev => {
   const t = ev.target.closest('button'); if (!t) return;
   if (t.dataset.alvo){ const i = $(t.dataset.alvo); const v = i.type === 'password'; i.type = v ? 'text' : 'password'; t.textContent = v ? 'Ocultar' : 'Mostrar'; t.setAttribute('aria-label', v ? 'Ocultar senha' : 'Mostrar senha'); return; }
   if (t.dataset.ir){ tela(t.dataset.ir); return; }
+  if (t.dataset.demo){ entrarDemo(t.dataset.demo); return; }
   if (t.dataset.acao === 'sair'){ signOut(auth).then(() => tela('entrar')); return; }
   if (t.dataset.acao === 'reenviar'){ ocupado(t, true); sendEmailVerification(USER).then(() => msg('E-mail reenviado. Confira a caixa de entrada e o spam.', 'ok')).catch(e => msg(erroMsg(e))).finally(() => ocupado(t, false)); return; }
   if (t.dataset.acao === 'jaconfirmei'){ ocupado(t, true); verificar(true).finally(() => ocupado(t, false)); }
@@ -414,9 +479,25 @@ async function verificar(forcar){
   }
 }
 
+function entrarDemo(perfil){
+  const p = DEMO_PERFIS[perfil] || DEMO_PERFIS.cliente;
+  try { sessionStorage.setItem('hubDemoPerfil', perfil); } catch (e) {}
+  USER = { email: p.email }; ACESSO = { papel: p.papel, nome: p.nome, book: false, empresas: ['demo'] };
+  if (liberado) return;
+  liberado = true;
+  mostrarTrans('Carregando a demonstração');
+  raiz.hidden = true; document.body.classList.remove('hub-locked'); abaDaEmpresa();
+  window.__hubPronto && window.__hubPronto({ email: p.email, papel: p.papel, nome: p.nome, book: false });
+}
+
 document.body.classList.add('hub-locked');
 montar(); abaNeutra(); tela('carregando');
-onAuthStateChanged(auth, u => {
+if (DEMO){
+  /* recarregar a página mantém o perfil escolhido nesta aba */
+  let pf = null; try { pf = sessionStorage.getItem('hubDemoPerfil'); } catch (e) {}
+  if (pf && DEMO_PERFIS[pf]) entrarDemo(pf); else tela('demo');
+}
+if (!DEMO) onAuthStateChanged(auth, u => {
   USER = u;
   if (!u){ if (liberado) location.reload(); else tela('entrar'); return; }
   verificar(false);

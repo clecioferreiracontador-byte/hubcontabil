@@ -225,7 +225,9 @@ function carregar(){
   var g=GRUPOS.filter(function(x){return x.id===SEL;})[0]||GRUPOS[0],id=g.id;
   carregando=true;
   fetch(g.arq+'?t='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-    .then(function(j){REFS[id]=j;carregando=false;if(ativo())render();})
+    .then(function(j){
+      if(CURTO!=='NHD'){var tr=function(x){return typeof x==='string'?x.replace(/\bNHD\b/g,CURTO):Array.isArray(x)?x.map(tr):(x&&typeof x==='object')?Object.keys(x).reduce(function(o,k){o[k]=tr(x[k]);return o;},{}):x;};j=tr(j);}
+      REFS[id]=j;carregando=false;if(ativo())render();})
     .catch(function(e){if(id===SEL)erro=e.message||String(e);carregando=false;render();});
 }
 

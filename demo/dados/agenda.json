@@ -1,0 +1,463 @@
+{
+ "v": 1,
+ "savedAt": "2026-11-24T19:30:00.000Z",
+ "comps": {
+  "2026-09": {
+   "inicio": "2026-10-01",
+   "prazo": "2026-10-15",
+   "tarefas": [
+    {
+     "id": "demo0001",
+     "titulo": "Enviar extratos bancários do mês (contas e aplicações)",
+     "resp": "cliente",
+     "data": "2026-10-02",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-02"
+    },
+    {
+     "id": "demo0002",
+     "titulo": "Enviar relatório de contas a pagar e a receber",
+     "resp": "cliente",
+     "data": "2026-10-02",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-02"
+    },
+    {
+     "id": "demo0003",
+     "titulo": "Enviar notas fiscais de entrada e saída pendentes",
+     "resp": "cliente",
+     "data": "2026-10-05",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-05"
+    },
+    {
+     "id": "demo0004",
+     "titulo": "Enviar contratos e extratos de empréstimos e financiamentos",
+     "resp": "cliente",
+     "data": "2026-10-05",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-05"
+    },
+    {
+     "id": "demo0005",
+     "titulo": "Importar balancete e razão do mês",
+     "resp": "contador",
+     "data": "2026-10-05",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-05"
+    },
+    {
+     "id": "demo0006",
+     "titulo": "Conciliação bancária",
+     "resp": "contador",
+     "data": "2026-10-06",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-06"
+    },
+    {
+     "id": "demo0007",
+     "titulo": "Conferência de faturamento",
+     "resp": "contador",
+     "data": "2026-10-07",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-07"
+    },
+    {
+     "id": "demo0008",
+     "titulo": "Parcelamentos federais e estaduais",
+     "resp": "contador",
+     "data": "2026-10-07",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-07"
+    },
+    {
+     "id": "demo0009",
+     "titulo": "Empréstimos e financiamentos",
+     "resp": "contador",
+     "data": "2026-10-08",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-08"
+    },
+    {
+     "id": "demo0010",
+     "titulo": "Book de conciliação (ativo, passivo e PL)",
+     "resp": "contador",
+     "data": "2026-10-08",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-08"
+    },
+    {
+     "id": "demo0011",
+     "titulo": "Enviar pendências da conciliação ao cliente",
+     "resp": "contador",
+     "data": "2026-10-08",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-08"
+    },
+    {
+     "id": "demo0012",
+     "titulo": "Responder pendências da conciliação",
+     "resp": "cliente",
+     "data": "2026-10-13",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-13"
+    },
+    {
+     "id": "demo0013",
+     "titulo": "Provisões, ajustes e lançamentos finais",
+     "resp": "contador",
+     "data": "2026-10-13",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-13"
+    },
+    {
+     "id": "demo0014",
+     "titulo": "Apuração de IRPJ e CSLL (LALUR)",
+     "resp": "contador",
+     "data": "2026-10-14",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-14"
+    },
+    {
+     "id": "demo0015",
+     "titulo": "Publicar o painel do mês",
+     "resp": "contador",
+     "data": "2026-10-14",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-14"
+    },
+    {
+     "id": "demo0016",
+     "titulo": "Reunião de resultado e aprovação do fechamento",
+     "resp": "cliente",
+     "data": "2026-10-15",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-15"
+    },
+    {
+     "id": "demo0017",
+     "titulo": "Reunião de resultado com o cliente",
+     "resp": "contador",
+     "data": "2026-10-15",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-10-15"
+    }
+   ]
+  },
+  "2026-10": {
+   "inicio": "2026-11-03",
+   "prazo": "2026-11-16",
+   "tarefas": [
+    {
+     "id": "demo0018",
+     "titulo": "Enviar extratos bancários do mês (contas e aplicações)",
+     "resp": "cliente",
+     "data": "2026-11-04",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-04"
+    },
+    {
+     "id": "demo0019",
+     "titulo": "Enviar relatório de contas a pagar e a receber",
+     "resp": "cliente",
+     "data": "2026-11-04",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-04"
+    },
+    {
+     "id": "demo0020",
+     "titulo": "Enviar notas fiscais de entrada e saída pendentes",
+     "resp": "cliente",
+     "data": "2026-11-05",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-05"
+    },
+    {
+     "id": "demo0021",
+     "titulo": "Enviar contratos e extratos de empréstimos e financiamentos",
+     "resp": "cliente",
+     "data": "2026-11-05",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-05"
+    },
+    {
+     "id": "demo0022",
+     "titulo": "Importar balancete e razão do mês",
+     "resp": "contador",
+     "data": "2026-11-05",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-05"
+    },
+    {
+     "id": "demo0023",
+     "titulo": "Conciliação bancária",
+     "resp": "contador",
+     "data": "2026-11-06",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-06"
+    },
+    {
+     "id": "demo0024",
+     "titulo": "Conferência de faturamento",
+     "resp": "contador",
+     "data": "2026-11-09",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-09"
+    },
+    {
+     "id": "demo0025",
+     "titulo": "Parcelamentos federais e estaduais",
+     "resp": "contador",
+     "data": "2026-11-09",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-09"
+    },
+    {
+     "id": "demo0026",
+     "titulo": "Empréstimos e financiamentos",
+     "resp": "contador",
+     "data": "2026-11-10",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-10"
+    },
+    {
+     "id": "demo0027",
+     "titulo": "Book de conciliação (ativo, passivo e PL)",
+     "resp": "contador",
+     "data": "2026-11-10",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-10"
+    },
+    {
+     "id": "demo0028",
+     "titulo": "Enviar pendências da conciliação ao cliente",
+     "resp": "contador",
+     "data": "2026-11-10",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-10"
+    },
+    {
+     "id": "demo0029",
+     "titulo": "Responder pendências da conciliação",
+     "resp": "cliente",
+     "data": "2026-11-12",
+     "status": "andamento",
+     "obs": "3 de 5 pendências respondidas; faltam os comprovantes de duas despesas de viagem."
+    },
+    {
+     "id": "demo0030",
+     "titulo": "Provisões, ajustes e lançamentos finais",
+     "resp": "contador",
+     "data": "2026-11-12",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-12"
+    },
+    {
+     "id": "demo0031",
+     "titulo": "Apuração de IRPJ e CSLL (LALUR)",
+     "resp": "contador",
+     "data": "2026-11-13",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-13"
+    },
+    {
+     "id": "demo0032",
+     "titulo": "Publicar o painel do mês",
+     "resp": "contador",
+     "data": "2026-11-13",
+     "status": "concluida",
+     "obs": "",
+     "concluidaEm": "2026-11-13"
+    },
+    {
+     "id": "demo0033",
+     "titulo": "Reunião de resultado e aprovação do fechamento",
+     "resp": "cliente",
+     "data": "2026-11-27",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0034",
+     "titulo": "Reunião de resultado com o cliente",
+     "resp": "contador",
+     "data": "2026-11-27",
+     "status": "pendente",
+     "obs": ""
+    }
+   ]
+  },
+  "2026-11": {
+   "inicio": "2026-12-01",
+   "prazo": "2026-12-14",
+   "tarefas": [
+    {
+     "id": "demo0035",
+     "titulo": "Enviar extratos bancários do mês (contas e aplicações)",
+     "resp": "cliente",
+     "data": "2026-12-02",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0036",
+     "titulo": "Enviar relatório de contas a pagar e a receber",
+     "resp": "cliente",
+     "data": "2026-12-02",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0037",
+     "titulo": "Enviar notas fiscais de entrada e saída pendentes",
+     "resp": "cliente",
+     "data": "2026-12-03",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0038",
+     "titulo": "Enviar contratos e extratos de empréstimos e financiamentos",
+     "resp": "cliente",
+     "data": "2026-12-03",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0039",
+     "titulo": "Importar balancete e razão do mês",
+     "resp": "contador",
+     "data": "2026-12-03",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0040",
+     "titulo": "Conciliação bancária",
+     "resp": "contador",
+     "data": "2026-12-04",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0041",
+     "titulo": "Conferência de faturamento",
+     "resp": "contador",
+     "data": "2026-12-07",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0042",
+     "titulo": "Parcelamentos federais e estaduais",
+     "resp": "contador",
+     "data": "2026-12-07",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0043",
+     "titulo": "Empréstimos e financiamentos",
+     "resp": "contador",
+     "data": "2026-12-08",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0044",
+     "titulo": "Book de conciliação (ativo, passivo e PL)",
+     "resp": "contador",
+     "data": "2026-12-08",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0045",
+     "titulo": "Enviar pendências da conciliação ao cliente",
+     "resp": "contador",
+     "data": "2026-12-08",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0046",
+     "titulo": "Responder pendências da conciliação",
+     "resp": "cliente",
+     "data": "2026-12-10",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0047",
+     "titulo": "Provisões, ajustes e lançamentos finais",
+     "resp": "contador",
+     "data": "2026-12-10",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0048",
+     "titulo": "Apuração de IRPJ e CSLL (LALUR)",
+     "resp": "contador",
+     "data": "2026-12-11",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0049",
+     "titulo": "Publicar o painel do mês",
+     "resp": "contador",
+     "data": "2026-12-11",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0050",
+     "titulo": "Reunião de resultado e aprovação do fechamento",
+     "resp": "cliente",
+     "data": "2026-12-14",
+     "status": "pendente",
+     "obs": ""
+    },
+    {
+     "id": "demo0051",
+     "titulo": "Reunião de resultado com o cliente",
+     "resp": "contador",
+     "data": "2026-12-14",
+     "status": "pendente",
+     "obs": ""
+    }
+   ]
+  }
+ }
+}

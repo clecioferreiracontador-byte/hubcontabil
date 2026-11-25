@@ -11,12 +11,18 @@
     centerfrio: { id: 'centerfrio', nome: 'Centerfrio', curto: 'Centerfrio', sub: 'Centerfrio Distribuição e Logística' }
   };
   var K_ABA = 'hubEmpresa', K_ULT = 'hubEmpresaUlt';
+  /* Demonstração comercial (?demo no endereço): empresa fictícia, dados fictícios de demo/dados e nada no
+     Firebase. Fica isolada das empresas reais: chaves "emp:demo:..." e banco local próprio, e não muda a
+     última empresa usada no navegador. */
+  var DEMO = /[?&]demo(=|&|$)/.test(location.search);
+  if (DEMO) EMPRESAS = { demo: { id: 'demo', nome: 'Sabor do Campo', curto: 'Sabor do Campo', sub: 'Sabor do Campo Alimentos Ltda' } };
   var ls = null; try { ls = window.localStorage; } catch (e) {}
   var proto = window.Storage && Storage.prototype;
   var get0 = proto && proto.getItem, set0 = proto && proto.setItem, del0 = proto && proto.removeItem;
   function ler(){
     var id = null;
     try { id = sessionStorage.getItem(K_ABA); } catch (e) {}
+    if (DEMO) return 'demo';
     if (!id && ls) try { id = get0.call(ls, K_ULT); } catch (e) {}
     return EMPRESAS[id] ? id : 'nhd';
   }
@@ -45,6 +51,7 @@
   }
   window.HubEmpresa = {
     lista: EMPRESAS,
+    demo: DEMO,
     get id(){ return atual; },
     get info(){ return EMPRESAS[atual]; },
     /* sufixo para nomes de banco/coleção: '' na NHD */
@@ -64,6 +71,7 @@
       Object.keys(EMPRESAS).forEach(function(e){ chaves.forEach(function(c){ try { del0.call(ls, e === 'nhd' ? c : 'emp:' + e + ':' + c); } catch (x) {} }); });
     },
     fixar: function(id){
+      if (DEMO) return;
       try { sessionStorage.setItem(K_ABA, id); } catch (e) {}
       try { if (ls) set0.call(ls, K_ULT, id); } catch (e) {}
     }
