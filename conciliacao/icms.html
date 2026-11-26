@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script src="../empresa.js?v=4"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICMS DIFAL e ST Audicon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tema Audicon (mesmo padrão dos outros painéis da Conciliação): azul #122A4F, dourado #CD9A56, Red Hat Display */
+:root{
+  --aud-primary:#122A4F; --aud-primary-dark:#0C182B; --aud-secondary:#CD9A56; --aud-secondary-hover:#B5833F;
+  --aud-text:#231F20; --aud-white:#FFFFFF; --aud-gray-100:#F1F1F1; --aud-gray-500:#69727D; --aud-gray-700:#33373D;
+  --aud-gold-soft:rgba(205,154,86,.55);
+  --aud-success:#04751A; --aud-warning:#F5AD00; --aud-info:#46CECD; --aud-danger:#FF0016; --aud-danger-text:#B0000F;
+  --aud-radius:.5rem;
+  --font:"Red Hat Display","Segoe UI",Calibri,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;background:var(--aud-gray-100);color:var(--aud-text);font-family:var(--font);font-weight:400;line-height:1.5}
+h1,h2,h3,h4{font-weight:600;color:var(--aud-primary);margin:0}
+.wrap{width:100%;margin:0 auto;padding:0 8px}
+header.top{background:var(--aud-primary);color:var(--aud-white);padding:10px 0 9px;border-bottom:3px solid var(--aud-secondary)}
+header.top .eyebrow{color:var(--aud-secondary);font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px}
+header.top h1{color:var(--aud-white);font-size:clamp(1.05rem,.95rem + .45vw,1.3rem);line-height:1.25}
+header.top p{margin:2px 0 0;font-size:.78rem;color:#dbe3ef}
+nav.tabs{background:var(--aud-primary-dark);position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(5,11,20,.25)}
+nav.tabs .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between}
+nav.tabs .brand{color:var(--aud-white);font-weight:600;font-size:.875rem;padding:12px 0}
+nav.tabs .toggler{display:inline-flex;border:1px solid var(--aud-gold-soft);background:transparent;color:var(--aud-white);border-radius:var(--aud-radius);padding:6px 10px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer}
+nav.tabs .menu{display:none;width:100%;flex-direction:column;padding-bottom:8px}
+nav.tabs .menu.open{display:flex}
+nav.tabs .menu button{border:0;border-left:3px solid transparent;background:transparent;color:var(--aud-white);padding:10px 12px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;text-align:left;border-radius:0}
+nav.tabs .menu button:hover{color:var(--aud-secondary)}
+nav.tabs .menu button[aria-selected="true"]{color:var(--aud-secondary);border-left-color:var(--aud-secondary)}
+@media (min-width:992px){
+  nav.tabs .toggler{display:none}
+  nav.tabs .menu{display:flex;flex-direction:row;width:auto;padding-bottom:0;gap:4px}
+  nav.tabs .menu button{border-left:0;border-bottom:3px solid transparent;padding:14px 16px;text-align:center}
+  nav.tabs .menu button[aria-selected="true"]{border-bottom-color:var(--aud-secondary)}
+}
+main{padding-top:20px;padding-bottom:40px}
+section.panel{display:none}
+section.panel.active{display:block}
+.box{background:var(--aud-white);border-radius:var(--aud-radius);padding:18px;margin-bottom:18px;box-shadow:0 .125rem .5rem rgba(18,42,79,.12);overflow-x:auto}
+.box h2{margin:0 0 12px;font-size:clamp(1.1rem,1rem + .5vw,1.3rem);padding-bottom:8px;border-bottom:2px solid var(--aud-gold-soft)}
+.box h3{margin:14px 0 6px;font-size:1rem}
+.muted{color:var(--aud-gray-500)}
+.small{font-size:.85rem}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar label{display:flex;align-items:center;gap:6px;margin:0;font-size:.85rem;font-weight:600;color:var(--aud-gray-700)}
+button{cursor:pointer;border:1px solid var(--aud-primary);background:var(--aud-white);color:var(--aud-primary);padding:8px 14px;border-radius:var(--aud-radius);font:inherit;font-size:.8125rem;font-weight:600;line-height:1.3}
+button:hover{background:var(--aud-primary);color:var(--aud-white)}
+button.primary{background:var(--aud-secondary);border-color:var(--aud-secondary);color:var(--aud-primary)}
+button.primary:hover{background:var(--aud-secondary-hover);border-color:var(--aud-secondary-hover);color:var(--aud-primary)}
+button:disabled{opacity:.55;cursor:wait}
+:focus-visible{outline:3px solid var(--aud-secondary);outline-offset:2px}
+input[type=file]{display:none}
+select,input[type=text]{font:inherit;font-size:.88rem;padding:6px 8px;border:1px solid #c5cbd3;border-radius:var(--aud-radius);background:#fff;color:var(--aud-text)}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{padding:5px 9px;text-align:right;border-bottom:1px solid #e1e4e8;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child,td.left,th.left{text-align:left}
+thead th{background:var(--aud-primary);color:var(--aud-white);font-weight:600;font-size:.78rem}
+tfoot td{font-weight:700;background:var(--aud-gray-100);border-top:2px solid var(--aud-secondary)}
+tbody tr:hover td{background:#fbf3e8}
+td.ex{font-size:.74rem;color:var(--aud-gray-500);white-space:normal;text-align:left;min-width:220px;max-width:420px}
+td.wrap{white-space:normal;text-align:left}
+tr.sub td{background:#F7F8FA;font-weight:700;color:var(--aud-primary)}
+tr.res td{background:#FFF8E6;font-weight:700;color:var(--aud-primary);border-top:2px solid var(--aud-secondary)}
+.tscroll{overflow:auto;max-height:640px;border:1px solid #e1e4e8;border-radius:var(--aud-radius)}
+.tscroll thead th{position:sticky;top:0;z-index:2}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:16px}
+.kpi{border-radius:var(--aud-radius);padding:12px 14px;background:#fff;border:1px solid #e1e4e8;border-top:4px solid var(--aud-secondary);box-shadow:0 .125rem .5rem rgba(18,42,79,.08)}
+.kpi .t{font-size:.78rem;font-weight:600;color:var(--aud-gray-500)}
+.kpi .v{font-size:1.15rem;font-weight:700;color:var(--aud-primary)}
+.kpi .s{font-size:.74rem;color:var(--aud-gray-500)}
+.kpi.ok{border-top-color:var(--aud-success)}.kpi.bad{border-top-color:var(--aud-danger)}
+.upl{border:2px dashed var(--aud-gold-soft);border-radius:var(--aud-radius);padding:14px;background:#fff}
+.upl-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.upl h3{margin:0 0 4px;font-size:1rem}
+.paste-actions{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#EEF2F8;color:var(--aud-primary);border-radius:999px;padding:2px 4px 2px 10px;font-size:.74rem;font-weight:600}
+.chip button{border:0;background:transparent;padding:0 6px;font-size:.9rem;line-height:1;color:var(--aud-gray-500)}
+.chip button:hover{background:#fff;color:var(--aud-danger-text)}
+.msg{padding:10px 14px;border-radius:var(--aud-radius);margin:8px 0;font-size:.9rem;background:#fff;border:1px solid #e1e4e8;border-left:5px solid var(--aud-primary)}
+.msg.err{border-left-color:var(--aud-danger);background:#FFF1F2;color:var(--aud-danger-text)}
+.msg.warn{border-left-color:var(--aud-warning);background:#FFF8E6}
+.msg.ok{border-left-color:var(--aud-success);background:#EAF6EC;color:#0b4f1a}
+.note{font-size:.8rem;margin-top:10px;padding:8px 12px;border-radius:var(--aud-radius);background:#FFF8E6;border-left:4px solid var(--aud-warning)}
+.empty{padding:22px;text-align:center;color:var(--aud-gray-500);white-space:normal}
+.dbad{color:var(--aud-danger-text);font-weight:600}
+.dok{color:var(--aud-success);font-weight:600}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.72rem;font-weight:600;white-space:nowrap}
+.pill.bad{background:#FFE3E6;color:var(--aud-danger-text);border:1px solid #f5b5bb}
+.pill.warn{background:var(--aud-warning);color:var(--aud-text)}
+.pill.info{background:#EEF2F8;color:var(--aud-primary)}
+.pill.ok{background:#E3F4E7;color:var(--aud-success)}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:10px}
+.filters label{display:flex;flex-direction:column;font-size:.76rem;font-weight:600;color:var(--aud-gray-700);gap:3px;margin:0}
+ol.steps{padding-left:22px;margin:6px 0}
+ol.steps li{margin:7px 0}
+.box table.regras td,.box table.regras th{white-space:normal;text-align:left}
+.ic{width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:.4em;flex:none;display:inline-block}
+@media (max-width:575px){html{font-size:15px}.box{padding:12px}}
+@media print{header.top,nav.tabs,.upl,.toolbar{display:none!important}body{background:#fff}.box{box-shadow:none}section.panel{display:block!important}}
+</style>
+<script src="vendor/sheetjs/xlsx.full.min.js"></script>
+<script src="hub-db.js?v=4"></script>
+<script src="mes-hub.js?v=3"></script>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="eyebrow">Audicon Contadores · Controladoria</div>
+  <h1>ICMS DIFAL e ST: saídas × guias × contabilidade</h1>
+  <p>NHD Foods · O ICMS ST e o DIFAL das notas de saída (relatório da Audicon) conferidos com a provisão no razão, e as guias pagas pela Dootax conferidas com as notas e com o pagamento lançado</p>
+</div></header>
+<nav class="tabs" role="navigation" aria-label="Etapas"><div class="wrap">
+  <span class="brand">ICMS DIFAL/ST</span>
+  <button type="button" class="toggler" id="navToggle" aria-expanded="false" aria-controls="menuAbas" aria-label="Alternar menu">☰ Menu</button>
+  <div class="menu" id="menuAbas" role="tablist">
+    <button type="button" role="tab" aria-selected="false" data-tab="processo">1 · Processo mensal</button>
+    <button type="button" role="tab" aria-selected="true" data-tab="conferencia">2 · Conferência do mês</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="st">3 · ST nota a nota</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="guias">4 · Guias Dootax</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="uf">5 · DIFAL por UF</button>
+  </div>
+</div></nav>
+<main class="wrap">
+
+<div class="box">
+  <div class="upl">
+    <div class="upl-grid">
+      <div>
+        <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4M6 12.5h2"/></svg>Relação de saídas (Audicon)</h3>
+        <div class="muted small">TXT “Saídas por produtos — Audicon padrão”, um por filial e mês (ex.: <i>082026 - RelacaoSaidas Filial 2.txt</i>). Lê nota a nota o ICMS ST, o FCP ST, o DIFAL e o FCP DIFAL. Aceita vários arquivos; o mesmo mês e filial de novo substitui.</div>
+        <div class="paste-actions"><button class="primary" type="button" id="btSaidas" onclick="$('inSaidas').click()">Importar saídas (.txt)</button></div>
+        <div class="chips" id="chSaidas"></div>
+      </div>
+      <div>
+        <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h8v13l-2-1.2-2 1.2-2-1.2-2 1.2zM6 5h4M6 8h4"/></svg>Guias pagas (Dootax)</h3>
+        <div class="muted small">Excel “Guias pagas Dootax” da empresa (aba <b>Base de Dados</b>). Tipo “ICMS” = DIFAL, “FECP” = FCP do DIFAL, “ICMS-ST” = ST. O Nº do documento é o número da nota. Importar de novo substitui a base inteira.</div>
+        <div class="paste-actions"><button class="primary" type="button" id="btDootax" onclick="$('inDootax').click()">Importar guias (.xlsx)</button></div>
+        <div class="chips" id="chDootax"></div>
+      </div>
+    </div>
+    <input type="file" id="inSaidas" accept=".txt" multiple onchange="importarSaidas([...this.files]);this.value=''">
+    <input type="file" id="inDootax" accept=".xlsx,.xls" onchange="importarDootax(this.files[0]);this.value=''">
+    <div class="muted small" style="margin-top:10px">O razão vem do <b>Book de conciliação</b> (contas 2.1.15.2004 ICMS ST a pagar, 2.1.15.2006 ICMS DIFAL a recolher, 2.1.15.2001 ICMS a recolher, 3.1.01.2008 e 3.1.01.2009). Tudo fica neste navegador, como o razão.</div>
+  </div>
+  <div class="toolbar" style="margin-top:12px">
+    <label>Mês:<select id="selMes" onchange="mesAtual=this.value;render()"></select></label>
+    <button type="button" onclick="baixarXlsx()">Baixar Excel do mês</button>
+    <span class="muted small" id="stTopo"></span>
+  </div>
+  <div id="msgs"></div>
+</div>
+
+<section class="panel active" id="tab-conferencia">
+  <div class="kpis" id="kpis"></div>
+  <div class="box">
+    <h2>ICMS ST <span class="muted small" id="titST"></span></h2>
+    <div class="tscroll" style="max-height:none"><table>
+      <thead><tr><th>Filial</th><th>ST das notas</th><th>FCP ST das notas</th><th>Provisão no razão</th><th>Diferença</th><th>Despesa 3.1.01.2008</th><th class="left">Conferência</th></tr></thead>
+      <tbody id="stBody"></tbody><tfoot id="stFoot"></tfoot>
+    </table></div>
+    <div class="muted small" id="stInfo" style="margin-top:8px"></div>
+  </div>
+  <div class="box">
+    <h2>DIFAL <span class="muted small" id="titDif"></span></h2>
+    <div class="tscroll" style="max-height:none"><table>
+      <thead><tr><th>Filial</th><th>DIFAL das notas</th><th>FCP DIFAL das notas</th><th>Total das notas</th><th>Provisão 2.1.15.2006</th><th>Diferença</th><th>Despesa 3.1.01.2009</th><th class="left">Conferência</th></tr></thead>
+      <tbody id="difBody"></tbody><tfoot id="difFoot"></tfoot>
+    </table></div>
+    <div class="muted small" id="difInfo" style="margin-top:8px"></div>
+  </div>
+  <div class="box">
+    <h2>Guias pagas no mês × razão <span class="muted small" id="titPg"></span></h2>
+    <div class="tscroll" style="max-height:none"><table>
+      <thead><tr><th>Tipo de guia</th><th>Guias</th><th>Valor pago (Dootax)</th><th class="left">Conferência</th></tr></thead>
+      <tbody id="pgBody"></tbody><tfoot id="pgFoot"></tfoot>
+    </table></div>
+    <div class="muted small" id="pgInfo" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-st">
+  <div class="box">
+    <h2>ICMS ST nota a nota <span class="muted small" id="titStN"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Cada nota com ST no relatório de saídas procurada na provisão do razão: débito “VE-SPED -nota” na despesa 3.1.01.2008 contra o ICMS ST a pagar (2.1.15.2004) ou direto no ICMS a recolher (2.1.15.2001). Quando a despesa foi lançada contra outra conta, mostra qual.</div>
+    <div class="filters"><label>Mostrar<select id="fSt" onchange="renderStNotas()"><option value="dif">Só divergências</option><option value="todas">Todas as notas com ST</option></select></label></div>
+    <div class="tscroll"><table>
+      <thead><tr><th>Filial</th><th>Nota</th><th>Data</th><th>UF</th><th>CFOP</th><th>ST</th><th>FCP ST</th><th>Provisão no razão</th><th>Diferença</th><th class="left">Situação</th></tr></thead>
+      <tbody id="stnBody"></tbody><tfoot id="stnFoot"></tfoot>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-guias">
+  <div class="box">
+    <h2>Pagamentos: guia Dootax × lançamento no razão <span class="muted small" id="titPgN"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Guias pagas no mês (data de pagamento) contra os débitos “DEB-TX-nota” da conta 2.1.15.2001, pelo número da nota. Mostra só as diferenças.</div>
+    <div class="tscroll" style="max-height:420px"><table>
+      <thead><tr><th>Nota</th><th>Pagamento</th><th>UF</th><th>Tipos</th><th>Dootax</th><th>Razão</th><th>Diferença</th><th class="left">Situação</th></tr></thead>
+      <tbody id="pgnBody"></tbody>
+    </table></div>
+  </div>
+  <div class="box">
+    <h2>Guia × nota (valor da guia contra o DIFAL/ST da nota) <span class="muted small" id="titGn"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Guias das notas emitidas no mês (período da guia = data da nota) contra o valor da própria nota no relatório de saídas: guia “ICMS” × DIFAL, “FECP” × FCP DIFAL, “ICMS-ST” × ST + FCP ST.</div>
+    <div class="filters"><label>Mostrar<select id="fGn" onchange="renderGuiaNota()"><option value="dif">Só divergências</option><option value="todas">Todas</option></select></label></div>
+    <div class="tscroll"><table>
+      <thead><tr><th>Filial</th><th>Nota</th><th>UF</th><th>Guia DIFAL</th><th>Nota DIFAL</th><th>Guia FCP</th><th>Nota FCP</th><th>Guia ST</th><th>Nota ST+FCP</th><th>Diferença</th><th class="left">Situação</th></tr></thead>
+      <tbody id="gnBody"></tbody><tfoot id="gnFoot"></tfoot>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-uf">
+  <div class="box">
+    <h2>DIFAL e FCP por UF de destino <span class="muted small" id="titUf"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">DIFAL e FCP das notas do mês por UF e quanto dele tem guia paga pela Dootax (guia por nota). UF sem guia nenhuma costuma ser estado em que a empresa tem inscrição e recolhe o DIFAL na apuração mensal.</div>
+    <div class="tscroll" style="max-height:none"><table>
+      <thead><tr><th>UF</th><th>Notas com DIFAL</th><th>DIFAL</th><th>FCP</th><th>Total das notas</th><th>Notas com guia</th><th>Guias (DIFAL+FCP)</th><th>Notas sem guia</th><th>Valor sem guia</th><th>Guia − nota</th></tr></thead>
+      <tbody id="ufBody"></tbody><tfoot id="ufFoot"></tfoot>
+    </table></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-processo">
+  <div class="box"><h2>Objetivo</h2><p>Confirmar, mês a mês, que o <b>ICMS ST</b> e o <b>DIFAL</b> destacados nas notas de saída foram provisionados na contabilidade e que as <b>guias pagas pela Dootax</b> correspondem às notas e foram lançadas no razão.</p></div>
+  <div class="box"><h2>Passo a passo</h2><ol class="steps">
+    <li>No <b>Book de conciliação</b>, importar o razão do mês (o mês escolhido lá abre aqui).</li>
+    <li>Aqui, importar os TXT da <b>relação de saídas</b> do mês (um por filial) e o Excel das <b>guias pagas da Dootax</b>.</li>
+    <li>Na etapa <b>2 · Conferência do mês</b>, ver por filial o ST e o DIFAL das notas × a provisão no razão, e as guias pagas × os pagamentos lançados.</li>
+    <li>As etapas 3 a 5 mostram nota a nota e por UF onde está a diferença. O botão <b>Baixar Excel do mês</b> leva tudo para planilha.</li>
+  </ol></div>
+  <div class="box"><h2>Regras</h2><table class="regras"><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
+    <tr><td>R1</td><td>Relatório de saídas: colunas ICMS ST, FCP ST, DIFAL (DIFAL DES) e FCP DIFAL somadas por nota (a nota tem uma linha por produto).</td></tr>
+    <tr><td>R2</td><td><b>ST</b>: a provisão é nota a nota, débito “VE-SPED -nota” na 3.1.01.2008 contra a 2.1.15.2004 (ICMS ST a pagar, transferida no fim do mês para a 2.1.15.2001) ou direto contra a 2.1.15.2001. A nota bate quando a provisão é igual ao ST ou ao ST + FCP ST da nota. Despesa lançada contra outra conta (ex.: 1.1.03.2001) é apontada. Devoluções (DE-SPED) ficam fora, porque o relatório é só de saídas.</td></tr>
+    <tr><td>R3</td><td><b>DIFAL</b>: a provisão é um lançamento por filial no fim do mês na 2.1.15.2006 (“VR REC DIFAL MÊS”, contra 2.1.15.2001, e 3.1.01.2009 contra 3.1.01.2002), conferida com DIFAL + FCP DIFAL das notas da filial.</td></tr>
+    <tr><td>R4</td><td><b>Pagamentos</b>: cada guia da Dootax é um débito “DEB-TX-nota” na 2.1.15.2001, pelo número da nota e pela data de pagamento.</td></tr>
+    <tr><td>R5</td><td><b>Guia × nota</b>: o período da guia é a data da nota; guia “ICMS” × DIFAL, “FECP” × FCP DIFAL e “ICMS-ST” × ST + FCP ST da mesma nota. Guia maior que a nota pode ser juros/multa por pagamento em atraso.</td></tr>
+    <tr><td>R6</td><td>Diferença até R$ 0,02 por nota (ou R$ 0,05 no total) é arredondamento.</td></tr>
+  </tbody></table></div>
+</section>
+
+</main>
+
+<script>
+// ===================== utilitários =====================
+const $ = id => document.getElementById(id);
+const r2 = v => Math.round((v + Number.EPSILON) * 100) / 100;
+const fmt = v => (v === null || v === undefined || isNaN(v)) ? '—' : (Math.abs(v) < 0.005 ? 0 : v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+const dig = s => String(s ?? '').replace(/\D/g, '');
+const MES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const mesLbl = m => m ? MES[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4) : '';
+const br = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '';
+const TOL = 0.02, TOLT = 0.05;
+const ok = (d, t) => Math.abs(d) <= (t || TOL) + 1e-9;
+const chk = (d, t, vazio) => isNaN(d) ? `<span class="muted small">${vazio || '—'}</span>` : ok(d, t) ? '<span class="dok">✓ OK</span>' : `<span class="dbad">dif. ${fmt(d)}</span>`;
+function num(v){
+  if (v === null || v === undefined || v === '') return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim().replace(/\s|R\$/g, ''); if (!s || s === '-') return NaN;
+  if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+  return parseFloat(s);
+}
+function msg(t, tipo){ const d = document.createElement('div'); d.className = 'msg ' + (tipo || ''); d.innerHTML = t; $('msgs').appendChild(d); setTimeout(() => d.remove(), tipo === 'err' ? 15000 : 10000); return d; }
+const filN = f => { const n = parseInt(dig(f), 10); return isNaN(n) ? '?' : String(n); };
+const filLbl = f => 'Filial ' + f;
+const LIM = 600;   // linhas mostradas nas tabelas nota a nota (o Excel leva todas)
+
+// ===================== contas =====================
+const CT = { st: '2.1.15.2004', dif: '2.1.15.2006', rec: '2.1.15.2001', dSt: '3.1.01.2008', dDif: '3.1.01.2009' };
+const nfHist = h => { const m = String(h || '').match(/-SPED\s*-+0*(\d+)/); return m ? +m[1] : 0; };
+const nfTx = h => { const m = String(h || '').match(/^DEB-TX-0*(\d+)/); return m ? +m[1] : 0; };
+
+// ===================== base local (IndexedDB do Hub) =====================
+// 'icms-saidas:aaaa-mm' -> { fil: { '2': { arquivo, em, linhas, ruins, cnpj } }, nfs: { '2': [[nf, uf, data, cfop, st, fcpst, difal, fcpdifal], ...] } }
+// 'icms-dootax'         -> { arquivo, em, guias: [[fil, nf, tipo, valor, per, pag, uf, cod], ...] }
+let mesAtual = '', SAI = null, DOO = null, RAZ = {}, BAL = null, CALC = null;
+const getMeta = async k => { try { return window.HubDB ? await HubDB.getMeta(k) : null; } catch(e){ return null; } };
+const setMeta = async (k, v) => { if (!window.HubDB) throw new Error('base local indisponível'); await HubDB.setMeta(k, v); };
+async function mesesSaidas(){ try { return (await HubDB.metaKeys()).filter(k => String(k).indexOf('icms-saidas:') === 0).map(k => k.slice(12)).sort(); } catch(e){ return []; } }
+
+// ===================== relação de saídas (TXT) =====================
+const RE_L = /^(\d\d)\/(\d\d)\/(\d{4})\s+([\d.]+)\s+.*?\s([A-Z]{2})\s+\S.*?\s(\d{8})\s+.+?\s+(\d\.\d{3})\s+(\d{3})\s+((?:-?[\d.]+,\d\d\s+){16})(\d{44})\s*$/;
+function lerSaidas(txt, nome){
+  const L = txt.split(/\r?\n/);
+  let fil = '', per = '', cnpj = '';
+  for (let i = 0; i < Math.min(L.length, 40); i++){
+    const m = L[i].match(/Filial\s+(\d{4})-(\d{2})/);
+    if (m){ fil = String(+m[1]); cnpj = m[1] + '-' + m[2]; const p = L[i].match(/(\d{2})\/(\d{4})\s*$/); if (p) per = p[2] + '-' + p[1]; break; }
+  }
+  const fn = String(nome).match(/(\d{2})(\d{4})\s*-\s*Rela\w*\s*Sa\w*\s+Filial\s+(\d+)/i);
+  if (!fil && fn) fil = String(+fn[3]);
+  if (!per && fn) per = fn[2] + '-' + fn[1];
+  if (!/RELACAO|SAIDAS POR PRODUTOS/.test(norm(L.slice(0, 6).join(' '))) && !fn) throw new Error('não parece a relação de saídas por produtos da Audicon');
+  const nfs = new Map(); let linhas = 0, ruins = 0; const meses = {};
+  for (const ln of L){
+    if (!/^\d\d\/\d\d\/\d{4}/.test(ln)) continue;
+    const m = RE_L.exec(ln.trimEnd());
+    if (!m){ ruins++; continue; }
+    linhas++;
+    const v = m[9].trim().split(/\s+/).map(num);
+    const data = m[3] + '-' + m[2] + '-' + m[1]; meses[data.slice(0, 7)] = (meses[data.slice(0, 7)] || 0) + 1;
+    const st = v[6] || 0, fs = v[7] || 0, fd = v[12] || 0, di = v[13] || 0;
+    if (!st && !fs && !di && !fd) continue;
+    const nf = +m[4].replace(/\./g, ''), k = nf + '|' + m[5];
+    let o = nfs.get(k); if (!o){ o = [nf, m[5], data, m[7], 0, 0, 0, 0]; nfs.set(k, o); }
+    if ((st || fs) && o[3].charAt(2) !== '4') o[3] = m[7];
+    o[4] += st; o[5] += fs; o[6] += di; o[7] += fd;
+  }
+  if (!per){ const ms = Object.keys(meses).sort((a, b) => meses[b] - meses[a]); per = ms[0] || ''; }
+  if (!fil) throw new Error('não achei a filial no cabeçalho nem no nome do arquivo');
+  if (!per) throw new Error('não achei o mês do relatório');
+  if (!linhas) throw new Error('nenhuma linha de nota reconhecida');
+  return { fil, per, cnpj, linhas, ruins, nfs: [...nfs.values()].map(o => o.map((x, i) => i >= 4 ? r2(x) : x)) };
+}
+async function importarSaidas(files){
+  if (!files.length) return;
+  $('btSaidas').disabled = true;
+  const aviso = msg('Lendo ' + files.length + ' arquivo(s) de saídas…');
+  for (const f of files){
+    try {
+      const txt = new TextDecoder('windows-1252').decode(await f.arrayBuffer());
+      const s = lerSaidas(txt, f.name);
+      const K = 'icms-saidas:' + s.per, o = (await getMeta(K)) || { fil: {}, nfs: {} };
+      o.fil[s.fil] = { arquivo: f.name, em: new Date().toISOString(), linhas: s.linhas, ruins: s.ruins, cnpj: s.cnpj };
+      o.nfs[s.fil] = s.nfs;
+      await setMeta(K, o);
+      const t = s.nfs.reduce((a, x) => { a.st += x[4] + x[5]; a.di += x[6] + x[7]; return a; }, { st: 0, di: 0 });
+      msg(`“${esc(f.name)}”: ${filLbl(s.fil)} · ${mesLbl(s.per)} — ${s.linhas.toLocaleString('pt-BR')} linhas, ST + FCP ${fmt(t.st)} · DIFAL + FCP ${fmt(t.di)}${s.ruins ? ` · <b>${s.ruins} linha(s) não lida(s)</b>` : ''}.`, s.ruins ? 'warn' : 'ok');
+      mesAtual = s.per;
+    } catch(e){ msg('Erro ao importar “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
+  }
+  aviso.remove(); $('btSaidas').disabled = false;
+  await render();
+}
+async function tirarSaidas(m, fil){
+  if (!confirm('Remover a relação de saídas da ' + filLbl(fil) + ' de ' + mesLbl(m) + '?')) return;
+  const K = 'icms-saidas:' + m, o = await getMeta(K); if (!o) return;
+  delete o.fil[fil]; delete o.nfs[fil];
+  if (Object.keys(o.fil).length) await setMeta(K, o); else await HubDB.delMeta(K);
+  await render();
+}
+
+// ===================== guias pagas (Dootax) =====================
+function dataIso(v){
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'number'){ const d = XLSX.SSF.parse_date_code(v); return d ? d.y + '-' + String(d.m).padStart(2, '0') + '-' + String(d.d).padStart(2, '0') : ''; }
+  if (v instanceof Date) return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0');
+  const s = String(v).trim(); let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/); if (m) return m[3] + '-' + m[2] + '-' + m[1];
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[0] : '';
+}
+function lerDootax(wb){
+  for (const sn of wb.SheetNames){
+    const R = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: null });
+    const h = R.findIndex(r => (r || []).some(c => /CNPJ CONTRIBUINTE/.test(norm(c))));
+    if (h < 0) continue;
+    const H = R[h].map(norm), col = re => H.findIndex(x => re.test(x));
+    const c = { cnpj: col(/CNPJ/), per: col(/^PERIODO/), doc: col(/DOCUMENTO/), cod: col(/CODIGO/), tipo: col(/TIPO/), val: col(/^VALOR/), pag: col(/PAGAMENTO/), uf: col(/^UF/) };
+    if ([c.cnpj, c.doc, c.tipo, c.val, c.pag].some(i => i < 0)) throw new Error('aba “' + sn + '” sem as colunas esperadas (CNPJ, Nº Documento, Tipo de Tributo, Valor Total, Data de Pagamento)');
+    const guias = [];
+    for (let i = h + 1; i < R.length; i++){
+      const r = R[i] || [], cn = dig(r[c.cnpj]); if (cn.length < 12) continue;
+      const t = norm(r[c.tipo]), tipo = /ST/.test(t) ? 'st' : /FECP|FCP/.test(t) ? 'fcp' : 'dif';
+      const valor = num(r[c.val]); if (isNaN(valor)) continue;
+      guias.push([String(+cn.slice(8, 12)), +dig(r[c.doc]) || 0, tipo, r2(valor), dataIso(r[c.per]), dataIso(r[c.pag]), String(r[c.uf] || '').trim().toUpperCase(), String(r[c.cod] ?? '')]);
+    }
+    if (!guias.length) throw new Error('nenhuma guia na aba “' + sn + '”');
+    return guias;
+  }
+  throw new Error('não achei a aba com “CNPJ Contribuinte” (Base de Dados)');
+}
+async function importarDootax(f){
+  if (!f) return;
+  $('btDootax').disabled = true;
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+    const g = lerDootax(wb);
+    DOO = { arquivo: f.name, em: new Date().toISOString(), guias: g };
+    await setMeta('icms-dootax', DOO);
+    const pags = g.map(x => x[5]).filter(Boolean).sort();
+    msg(`“${esc(f.name)}”: ${g.length.toLocaleString('pt-BR')} guias, ${fmt(g.reduce((a, x) => a + x[3], 0))}, pagas de ${br(pags[0])} a ${br(pags[pags.length - 1])}.`, 'ok');
+  } catch(e){ msg('Erro ao importar “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
+  $('btDootax').disabled = false;
+  await render();
+}
+async function tirarDootax(){ if (!confirm('Remover a base de guias da Dootax?')) return; await HubDB.delMeta('icms-dootax'); DOO = null; await render(); }
+
+// ===================== razão (Book) =====================
+async function carregarRazao(m){
+  RAZ = {}; const info = await getMeta('razao');
+  RAZ.__ok = !!(info && info.agg && info.agg[m]);
+  if (!RAZ.__ok) return;
+  for (const c of Object.values(CT)){
+    RAZ[c] = [];
+    if (!info.agg[m][c]) continue;
+    try { RAZ[c] = await HubDB.lancamentosConta(c, [m]); } catch(e){}
+  }
+}
+
+// ===================== cálculo do mês =====================
+function calcular(m){
+  const C = { fil: {}, stN: [], pgN: [], gn: [], uf: {}, semGuia: [] };
+  const F = f => C.fil[f] = C.fil[f] || { st: 0, fs: 0, di: 0, fd: 0, provSt: 0, despSt: 0, provDif: 0, despDif: 0, txt: false };
+  // notas do relatório de saídas
+  const NF = new Map();   // fil|nf -> registro
+  if (SAI) Object.keys(SAI.nfs || {}).forEach(f => {
+    F(f).txt = true;
+    SAI.nfs[f].forEach(x => {
+      const o = F(f); o.st += x[4]; o.fs += x[5]; o.di += x[6]; o.fd += x[7];
+      const k = f + '|' + x[0], a = NF.get(k);
+      if (a){ a.st += x[4]; a.fs += x[5]; a.di += x[6]; a.fd += x[7]; }
+      else NF.set(k, { f, nf: x[0], uf: x[1], data: x[2], cfop: x[3], st: x[4], fs: x[5], di: x[6], fd: x[7] });
+    });
+  });
+  // ST: provisão nota a nota = débito “VE-SPED -nota” na despesa 3.1.01.2008 contra o passivo
+  // (2.1.15.2004 ICMS ST a pagar, ou direto na 2.1.15.2001 ICMS a recolher: os dois jeitos aparecem no razão)
+  const PASS = [CT.st, CT.rec];
+  const rSt = new Map(); C.transfSt = 0; C.devSt = 0; C.ctaSt = {}; C.outrosSt = [];
+  (RAZ[CT.dSt] || []).forEach(l => {
+    const f = filN(l.fil), v = l.deb - l.cred; F(f).despSt += v;
+    if (!/^VE-SPED/i.test(l.hist)) return;
+    const n = nfHist(l.hist); if (!n){ C.outrosSt.push(l); return; }
+    const pass = PASS.includes(l.cp);
+    if (pass){ F(f).provSt += v; C.ctaSt[l.cp] = (C.ctaSt[l.cp] || 0) + v; }
+    const k = f + '|' + n, a = rSt.get(k) || { v: 0, fora: 0, cps: new Set(), hist: l.hist, data: l.data };
+    if (pass) a.v += v; else { a.fora += v; a.cps.add(l.cp || '?'); }
+    rSt.set(k, a);
+  });
+  (RAZ[CT.st] || []).forEach(l => {
+    if (l.cp === CT.rec || /TRANSF/i.test(l.hist)) C.transfSt += l.deb - l.cred;
+    else if (/^DE-SPED/i.test(l.hist)) C.devSt += l.deb - l.cred;
+  });
+  NF.forEach((x, k) => {
+    if (!(x.st || x.fs)) return;
+    const r = rSt.get(k), t1 = x.st, t2 = x.st + x.fs;
+    let sit, dif, cls;
+    if (!r){ sit = 'Sem provisão no razão' + (/^[56]\.91[01]$/.test(x.cfop) ? ' (CFOP ' + x.cfop + ': bonificação/brinde)' : ''); dif = -t2; cls = 'bad'; }
+    else if (!r.v && r.fora){ sit = 'Despesa lançada contra ' + [...r.cps].join(', ') + ' (' + fmt(r.fora) + '), não no ICMS ST a pagar'; dif = r2(-t2); cls = 'bad'; }
+    else if (ok(r.v - t1) || ok(r.v - t2)){ sit = 'OK'; dif = 0; cls = 'ok'; }
+    else { dif = r2(r.v - t2); sit = 'Valor diferente'; cls = 'warn'; }
+    C.stN.push({ f: x.f, nf: x.nf, data: x.data, uf: x.uf, cfop: x.cfop, st: x.st, fs: x.fs, raz: r ? r.v : NaN, dif, sit, cls });
+    if (r) r.usado = true;
+  });
+  rSt.forEach((r, k) => { if (r.usado || (ok(r.v) && ok(r.fora))) return; const [f, n] = k.split('|');
+    C.stN.push({ f, nf: +n, data: r.data, uf: '', cfop: '', st: 0, fs: 0, raz: r.v, dif: r2(r.v + r.fora), sit: SAI && SAI.fil[f] ? 'No razão, sem ST no relatório de saídas' : 'No razão (sem relatório de saídas desta filial)', cls: SAI && SAI.fil[f] ? 'bad' : 'info' }); });
+  C.stN.sort((a, b) => (a.cls === 'ok') - (b.cls === 'ok') || Math.abs(b.dif) - Math.abs(a.dif) || a.nf - b.nf);
+  // DIFAL: provisão mensal por filial na 2.1.15.2006
+  C.difL = [];
+  (RAZ[CT.dif] || []).forEach(l => { F(filN(l.fil)).provDif += l.cred - l.deb; C.difL.push(l); });
+  (RAZ[CT.dDif] || []).forEach(l => { F(filN(l.fil)).despDif += l.deb - l.cred; });
+  // guias pagas no mês × DEB-TX na 2.1.15.2001
+  const G = (DOO && DOO.guias) || [];
+  const pg = new Map(), tp = { dif: [0, 0], fcp: [0, 0], st: [0, 0] };
+  G.forEach(g => { if (g[5].slice(0, 7) !== m) return; tp[g[2]][0]++; tp[g[2]][1] += g[3];
+    const a = pg.get(g[1]) || { nf: g[1], doo: 0, raz: 0, pag: g[5], uf: g[6], tipos: new Set(), f: g[0] }; a.doo += g[3]; a.tipos.add(g[2]); pg.set(g[1], a); });
+  C.tipos = tp; C.razTx = 0; C.razTxN = 0;
+  (RAZ[CT.rec] || []).forEach(l => { const n = nfTx(l.hist); if (!n) return; const v = l.deb - l.cred; C.razTx += v; C.razTxN++;
+    const a = pg.get(n) || { nf: n, doo: 0, raz: 0, pag: l.data, uf: '', tipos: new Set(), f: filN(l.fil) }; a.raz += v; pg.set(n, a); });
+  pg.forEach(a => { const d = r2(a.raz - a.doo); if (ok(d)) return;
+    C.pgN.push({ nf: a.nf, pag: a.pag, uf: a.uf, tipos: [...a.tipos].map(t => ({ dif: 'ICMS', fcp: 'FECP', st: 'ICMS-ST' })[t]).join(', '), doo: a.doo, raz: a.raz, dif: d,
+      sit: !a.doo ? 'Lançado no razão sem guia na Dootax' : !a.raz ? 'Guia paga sem lançamento no razão' : 'Valor diferente' }); });
+  C.pgN.sort((a, b) => Math.abs(b.dif) - Math.abs(a.dif));
+  C.dooTot = r2(tp.dif[1] + tp.fcp[1] + tp.st[1]);
+  // guia × nota (guias das notas emitidas no mês)
+  const gn = new Map();
+  G.forEach(g => { if (g[4].slice(0, 7) !== m) return; const k = g[0] + '|' + g[1], a = gn.get(k) || { f: g[0], nf: g[1], uf: g[6], dif: 0, fcp: 0, st: 0 }; a[g[2]] += g[3]; gn.set(k, a); });
+  const U = u => C.uf[u] = C.uf[u] || { n: 0, di: 0, fd: 0, nG: 0, g: 0, nS: 0, s: 0, gd: 0 };
+  NF.forEach((x, k) => {
+    if (x.di || x.fd){ const u = U(x.uf); u.n++; u.di += x.di; u.fd += x.fd;
+      const a = gn.get(k);
+      if (a && (a.dif || a.fcp)){ u.nG++; u.g += a.dif + a.fcp; u.gd += (a.dif + a.fcp) - (x.di + x.fd); }
+      else { u.nS++; u.s += x.di + x.fd; C.semGuia.push(x); }
+    }
+  });
+  gn.forEach((a, k) => {
+    const x = NF.get(k), tem = !!(SAI && SAI.fil[a.f]);
+    const nd = x ? x.di : NaN, nfc = x ? x.fd : NaN, nst = x ? x.st + x.fs : NaN;
+    let d = 0, sit = 'OK', cls = 'ok';
+    if (!x){ d = a.dif + a.fcp + a.st; sit = tem ? 'Guia sem a nota no relatório de saídas (ou nota sem DIFAL/ST)' : 'Sem relatório de saídas desta filial'; cls = tem ? 'bad' : 'info'; }
+    else {
+      const dd = (a.dif || a.fcp) ? (a.dif + a.fcp) - (nd + nfc) : 0, ds = a.st ? a.st - nst : 0;
+      const ddSep = a.dif && !ok(a.dif - nd) || a.fcp && !ok(a.fcp - nfc);
+      d = r2(dd + ds);
+      if (!ok(d) || (ddSep && !ok(dd))){ sit = d > 0 ? 'Guia maior que a nota' : 'Guia menor que a nota'; cls = 'warn'; }
+      else if (ddSep){ sit = 'Total igual, DIFAL e FCP trocados'; cls = 'info'; }
+    }
+    C.gn.push({ f: a.f, nf: a.nf, uf: a.uf || (x && x.uf) || '', gDif: a.dif, nDif: nd, gFcp: a.fcp, nFcp: nfc, gSt: a.st, nSt: nst, dif: d, sit, cls });
+  });
+  C.gn.sort((a, b) => (a.cls === 'ok') - (b.cls === 'ok') || Math.abs(b.dif) - Math.abs(a.dif));
+  return C;
+}
+
+// ===================== telas =====================
+async function carregarMeses(){
+  const ms = await mesesSaidas(); let raz = [];
+  const info = await getMeta('razao'); if (info && info.agg) raz = Object.keys(info.agg);
+  const todos = [...new Set(ms.concat(raz))].sort();
+  const mHub = window.mesDoHub ? mesDoHub() : '';
+  if (!mesAtual) mesAtual = (mHub && todos.includes(mHub)) ? mHub : (ms[ms.length - 1] || mHub || todos[todos.length - 1] || new Date().toISOString().slice(0, 7));
+  if (!todos.includes(mesAtual)) todos.push(mesAtual);
+  todos.sort();
+  $('selMes').innerHTML = todos.slice().reverse().map(m => `<option value="${m}" ${m === mesAtual ? 'selected' : ''}>${mesLbl(m)}${ms.includes(m) ? '' : ' (sem saídas)'}${raz.includes(m) ? '' : ' (sem razão)'}</option>`).join('');
+  return ms;
+}
+async function render(){
+  const ms = await carregarMeses();
+  SAI = await getMeta('icms-saidas:' + mesAtual);
+  DOO = await getMeta('icms-dootax');
+  BAL = await getMeta('balancete:' + mesAtual);
+  await carregarRazao(mesAtual);
+  CALC = calcular(mesAtual);
+  const fs = SAI ? Object.keys(SAI.fil).sort() : [];
+  $('stTopo').textContent = (fs.length ? 'Saídas de ' + mesLbl(mesAtual) + ': ' + fs.map(filLbl).join(', ') : 'Sem relação de saídas de ' + mesLbl(mesAtual)) + ' · ' + (RAZ.__ok ? 'razão do mês carregado do Book' : 'sem razão do mês no Book') + ' · ' + (DOO ? DOO.guias.length.toLocaleString('pt-BR') + ' guias Dootax' : 'sem guias Dootax') + '.';
+  await renderChips(ms);
+  ['titST', 'titDif', 'titPg', 'titStN', 'titPgN', 'titGn', 'titUf'].forEach(id => $(id).textContent = '· ' + mesLbl(mesAtual));
+  renderKpis(); renderST(); renderDif(); renderPg(); renderStNotas(); renderPgNotas(); renderGuiaNota(); renderUf();
+}
+async function renderChips(ms){
+  const ch = [];
+  for (const m of ms.slice().reverse()){
+    const o = m === mesAtual ? SAI : await getMeta('icms-saidas:' + m);
+    Object.keys((o && o.fil) || {}).sort().forEach(f => ch.push(`<span class="chip" title="${esc(o.fil[f].arquivo)}">${mesLbl(m)} · ${filLbl(f)}<button type="button" onclick="tirarSaidas('${m}','${f}')" aria-label="Remover">×</button></span>`));
+  }
+  $('chSaidas').innerHTML = ch.join('') || '<span class="muted small">Nenhuma relação de saídas importada.</span>';
+  $('chDootax').innerHTML = DOO ? `<span class="chip" title="${esc(DOO.arquivo)}">${esc(DOO.arquivo)} · ${DOO.guias.length.toLocaleString('pt-BR')} guias<button type="button" onclick="tirarDootax()" aria-label="Remover">×</button></span>` : '<span class="muted small">Nenhuma base de guias importada.</span>';
+}
+function totais(){
+  const C = CALC, T = { st: 0, fs: 0, di: 0, fd: 0, provSt: 0, despSt: 0, provDif: 0, despDif: 0 };
+  Object.values(C.fil).forEach(o => Object.keys(T).forEach(k => T[k] += o[k]));
+  return T;
+}
+function renderKpis(){
+  const C = CALC, T = totais();
+  const card = (t, v, s, cls) => `<div class="kpi ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
+  const dSt = SAI && RAZ.__ok ? r2(T.provSt - (T.st + T.fs)) : NaN, dDif = SAI && RAZ.__ok ? r2(T.provDif - (T.di + T.fd)) : NaN, dPg = DOO && RAZ.__ok ? r2(C.razTx - C.dooTot) : NaN;
+  const nStDiv = C.stN.filter(x => x.cls !== 'ok').length, nGn = C.gn.filter(x => x.cls === 'warn' || x.cls === 'bad').length;
+  $('kpis').innerHTML =
+    card('ST + FCP ST das notas', fmt(T.st + T.fs), SAI ? 'relação de saídas' : 'importe as saídas do mês') +
+    card('ST provisionado no razão', fmt(T.provSt), isNaN(dSt) ? 'falta saídas ou razão' : ok(dSt, TOLT) ? '✓ igual às notas' : 'diferença ' + fmt(dSt) + ' · ' + nStDiv + ' nota(s)', isNaN(dSt) ? '' : ok(dSt, TOLT) && !nStDiv ? 'ok' : 'bad') +
+    card('DIFAL + FCP das notas', fmt(T.di + T.fd), SAI ? 'relação de saídas' : 'importe as saídas do mês') +
+    card('DIFAL provisionado (2.1.15.2006)', fmt(T.provDif), isNaN(dDif) ? 'falta saídas ou razão' : ok(dDif, TOLT) ? '✓ igual às notas' : 'diferença ' + fmt(dDif), isNaN(dDif) ? '' : ok(dDif, TOLT) ? 'ok' : 'bad') +
+    card('Guias pagas no mês (Dootax)', fmt(C.dooTot), DOO ? (C.tipos.dif[0] + C.tipos.fcp[0] + C.tipos.st[0]).toLocaleString('pt-BR') + ' guias' : 'importe as guias') +
+    card('Pagamentos no razão (DEB-TX)', fmt(C.razTx), isNaN(dPg) ? 'falta guias ou razão' : ok(dPg, TOLT) && !C.pgN.length ? '✓ igual às guias' : 'diferença ' + fmt(dPg) + ' · ' + C.pgN.length + ' nota(s)', isNaN(dPg) ? '' : ok(dPg, TOLT) && !C.pgN.length ? 'ok' : 'bad') +
+    card('Guia × nota', DOO && SAI ? nGn.toLocaleString('pt-BR') : '—', DOO && SAI ? 'guia(s) com valor diferente da nota' : 'falta guias ou saídas', DOO && SAI ? (nGn ? 'bad' : 'ok') : '');
+}
+const filiais = () => Object.keys(CALC.fil).filter(f => f !== '?' || Object.values(CALC.fil['?']).some(v => v && v !== true)).sort((a, b) => a - b);
+function renderST(){
+  const C = CALC, fs = filiais().filter(f => { const o = C.fil[f]; return o.st || o.fs || o.provSt || o.despSt; });
+  if (!fs.length){ $('stBody').innerHTML = `<tr><td colspan="7" class="empty">Sem ST no mês: importe a relação de saídas e o razão de ${mesLbl(mesAtual)} no Book.</td></tr>`; $('stFoot').innerHTML = ''; $('stInfo').innerHTML = ''; return; }
+  $('stBody').innerHTML = fs.map(f => { const o = C.fil[f], d = r2(o.provSt - (o.st + o.fs)), d1 = r2(o.provSt - o.st);
+    const n = C.stN.filter(x => x.f === f && x.cls !== 'ok').length;
+    const conf = !o.txt ? '<span class="muted small">sem relação de saídas desta filial</span>' : !RAZ.__ok ? '<span class="muted small">sem razão do mês</span>' : (ok(d, TOLT) || ok(d1, TOLT)) && !n ? '<span class="dok">✓ OK</span>' : `<span class="dbad">${n} nota(s) com diferença</span> <a href="#" onclick="abrirEtapa('st');return false">ver</a>`;
+    return `<tr><td>${filLbl(f)}</td><td>${fmt(o.st)}</td><td>${fmt(o.fs)}</td><td>${fmt(o.provSt)}</td><td class="${ok(d, TOLT) ? '' : 'dbad'}">${o.txt && RAZ.__ok ? fmt(d) : '—'}</td><td>${fmt(o.despSt)}</td><td class="ex">${conf}</td></tr>`; }).join('');
+  const T = totais();
+  $('stFoot').innerHTML = `<tr><td>Total</td><td>${fmt(T.st)}</td><td>${fmt(T.fs)}</td><td>${fmt(T.provSt)}</td><td>${fmt(r2(T.provSt - T.st - T.fs))}</td><td>${fmt(T.despSt)}</td><td></td></tr>`;
+  const sa = BAL && BAL.contas && BAL.contas[CT.st];
+  const ctas = Object.keys(C.ctaSt);
+  $('stInfo').innerHTML = (ctas.length ? 'Provisão (débitos “VE-SPED” na 3.1.01.2008) contra ' + ctas.map(c => c + ' ' + fmt(C.ctaSt[c])).join(' e ') + '.' : '') +
+    (C.transfSt ? ` Transferido da 2.1.15.2004 para a 2.1.15.2001 no fim do mês (“VR TRANSF. ICMS”): <b>${fmt(C.transfSt)}</b> ${chk(r2(C.transfSt - (C.ctaSt[CT.st] || 0) + C.devSt), TOLT, '')} (transferência × provisão na 2.1.15.2004 menos devoluções).` : '') +
+    (C.devSt ? ` Devoluções (DE-SPED) na 2.1.15.2004: ${fmt(C.devSt)}.` : '') +
+    (sa ? ` Saldo final da 2.1.15.2004 no balancete: <b>${fmt(sa.sf)}</b>.` : '') +
+    (C.outrosSt.length ? ` ${C.outrosSt.length} lançamento(s) “VE-SPED” na 3.1.01.2008 sem número de nota no histórico (${fmt(C.outrosSt.reduce((a, l) => a + l.deb - l.cred, 0))}).` : '') +
+    ' A diferença por filial é a provisão menos ST + FCP ST; a provisão pode ser só do ST (sem o FCP), o que a etapa 3 aceita nota a nota.';
+}
+function renderDif(){
+  const C = CALC, fs = filiais().filter(f => { const o = C.fil[f]; return o.di || o.fd || o.provDif || o.despDif; });
+  if (!fs.length){ $('difBody').innerHTML = `<tr><td colspan="8" class="empty">Sem DIFAL no mês: importe a relação de saídas e o razão de ${mesLbl(mesAtual)} no Book.</td></tr>`; $('difFoot').innerHTML = ''; $('difInfo').innerHTML = ''; return; }
+  $('difBody').innerHTML = fs.map(f => { const o = C.fil[f], t = o.di + o.fd, d = r2(o.provDif - t), d1 = r2(o.provDif - o.di);
+    const conf = !o.txt ? '<span class="muted small">sem relação de saídas desta filial</span>' : !RAZ.__ok ? '<span class="muted small">sem razão do mês</span>' : ok(d, TOLT) ? '<span class="dok">✓ OK</span>' : ok(d1, TOLT) ? '<span class="dok">✓ igual ao DIFAL sem o FCP</span>' : `<span class="dbad">dif. ${fmt(d)}</span>`;
+    return `<tr><td>${filLbl(f)}</td><td>${fmt(o.di)}</td><td>${fmt(o.fd)}</td><td>${fmt(t)}</td><td>${fmt(o.provDif)}</td><td class="${ok(d, TOLT) ? '' : 'dbad'}">${o.txt && RAZ.__ok ? fmt(d) : '—'}</td><td>${fmt(o.despDif)}</td><td class="ex">${conf}</td></tr>`; }).join('');
+  const T = totais();
+  $('difFoot').innerHTML = `<tr><td>Total</td><td>${fmt(T.di)}</td><td>${fmt(T.fd)}</td><td>${fmt(T.di + T.fd)}</td><td>${fmt(T.provDif)}</td><td>${fmt(r2(T.provDif - T.di - T.fd))}</td><td>${fmt(T.despDif)}</td><td></td></tr>`;
+  const sa = BAL && BAL.contas && BAL.contas[CT.dif];
+  const outros = C.difL.filter(l => !/DIFAL/i.test(l.hist));
+  $('difInfo').innerHTML = 'Provisão = créditos − débitos da 2.1.15.2006 no mês (' + C.difL.length + ' lançamento(s)' + (outros.length ? ', dos quais ' + outros.length + ' sem “DIFAL” no histórico: ' + outros.map(l => esc(l.hist) + ' ' + fmt(l.cred - l.deb)).join('; ') : '') + ').' +
+    (sa ? ` Saldo final da 2.1.15.2006 no balancete: <b>${fmt(sa.sf)}</b>` + (C.difL.some(l => l.deb) ? '.' : ' — os pagamentos das guias são lançados na 2.1.15.2001 (DEB-TX), por isso a 2.1.15.2006 só recebe créditos e o saldo vai acumulando.') : '');
+}
+function renderPg(){
+  const C = CALC;
+  if (!DOO){ $('pgBody').innerHTML = `<tr><td colspan="4" class="empty">Importe o Excel das guias pagas da Dootax.</td></tr>`; $('pgFoot').innerHTML = ''; $('pgInfo').innerHTML = ''; return; }
+  const L = [['dif', 'ICMS (DIFAL)'], ['fcp', 'FECP (FCP do DIFAL)'], ['st', 'ICMS-ST']];
+  $('pgBody').innerHTML = L.map(([k, n]) => `<tr><td>${n}</td><td>${C.tipos[k][0].toLocaleString('pt-BR')}</td><td>${fmt(C.tipos[k][1])}</td><td class="ex"></td></tr>`).join('');
+  const d = r2(C.razTx - C.dooTot);
+  $('pgFoot').innerHTML = `<tr><td>Total pago no mês</td><td>${(C.tipos.dif[0] + C.tipos.fcp[0] + C.tipos.st[0]).toLocaleString('pt-BR')}</td><td>${fmt(C.dooTot)}</td><td class="left">${RAZ.__ok ? 'Razão 2.1.15.2001 (DEB-TX, ' + C.razTxN.toLocaleString('pt-BR') + ' lançamentos): ' + fmt(C.razTx) + ' · ' + chk(d, TOLT) : 'sem razão do mês'}</td></tr>`;
+  $('pgInfo').innerHTML = RAZ.__ok ? (C.pgN.length ? `<span class="dbad">${C.pgN.length} nota(s) com guia e lançamento diferentes</span> — <a href="#" onclick="abrirEtapa('guias');return false">ver na etapa 4</a>.` : '<span class="dok">✓ Todas as guias pagas no mês estão lançadas no razão, nota a nota.</span>') : '';
+}
+function linhasLim(arr, fn, cols){
+  if (!arr.length) return `<tr><td colspan="${cols}" class="empty">Nada a mostrar.</td></tr>`;
+  return arr.slice(0, LIM).map(fn).join('') + (arr.length > LIM ? `<tr><td colspan="${cols}" class="empty">… mais ${(arr.length - LIM).toLocaleString('pt-BR')} linha(s): use “Baixar Excel do mês”.</td></tr>` : '');
+}
+const pill = (t, c) => `<span class="pill ${c}">${esc(t)}</span>`;
+function renderStNotas(){
+  const all = $('fSt').value === 'todas', A = CALC.stN.filter(x => all || x.cls !== 'ok');
+  if (!SAI && !RAZ.__ok){ $('stnBody').innerHTML = `<tr><td colspan="10" class="empty">Importe a relação de saídas e o razão do mês.</td></tr>`; $('stnFoot').innerHTML = ''; return; }
+  $('stnBody').innerHTML = linhasLim(A, x => `<tr><td>${filLbl(x.f)}</td><td>${x.nf}</td><td>${br(x.data)}</td><td>${x.uf}</td><td>${x.cfop}</td><td>${fmt(x.st)}</td><td>${fmt(x.fs)}</td><td>${fmt(x.raz)}</td><td class="${x.cls === 'ok' ? '' : 'dbad'}">${fmt(x.dif)}</td><td class="ex">${pill(x.sit, x.cls)}</td></tr>`, 10);
+  const n = CALC.stN.filter(x => x.cls !== 'ok');
+  $('stnFoot').innerHTML = `<tr><td colspan="5">${CALC.stN.length.toLocaleString('pt-BR')} nota(s) · ${n.length} com diferença</td><td>${fmt(CALC.stN.reduce((a, x) => a + x.st, 0))}</td><td>${fmt(CALC.stN.reduce((a, x) => a + x.fs, 0))}</td><td>${fmt(CALC.stN.reduce((a, x) => a + (isNaN(x.raz) ? 0 : x.raz), 0))}</td><td>${fmt(n.reduce((a, x) => a + x.dif, 0))}</td><td></td></tr>`;
+}
+function renderPgNotas(){
+  if (!DOO || !RAZ.__ok){ $('pgnBody').innerHTML = `<tr><td colspan="8" class="empty">${!DOO ? 'Importe o Excel das guias da Dootax.' : 'Sem razão de ' + mesLbl(mesAtual) + ' no Book.'}</td></tr>`; return; }
+  $('pgnBody').innerHTML = CALC.pgN.length ? linhasLim(CALC.pgN, x => `<tr><td>${x.nf}</td><td>${br(x.pag)}</td><td>${x.uf}</td><td>${x.tipos}</td><td>${fmt(x.doo)}</td><td>${fmt(x.raz)}</td><td class="dbad">${fmt(x.dif)}</td><td class="ex">${pill(x.sit, x.doo && x.raz ? 'warn' : 'bad')}</td></tr>`, 8)
+    : `<tr><td colspan="8" class="empty"><span class="dok">✓ As ${(CALC.tipos.dif[0] + CALC.tipos.fcp[0] + CALC.tipos.st[0]).toLocaleString('pt-BR')} guias pagas em ${mesLbl(mesAtual)} batem com os lançamentos DEB-TX da 2.1.15.2001.</span></td></tr>`;
+}
+function renderGuiaNota(){
+  if (!DOO || !SAI){ $('gnBody').innerHTML = `<tr><td colspan="11" class="empty">${!DOO ? 'Importe o Excel das guias da Dootax.' : 'Importe a relação de saídas de ' + mesLbl(mesAtual) + '.'}</td></tr>`; $('gnFoot').innerHTML = ''; return; }
+  const all = $('fGn').value === 'todas', A = CALC.gn.filter(x => all || x.cls !== 'ok');
+  $('gnBody').innerHTML = linhasLim(A, x => `<tr><td>${filLbl(x.f)}</td><td>${x.nf}</td><td>${x.uf}</td><td>${x.gDif ? fmt(x.gDif) : ''}</td><td>${fmt(x.nDif)}</td><td>${x.gFcp ? fmt(x.gFcp) : ''}</td><td>${fmt(x.nFcp)}</td><td>${x.gSt ? fmt(x.gSt) : ''}</td><td>${fmt(x.nSt)}</td><td class="${x.cls === 'ok' ? '' : 'dbad'}">${fmt(x.dif)}</td><td class="ex">${pill(x.sit, x.cls)}</td></tr>`, 11);
+  const by = c => CALC.gn.filter(x => x.cls === c).length, n = CALC.gn.filter(x => x.cls !== 'ok');
+  $('gnFoot').innerHTML = `<tr><td colspan="9">${CALC.gn.length.toLocaleString('pt-BR')} nota(s) com guia · ${by('ok').toLocaleString('pt-BR')} OK · ${by('warn')} com valor diferente · ${by('bad')} sem a nota · ${by('info')} outras</td><td>${fmt(n.reduce((a, x) => a + x.dif, 0))}</td><td></td></tr>`;
+}
+function renderUf(){
+  const U = CALC.uf, ks = Object.keys(U).sort((a, b) => (U[b].di + U[b].fd) - (U[a].di + U[a].fd));
+  if (!ks.length){ $('ufBody').innerHTML = `<tr><td colspan="10" class="empty">Sem DIFAL nas saídas de ${mesLbl(mesAtual)}.</td></tr>`; $('ufFoot').innerHTML = ''; return; }
+  $('ufBody').innerHTML = ks.map(k => { const u = U[k];
+    return `<tr><td>${k}${!u.nG && DOO ? ' ' + pill('sem guia por nota', 'info') : ''}</td><td>${u.n.toLocaleString('pt-BR')}</td><td>${fmt(u.di)}</td><td>${fmt(u.fd)}</td><td>${fmt(u.di + u.fd)}</td><td>${u.nG.toLocaleString('pt-BR')}</td><td>${fmt(u.g)}</td><td>${u.nS.toLocaleString('pt-BR')}</td><td>${fmt(u.s)}</td><td class="${ok(u.gd, TOLT) ? '' : 'dbad'}">${fmt(u.gd)}</td></tr>`; }).join('');
+  const S = ks.reduce((a, k) => { Object.keys(U[k]).forEach(x => a[x] = (a[x] || 0) + U[k][x]); return a; }, {});
+  $('ufFoot').innerHTML = `<tr><td>Total</td><td>${S.n.toLocaleString('pt-BR')}</td><td>${fmt(S.di)}</td><td>${fmt(S.fd)}</td><td>${fmt(S.di + S.fd)}</td><td>${S.nG.toLocaleString('pt-BR')}</td><td>${fmt(S.g)}</td><td>${S.nS.toLocaleString('pt-BR')}</td><td>${fmt(S.s)}</td><td>${fmt(S.gd)}</td></tr>`;
+}
+
+// ===================== Excel do mês =====================
+function baixarXlsx(){
+  if (!CALC) return;
+  const C = CALC, wb = XLSX.utils.book_new(), add = (nome, rows, cols) => { const ws = XLSX.utils.aoa_to_sheet(rows); if (cols) ws['!cols'] = cols.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, nome); };
+  const fs = filiais(), T = totais();
+  const res = [['ICMS DIFAL e ST · ' + mesLbl(mesAtual)], [], ['Filial', 'ST notas', 'FCP ST notas', 'Provisão ST no razão', 'Dif. ST', 'Despesa 3.1.01.2008', 'DIFAL notas', 'FCP DIFAL notas', 'Provisão 2.1.15.2006', 'Dif. DIFAL', 'Despesa 3.1.01.2009']];
+  fs.forEach(f => { const o = C.fil[f]; res.push([filLbl(f), r2(o.st), r2(o.fs), r2(o.provSt), r2(o.provSt - o.st - o.fs), r2(o.despSt), r2(o.di), r2(o.fd), r2(o.provDif), r2(o.provDif - o.di - o.fd), r2(o.despDif)]); });
+  res.push(['Total', r2(T.st), r2(T.fs), r2(T.provSt), r2(T.provSt - T.st - T.fs), r2(T.despSt), r2(T.di), r2(T.fd), r2(T.provDif), r2(T.provDif - T.di - T.fd), r2(T.despDif)]);
+  res.push([], ['Guias pagas no mês (Dootax)', r2(C.dooTot)], ['Pagamentos no razão 2.1.15.2001 (DEB-TX)', r2(C.razTx)], ['Diferença', r2(C.razTx - C.dooTot)]);
+  add('Resumo', res, [26, 14, 14, 18, 12, 18, 14, 14, 18, 12, 18]);
+  add('ST nota a nota', [['Filial', 'Nota', 'Data', 'UF', 'CFOP', 'ST', 'FCP ST', 'Provisão no razão', 'Diferença', 'Situação']].concat(C.stN.map(x => [x.f, x.nf, br(x.data), x.uf, x.cfop, r2(x.st), r2(x.fs), isNaN(x.raz) ? '' : r2(x.raz), r2(x.dif), x.sit])), [7, 10, 11, 5, 7, 12, 10, 16, 12, 60]);
+  add('Pagamentos x razão', [['Nota', 'Pagamento', 'UF', 'Tipos', 'Dootax', 'Razão', 'Diferença', 'Situação']].concat(C.pgN.map(x => [x.nf, br(x.pag), x.uf, x.tipos, r2(x.doo), r2(x.raz), x.dif, x.sit])), [10, 11, 5, 16, 12, 12, 12, 40]);
+  add('Guia x nota', [['Filial', 'Nota', 'UF', 'Guia DIFAL', 'Nota DIFAL', 'Guia FCP', 'Nota FCP', 'Guia ST', 'Nota ST+FCP', 'Diferença', 'Situação']].concat(C.gn.map(x => [x.f, x.nf, x.uf, r2(x.gDif), isNaN(x.nDif) ? '' : r2(x.nDif), r2(x.gFcp), isNaN(x.nFcp) ? '' : r2(x.nFcp), r2(x.gSt), isNaN(x.nSt) ? '' : r2(x.nSt), r2(x.dif), x.sit])), [7, 10, 5, 11, 11, 10, 10, 10, 12, 11, 50]);
+  add('Notas DIFAL sem guia', [['Filial', 'Nota', 'Data', 'UF', 'CFOP', 'DIFAL', 'FCP DIFAL']].concat(C.semGuia.map(x => [x.f, x.nf, br(x.data), x.uf, x.cfop, r2(x.di), r2(x.fd)])), [7, 10, 11, 5, 7, 12, 12]);
+  const U = C.uf;
+  add('DIFAL por UF', [['UF', 'Notas com DIFAL', 'DIFAL', 'FCP', 'Total', 'Notas com guia', 'Guias DIFAL+FCP', 'Notas sem guia', 'Valor sem guia', 'Guia - nota']].concat(Object.keys(U).sort().map(k => { const u = U[k]; return [k, u.n, r2(u.di), r2(u.fd), r2(u.di + u.fd), u.nG, r2(u.g), u.nS, r2(u.s), r2(u.gd)]; })), [5, 14, 12, 10, 12, 14, 15, 14, 14, 12]);
+  XLSX.writeFile(wb, 'icms-difal-st-' + mesAtual + '.xlsx');
+}
+
+window.focoConta = function(c){ window.abrirEtapa && abrirEtapa(c === CT.st || c === CT.dSt ? 'st' : 'conferencia'); };
+(async () => { await render(); })();
+if (window.aoMudarMesHub) aoMudarMesHub(m => { mesAtual = m; render(); });   // mês trocado no Book
+</script>
+
+<script>
+/* etapas (mesmo comportamento dos outros painéis) */
+(function(){
+  var KEY = location.pathname.split('/').pop() + ':etapa';
+  function abrir(t){
+    document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.setAttribute('aria-selected', b.getAttribute('data-tab') === t ? 'true' : 'false'); });
+    document.querySelectorAll('section.panel').forEach(function(s){ s.classList.toggle('active', s.id === 'tab-' + t); });
+    try { sessionStorage.setItem(KEY, t); } catch(e){}
+    var m = document.getElementById('menuAbas'); if (m) m.classList.remove('open');
+  }
+  window.abrirEtapa = abrir;
+  document.querySelectorAll('nav.tabs button[data-tab]').forEach(function(b){ b.addEventListener('click', function(){ abrir(b.getAttribute('data-tab')); }); });
+  var tg = document.getElementById('navToggle');
+  if (tg) tg.addEventListener('click', function(){ var m = document.getElementById('menuAbas'); var o = m.classList.toggle('open'); tg.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+  var salvo = null; try { salvo = sessionStorage.getItem(KEY); } catch(e){}
+  abrir(salvo || 'conferencia');
+})();
+</script>
+</body>
+</html>
