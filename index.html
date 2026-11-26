@@ -547,9 +547,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="nav-item" id="bookNav" style="display:none" onclick="setPage('bookv',this)" title="Book de conciliação dos meses fechados (somente visualização)"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M3 2.5h7.5l2.5 2.5v8.5H3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5.5 7.5l1.6 1.6 3.4-3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Book de conciliação</div>
     <div id="adminNav" style="display:none">
       <hr class="sdiv">
-      <div class="ssec sb-tog" data-sec="admin" role="button" tabindex="0" aria-expanded="true" onclick="sbToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sbToggle(this);}"><span>Admin</span><svg class="sb-chev" width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="ssec sb-tog" data-sec="admin" role="button" tabindex="0" aria-expanded="true" onclick="sbToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sbToggle(this);}"><span>Área técnica</span><svg class="sb-chev" width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div class="nav-item" id="concNavItem" onclick="setPage('conc',this)"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" stroke-width="1.2" opacity=".6"/></svg>Conciliação</div>
       <div class="nav-item" id="verCliNav" onclick="verComoCliente(true)" title="Mostra o dash exatamente como o cliente vê, sem as áreas e recursos de admin"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/></svg>Ver como cliente</div>
+      <div class="nav-item" id="impNav" onclick="setPage('imp',this)" title="Importação do balancete do mês, salvar e publicar a base"><svg class="niv" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v3h11v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Importações</div>
     </div>
     <hr class="sdiv">
     <div class="ssec sb-tog" data-sec="exib" role="button" tabindex="0" aria-expanded="true" onclick="sbToggle(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sbToggle(this);}"><span>Exibição e Exportação</span><svg class="sb-chev" width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -773,6 +774,31 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div id="bookvBox"></div>
 </section>
 
+<!-- IMPORTAÇÕES (área técnica, só admin) -->
+<section id="page-imp" class="page">
+  <div style="margin:0 0 16px"><div class="ptitle">Importações</div><div class="psub">Área técnica · arquivos que alimentam o Hub: o balancete do mês atualiza DRE, índices, balanço e LALUR</div></div>
+  <div class="cc adm-only">
+    <div class="ctop">
+      <div><div class="ctitle">Importação de Balancete</div><div class="cdesc">Envie o balancete do mês (mesmo formato usado na planilha de prestação de contas) para atualizar automaticamente DRE, índices e balanço</div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px">
+      <span class="fl">Mês do balancete:</span>
+      <select class="fs" id="impMes">
+        <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+        <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+        <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+        <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+      </select>
+      <div class="fdiv"></div>
+      <input type="file" id="impFile" accept=".xlsx,.xls,.xlsm" multiple style="display:none" onchange="handleBalanceteFiles(this.files)">
+      <button class="fs" style="cursor:pointer" onclick="document.getElementById('impFile').click()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5h5l1.5 1.5h6.5v7.5h-13z"/></svg>Selecionar balancete (.xlsx)</button>
+      <button class="fs" id="impSaveBtn" style="cursor:pointer;display:none;border-color:rgba(46,204,113,.5);color:var(--green2)" onclick="saveCurrentBase()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h8l2 2v9H3zM5.5 2.5v3h4v-3M5.5 13.5v-4h5v4"/></svg>Salvar base atual</button>
+      <button class="fs" id="impPubBtn" style="cursor:pointer;display:none;border-color:rgba(52,152,219,.5);color:var(--blue)" onclick="publishBaseToGitHub()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5C6.2 12.7 5.4 10.5 5.4 8S6.2 3.3 8 1.5"/></svg>Publicar para todos</button>
+    </div>
+    <div id="impStatus" style="font-size:13px;color:var(--gray);margin-top:10px;line-height:1.6"></div>
+  </div>
+</section>
+
 <section id="page-bal" class="page">
   <div class="fbar">
     <span class="fl">Mês:</span>
@@ -796,26 +822,6 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <div class="leg"><span><span class="ldot" style="background:#C0392B"></span>Fornecedores</span><span><span class="ldot" style="background:#E74C3C"></span>Empréstimos</span><span><span class="ldot" style="background:#E67E22"></span>Obrig. Trib.</span><span><span class="ldot" style="background:#3498DB"></span>Obrig. Trab.</span><span><span class="ldot" style="background:#7F8C8D"></span>Tributos Parcelados</span></div>
     </div>
     <div style="position:relative;height:160px"><canvas id="cPassivo"></canvas></div>
-  </div>
-  <div style="margin-top:16px" class="cc adm-only">
-    <div class="ctop">
-      <div><div class="ctitle">Importação de Balancete</div><div class="cdesc">Envie o balancete do mês (mesmo formato usado na planilha de prestação de contas) para atualizar automaticamente DRE, índices e balanço</div></div>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px">
-      <span class="fl">Mês do balancete:</span>
-      <select class="fs" id="impMes">
-        <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
-        <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
-        <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
-        <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
-      </select>
-      <div class="fdiv"></div>
-      <input type="file" id="impFile" accept=".xlsx,.xls,.xlsm" multiple style="display:none" onchange="handleBalanceteFiles(this.files)">
-      <button class="fs" style="cursor:pointer" onclick="document.getElementById('impFile').click()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5h5l1.5 1.5h6.5v7.5h-13z"/></svg>Selecionar balancete (.xlsx)</button>
-      <button class="fs" id="impSaveBtn" style="cursor:pointer;display:none;border-color:rgba(46,204,113,.5);color:var(--green2)" onclick="saveCurrentBase()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h8l2 2v9H3zM5.5 2.5v3h4v-3M5.5 13.5v-4h5v4"/></svg>Salvar base atual</button>
-      <button class="fs" id="impPubBtn" style="cursor:pointer;display:none;border-color:rgba(52,152,219,.5);color:var(--blue)" onclick="publishBaseToGitHub()"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM1.5 8h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5C6.2 12.7 5.4 10.5 5.4 8S6.2 3.3 8 1.5"/></svg>Publicar para todos</button>
-    </div>
-    <div id="impStatus" style="font-size:13px;color:var(--gray);margin-top:10px;line-height:1.6"></div>
   </div>
 </section>
 
@@ -1226,7 +1232,7 @@ function importarDREOficial(file){
       var ms=Object.keys(O.meses).map(Number).sort(function(a,b){return a-b;});
       if(!ms.length)throw new Error('a aba "DRE '+DRE_ANO+'" não tem valores');
       DRE_OF=O;try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(x){}
-      st.textContent='✓ DRE contábil importada ('+M[ms[0]]+'–'+M[ms[ms.length-1]]+(O.mesesSA?', com e sem ajuste':'')+'). Publique em Balanço & Índices para valer para todos.';
+      st.textContent='✓ DRE contábil importada ('+M[ms[0]]+'–'+M[ms[ms.length-1]]+(O.mesesSA?', com e sem ajuste':'')+'). Publique em Área técnica › Importações para valer para todos.';
       st.style.color='var(--green2)';buildDRE();
     }catch(err){st.textContent='⚠︎ '+err.message;st.style.color='var(--red2)';}
     document.getElementById('dreOfFile').value='';
@@ -3697,7 +3703,7 @@ function adminApply(on){
   document.getElementById('adminBtnLbl').textContent=on?'Usuários e acessos':'Voltar ao admin';
   if(!on){
     document.getElementById('concFrames').innerHTML='';
-    if(document.getElementById('page-conc').classList.contains('active'))setPage('ov',document.querySelector('.nav-item'));
+    if(document.getElementById('page-conc').classList.contains('active')||document.getElementById('page-imp').classList.contains('active'))setPage('ov',document.querySelector('.nav-item'));
   }
 }
 // "Ver como cliente": o admin vê o dash sem os recursos de admin, sem perder o acesso.
@@ -3879,7 +3885,7 @@ window.abrirConciliacao=function(p,conta){
 };
 
 function setPage(n,el){
-  if(n==='conc'&&!IS_ADMIN){alert('Área restrita ao administrador.');return;}
+  if((n==='conc'||n==='imp')&&!IS_ADMIN){alert('Área restrita ao administrador.');return;}
   if(n==='bookv'&&!(window.HubAuth&&HubAuth.podeBook)){alert('O seu acesso não inclui o Book de conciliação.');return;}
   document.querySelectorAll('.nav-item').forEach(function(e){e.classList.remove('active');});
   document.querySelectorAll('.page').forEach(function(e){e.classList.remove('active');});
@@ -3952,7 +3958,7 @@ function aresLinhas(){
 function buildARes(){
   var box=document.getElementById('aresBox');if(!box)return;
   var ms=aresMeses(),sel=document.getElementById('aresMes');
-  if(!ms.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano (Balanço &amp; Índices › importar) para montar a análise. Meses importados antes desta tela precisam ser reimportados.</p>';return;}
+  if(!ms.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano (Área técnica › Importações) para montar a análise. Meses importados antes desta tela precisam ser reimportados.</p>';return;}
   var L=aresLinhas(),cur=L.cur,R=L.d.R;
   sel.innerHTML=ms.map(function(i){return '<option value="'+i+'"'+(i===cur?' selected':'')+'>'+MF[i]+'/'+DRE_ANO+'</option>';}).join('');
   document.getElementById('aresSub').textContent='Data-base '+MF[cur]+'/'+DRE_ANO+' · média mensal de '+L.d.nAnt+' mês(es) anterior(es) · valores em R$, sem centavos (o Excel sai com centavos), em débito − crédito (receitas negativas), como no balancete'+(L.d.temAnt?'':' · sem o mês anterior importado');
@@ -4065,7 +4071,7 @@ function importarDREAnterior(file){
       if(!Object.keys(A.rv).length)throw new Error('a aba "DRE '+ano+'" não tem valores');
       if(ANT&&ANT.sal){A.sal=ANT.sal;A.salIni=ANT.salIni;A.balArquivo=ANT.balArquivo;}   // mantém os saldos do balancete já importado
       ANT=A;try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(x){}
-      st.innerHTML='✓ DRE de '+ano+' importada ('+Object.keys(A.rv).map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Balanço &amp; Índices › Publicar para todos.';
+      st.innerHTML='✓ DRE de '+ano+' importada ('+Object.keys(A.rv).map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Área técnica › Importações › Publicar para todos.';
       st.style.color='var(--green2)';buildComp();
     }catch(err){st.textContent='⚠︎ '+err.message;st.style.color='var(--red2)';}
     document.getElementById('compFile').value='';
@@ -4101,7 +4107,7 @@ function importarBalAnterior(file){
       ANT=ANT||{ano:ano,rv:{},mov:{},arquivo:''};
       ANT.sal=sal;ANT.salIni=ini;ANT.balArquivo=file.name;
       try{localStorage.setItem('nhdDashBase',JSON.stringify(buildBaseState()));}catch(x){}
-      st.innerHTML='✓ Balancetes de '+ano+' importados ('+ms.map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Balanço &amp; Índices › Publicar para todos.';
+      st.innerHTML='✓ Balancetes de '+ano+' importados ('+ms.map(function(m){return M[m];}).join(', ')+'). Base salva neste navegador; para os clientes verem, publique em Área técnica › Importações › Publicar para todos.';
       st.style.color='var(--green2)';buildComp();
     }catch(err){st.textContent='⚠︎ '+err.message;st.style.color='var(--red2)';}
     document.getElementById('compBalFile').value='';
@@ -4163,7 +4169,7 @@ function buildComp(){
   var box=document.getElementById('compBox');if(!box)return;
   var meses=Object.keys(BALHIST).map(Number).sort(function(a,b){return a-b;});
   var sel=document.getElementById('compMes');
-  if(!meses.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Balanço &amp; Índices.</p>';return;}
+  if(!meses.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Área técnica › Importações.</p>';return;}
   var ult=meses[meses.length-1];
   if(COMP.modo==='all'){COMP.de=0;COMP.mes=ult;}
   var ate=COMP.mes!==null&&meses.indexOf(COMP.mes)>=0?COMP.mes:ult;COMP.mes=ate;
@@ -4177,7 +4183,7 @@ function buildComp(){
   if(selDe)selDe.innerHTML=meses.filter(function(i){return i<=ate;}).map(function(i){return '<option value="'+i+'"'+(i===COMP.de?' selected':'')+'>'+M[i]+'</option>';}).join('');
   sel.innerHTML=meses.filter(function(i){return i>=COMP.de;}).map(function(i){return '<option value="'+i+'"'+(i===ate?' selected':'')+'>'+M[i]+'</option>';}).join('');
   var ano=DRE_ANO,anoA=String(+DRE_ANO-1),per=compPer(ate);
-  document.getElementById('compSub').textContent=(COMP.de?'Período ':'Acumulado ')+per+' · '+ano+' × '+anoA+' · visão '+(COMP.aj?'COM ajuste ('+AJUSTES.length+' ajuste(s))':'sem ajuste')+(ANT?' · ano anterior: '+ANT.arquivo:' · importe a DRE de '+anoA+' para comparar')+' · alterações (ajustes, recomendações, meta) ficam neste navegador até publicar em Balanço & Índices';
+  document.getElementById('compSub').textContent=(COMP.de?'Período ':'Acumulado ')+per+' · '+ano+' × '+anoA+' · visão '+(COMP.aj?'COM ajuste ('+AJUSTES.length+' ajuste(s))':'sem ajuste')+(ANT?' · ano anterior: '+ANT.arquivo:' · importe a DRE de '+anoA+' para comparar')+' · alterações (ajustes, recomendações, meta) ficam neste navegador até publicar em Área técnica › Importações';
   var N=function(v){return v===null?'–':relN(v/1000,1);};
   var P=function(v){return v===null||!isFinite(v)?'–':(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';};
   // 1) indicadores
@@ -4654,7 +4660,7 @@ function buildFluxo(){
   var box=document.getElementById('flxBox');if(!box)return;
   [].forEach.call(document.querySelectorAll('#flxTabs button'),function(b){b.classList.toggle('on',b.getAttribute('data-v')===FLX.aba);});
   var todos=flxMeses();
-  if(!todos.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Balanço &amp; Índices.</p>';return;}
+  if(!todos.length){box.innerHTML='<p class="muted" style="padding:16px">Importe os balancetes do ano em Área técnica › Importações.</p>';return;}
   // período: acumulado (jan–último), escolher (de–até) ou um mês
   var ult=todos[todos.length-1];
   if(FLX.modo==='all'){FLX.de=todos[0];FLX.ate=ult;}

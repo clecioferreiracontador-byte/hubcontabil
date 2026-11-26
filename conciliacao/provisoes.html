@@ -289,7 +289,7 @@ table.pv tr.dif td{font-weight:600}
 <section class="panel" id="tab-processo">
   <div class="box"><h2>Objetivo</h2><p>Garantir todo mês que as contas de <b>provisão de férias</b> e <b>provisão de 13º salário</b> (grupo 2.1.10.2) estejam iguais ao relatório de provisões da folha — provisão + INSS + FGTS — e acompanhar a variação mensal de cada uma.</p></div>
   <div class="box"><h2>Passo a passo</h2><ol class="steps">
-    <li>Importar o balancete do mês no <b>Book de conciliação</b> ou na tela <b>Balanço &amp; Índices</b> do Hub (os dois servem).</li>
+    <li>Importar o balancete do mês no <b>Book de conciliação</b> ou em <b>Área técnica › Importações</b> no Hub (os dois servem).</li>
     <li>Pegar com o DP o <b>relatório de provisões</b> de férias e 13º do mês (saldo da provisão, INSS e FGTS).</li>
     <li>Na etapa <b>2</b>, digitar os valores na coluna do mês (ou importar o Book NHD, aba “Prov Trab”).</li>
     <li>Conferir a linha <b>Diferença</b> de cada provisão; a variação do mês aparece no quadro abaixo.</li>
@@ -479,7 +479,7 @@ async function carregar(){
   mesesBal = []; bal = {};
   try { if (window.HubDB){ mesesBal = (await HubDB.metaKeys()).filter(k => String(k).indexOf('balancete:') === 0).map(k => k.slice(10)).sort();
     for (const m of mesesBal){ const b = await HubDB.getMeta('balancete:' + m); if (b) bal[m] = b; } } } catch(e){}
-  // meses sem balancete no Book: usa o balancete importado na tela Balanço & Índices do Hub (saldo por conta)
+  // meses sem balancete no Book: usa o balancete importado em Área técnica › Importações do Hub (saldo por conta)
   const H = balancetesDoHub();
   Object.keys(H).forEach(m => { if (!bal[m]){ bal[m] = H[m]; mesesBal.push(m); } });
   mesesBal.sort();
