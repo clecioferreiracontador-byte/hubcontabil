@@ -581,9 +581,16 @@ function renderDif(){
   const T = totais();
   $('difFoot').innerHTML = `<tr><td>Total</td><td>${fmt(T.di)}</td><td>${fmt(T.fd)}</td><td>${fmt(T.di + T.fd)}</td><td>${fmt(T.provDif)}</td><td>${fmt(r2(T.provDif - T.di - T.fd))}</td><td>${fmt(T.despDif)}</td><td></td></tr>`;
   const sa = BAL && BAL.contas && BAL.contas[CT.dif];
-  const outros = C.difL.filter(l => !/DIFAL/i.test(l.hist));
-  $('difInfo').innerHTML = 'Provisão = créditos − débitos da 2.1.15.2006 no mês (' + C.difL.length + ' lançamento(s)' + (outros.length ? ', dos quais ' + outros.length + ' sem “DIFAL” no histórico: ' + outros.map(l => esc(l.hist) + ' ' + fmt(l.cred - l.deb)).join('; ') : '') + ').' +
-    (sa ? ` Saldo final da 2.1.15.2006 no balancete: <b>${fmt(sa.sf)}</b>` + (C.difL.some(l => l.deb) ? '.' : ' — os pagamentos das guias são lançados na 2.1.15.2001 (DEB-TX), por isso a 2.1.15.2006 só recebe créditos e o saldo vai acumulando.') : '');
+  // lançamentos da 2.1.15.2006 resumidos por tipo de histórico (VE-SPED, AM-SPED, VR REC DIFAL…); a lista fica recolhida
+  const tipoH = h => { const m = String(h || '').match(/^([A-Z]{2,4}-[A-Z]{2,5})/); return m ? m[1] : String(h || '').trim().split(/\s+/).slice(0, 3).join(' ').toUpperCase() || '(sem histórico)'; };
+  const grp = {}; C.difL.forEach(l => { const t = tipoH(l.hist), g = grp[t] = grp[t] || { n: 0, v: 0 }; g.n++; g.v += l.cred - l.deb; });
+  const resumo = Object.keys(grp).sort((a, b) => Math.abs(grp[b].v) - Math.abs(grp[a].v)).map(t => `${esc(t)}: ${grp[t].n.toLocaleString('pt-BR')} lanç. · ${fmt(grp[t].v)}`).join(' · ');
+  const LST = 300, lista = C.difL.length ? `<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--aud-primary);font-weight:600">Ver os ${C.difL.length.toLocaleString('pt-BR')} lançamento(s) da 2.1.15.2006</summary>` +
+    `<div class="tscroll" style="max-height:320px;margin-top:6px"><table><thead><tr><th>Data</th><th>Filial</th><th class="left">Histórico</th><th>Crédito − débito</th></tr></thead><tbody>` +
+    C.difL.slice(0, LST).map(l => `<tr><td>${br(l.data)}</td><td>${filN(l.fil)}</td><td class="left">${esc(l.hist)}</td><td>${fmt(l.cred - l.deb)}</td></tr>`).join('') +
+    (C.difL.length > LST ? `<tr><td colspan="4" class="empty">… mais ${(C.difL.length - LST).toLocaleString('pt-BR')} lançamento(s) (veja o razão no Book).</td></tr>` : '') + '</tbody></table></div></details>' : '';
+  $('difInfo').innerHTML = 'Provisão = créditos − débitos da 2.1.15.2006 no mês (' + C.difL.length.toLocaleString('pt-BR') + ' lançamento(s): ' + resumo + ').' +
+    (sa ? ` Saldo final da 2.1.15.2006 no balancete: <b>${fmt(sa.sf)}</b>` + (C.difL.some(l => l.deb) ? '.' : ' — os pagamentos das guias são lançados na 2.1.15.2001 (DEB-TX), por isso a 2.1.15.2006 só recebe créditos e o saldo vai acumulando.') : '') + lista;
 }
 function renderPg(){
   const C = CALC;
