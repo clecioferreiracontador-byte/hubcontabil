@@ -233,6 +233,7 @@ tr.grp0 td .dsc{color:#CD9A56}
 .auto{font-size:.72rem;color:var(--aud-gray-500)}
 </style>
 <script src="vendor/sheetjs/xlsx.full.min.js"></script>
+<script src="vendor/pdfjs/pdf.min.js"></script>
 <script src="hub-db.js?v=4"></script>
 <style>
 tr.depois td{opacity:.5}
@@ -271,9 +272,11 @@ table.pv tr.dif td{font-weight:600}
 <div class="box">
   <div class="upl" id="recImport" data-recolher="Importação (Book, aba Prov Trab) e cópia dos dados">
     <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M11 2.5a2.2 2.2 0 0 1 0 4.4M12.5 9.7c1.2.6 2 1.9 2 3.3"/></svg>Provisões trabalhistas</h3>
-    <div class="muted small">Digite na tabela os saldos do <b>relatório de provisões da folha</b> de cada mês (provisão, INSS e FGTS de férias e de 13º) <b>ou</b> importe o Book NHD (.xlsx, aba “Prov Trab”). O total de cada provisão é comparado com o saldo da conta no balancete do mesmo mês, importado no Book de conciliação.</div>
-    <div class="paste-actions"><button class="primary" type="button" onclick="document.getElementById('inProv').click()">Importar Book (aba Prov Trab)</button>
+    <div class="muted small">Importe os PDFs do <b>relatório de provisão mensal</b> da folha (Protheus “Provisão mensal de férias” e “Provisão mensal de 13º salário”, um por mês), digite os saldos na tabela <b>ou</b> importe o Book NHD (.xlsx, aba “Prov Trab”). O total de cada provisão é comparado com o saldo da conta no balancete do mesmo mês, e o movimento do mês (provisão, INSS, FGTS e baixas) com o razão, ambos importados no Book de conciliação.</div>
+    <div class="paste-actions"><button class="primary" type="button" id="btProvPdf" onclick="document.getElementById('inProvPdf').click()">Importar relatórios de provisão (PDF)</button>
+      <button type="button" onclick="document.getElementById('inProv').click()">Importar Book (aba Prov Trab)</button>
       <button type="button" onclick="exportJSON()">Exportar dados (JSON)</button> <button type="button" onclick="document.getElementById('inJson').click()">Importar dados (JSON)</button></div>
+    <input type="file" id="inProvPdf" accept=".pdf" multiple onchange="importarProvPdf([...this.files]);this.value=''">
     <input type="file" id="inProv" accept=".xlsx,.xls" onchange="importarBook(this.files[0]);this.value=''">
     <input type="file" id="inJson" accept="application/json" onchange="importJSON(this.files[0]);this.value=''">
   </div>
@@ -300,6 +303,8 @@ table.pv tr.dif td{font-weight:600}
     <tr><td>R2</td><td>Os valores são saldos (posição no fim do mês), positivos como no relatório; na contabilidade a provisão é credora.</td></tr>
     <tr><td>R3</td><td>Variação do mês = saldo do mês − saldo do mês anterior.</td></tr>
     <tr><td>R4</td><td>Diferença até R$ 0,01 é tratada como arredondamento.</td></tr>
+    <tr><td>R5</td><td>PDF do relatório de provisão (Total Geral do Relatório): saldo da provisão = acumulado do mês menos o valor pago no mês (“valor com abatimento”). O relatório não traz o saldo acumulado de INSS e FGTS: eles são calculados pelo saldo da provisão × a alíquota do mês (INSS do mês ÷ provisão do mês, FGTS do mês ÷ provisão do mês) e ficam marcados como calculados.</td></tr>
+    <tr><td>R6</td><td>Movimento do mês: créditos da conta no razão com “INSS” no histórico = INSS; com “FGTS” = FGTS; os demais créditos = provisão. Débitos = baixas (férias/13º pagos, abonos, rescisões).</td></tr>
   </tbody></table></div>
 </section>
 
@@ -312,6 +317,15 @@ table.pv tr.dif td{font-weight:600}
     </table></div>
     <div class="muted small" style="margin-top:8px">Digite o valor e saia da célula (Tab/Enter) para gravar. Célula vazia = mês sem relatório.</div>
     <div id="outrasContas"></div>
+  </div>
+  <div class="box">
+    <h2>Movimento do mês: relatório da folha × razão <span class="muted small" id="titMov"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Provisão do mês, INSS e FGTS do relatório de provisão da folha contra os créditos lançados no razão de cada conta (pelo histórico: INSS, FGTS e o restante como provisão), e as baixas do mês (valor pago de férias/13º no relatório) contra os débitos.</div>
+    <div class="tscroll"><table class="pv">
+      <thead><tr><th class="wrap">Item</th><th>Relatório da folha</th><th>Lançado no razão</th><th>Diferença</th><th class="wrap">Observação</th></tr></thead>
+      <tbody id="movBody"></tbody>
+    </table></div>
+    <div class="muted small" id="movInfo" style="margin-top:8px"></div>
   </div>
   <div class="box">
     <h2>Variações mensais</h2>
@@ -468,6 +482,7 @@ async function importJSON(f){
 
 // ===================== edição na grade =====================
 function setVal(m, g, i, txt){
+  if (dados.calc) delete dados.calc[m + '|' + g];
   const v = num(txt), o = dados.valores[m] = dados.valores[m] || {}, gg = o[g] = o[g] || {};
   if (String(txt).trim() === '' || isNaN(v)) delete gg[i]; else gg[i] = r2(Math.abs(v));
   if (!Object.keys(gg).length) delete o[g]; if (!Object.keys(o).length) delete dados.valores[m];
@@ -516,7 +531,8 @@ async function render(){
     html += `<tr class="grp"><td colspan="${MM.length + 2}">${esc(g.nome)}</td></tr>`;
     g.itens.forEach(([i, nome]) => {
       html += `<tr><td class="wrap">${esc(nome)}</td><td>${esc(conta)}</td>` + MM.map(m => { const v = val(m, g.id, i);
-        return `<td class="${m === mesBase ? 'base' : ''}"><input type="text" class="cel" inputmode="decimal" value="${isNaN(v) ? '' : fmt(v)}" onchange="setVal('${m}','${g.id}','${i}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>`; }).join('') + '</tr>';
+        const calc = i !== 'prov' && (dados.calc || {})[m + '|' + g.id];
+        return `<td class="${m === mesBase ? 'base' : ''}"><input type="text" class="cel" inputmode="decimal" value="${isNaN(v) ? '' : fmt(v)}" ${calc ? 'title="Calculado: saldo da provisão × alíquota do mês do relatório" style="font-style:italic"' : ''} onchange="setVal('${m}','${g.id}','${i}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>`; }).join('') + '</tr>';
     });
     const tot = MM.map(m => totalMes(m, g.id)), cont = MM.map(m => contab(m, g.id));
     html += `<tr class="tot"><td>Total relatório da folha</td><td></td>${tot.map((v, k) => `<td class="${MM[k] === mesBase ? 'base' : ''}">${isNaN(v) ? '' : fmt(v)}</td>`).join('')}</tr>`;
@@ -544,9 +560,98 @@ async function render(){
   $('stTopo').textContent = Object.keys(dados.valores).length + ' mês(es) com relatório';
   const kp = GRUPOS.map(g => [g.nome + ' em ' + mesLbl(mesBase), fmt(totalMes(mesBase, g.id)) + ' · contábil ' + fmt(contab(mesBase, g.id))]);
   $('kpis').innerHTML = kp.concat([['Conferência na data-base', nOk + ' OK · ' + nDiv + ' com diferença']]).map(([t, v]) => `<div class="kpi"><div class="t">${t}</div><div class="v">${v}</div></div>`).join('');
+  await renderMov();
   $('ctBody').innerHTML = GRUPOS.map(g => `<tr><td>${esc(g.nome)} (provisão + INSS + FGTS)</td><td><input type="text" value="${esc(dados.contas[g.id])}" onchange="setConta('${g.id}',this.value)"></td></tr>`).join('');
 }
 function setConta(g, v){ v = v.trim(); if (!/^\d\.\d\.\d{2}\.\d{4}$/.test(v)){ alert('Conta no formato 2.1.10.2001'); render(); return; } dados.contas[g] = v; salvar(); render(); }
+
+
+// ===================== relatório de provisão em PDF (Protheus FOPREL00182) =====================
+// dados.rel[aaaa-mm][grupo] = { arquivo, em, ant, acum, pago, saldo, mensal, inss, fgts }
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+async function itensPagina(pg){
+  const c = await pg.getTextContent(), vp = pg.getViewport({ scale: 1 });
+  return c.items.map(i => ({ s: i.str, x: i.transform[4], y: vp.height - i.transform[5] })).filter(i => i.s.trim());
+}
+async function lerProvPdf(f){
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise;
+  const p1 = await itensPagina(await pdf.getPage(1)), T1 = norm(p1.map(i => i.s).join(' '));
+  const g = /FERIAS/.test(T1) && !/13\S? SALARIO/.test(T1.slice(0, 200)) ? 'ferias' : /13/.test(T1) ? 'decimo' : '';
+  const grupo = /PROVIS\S*O MENSAL DE F\S*RIAS/.test(T1) ? 'ferias' : /PROVIS\S*O MENSAL DE 13/.test(T1) ? 'decimo' : g;
+  if (!grupo) throw new Error('não é o relatório de provisão mensal de férias nem de 13º');
+  // mês: “AnoMês 20269” / “202610” no cabeçalho, senão o nome do arquivo (“092026”)
+  let m = '', x = T1.match(/ANO\s*MES\s*(20\d{2})(1[0-2]|0?[1-9])(?!\d)/) || T1.match(/\b(20\d{2})(1[0-2]|0?[1-9])\b/);
+  if (x) m = x[1] + '-' + String(+x[2]).padStart(2, '0');
+  const fn = String(f.name).match(/(\d{2})[.\-]?(20\d{2})/); if (fn && +fn[1] >= 1 && +fn[1] <= 12) m = fn[2] + '-' + fn[1];
+  if (!m) throw new Error('não achei o mês/ano do relatório');
+  // Total Geral do Relatório: última linha de valores da última página
+  const it = await itensPagina(await pdf.getPage(pdf.numPages));
+  // o rótulo “Total Geral do Relatório” às vezes fica na penúltima página e a linha de totais na última
+  const temRot = its => its.some(i => /TOTAL GERAL/.test(norm(i.s)));
+  if (!temRot(it) && !(pdf.numPages > 1 && temRot(await itensPagina(await pdf.getPage(pdf.numPages - 1))))) throw new Error('não achei o “Total Geral do Relatório” nas últimas páginas');
+  const nums = it.filter(i => /^-?[\d.]+,\d{2}$/.test(i.s.trim()));
+  const ys = [...new Set(nums.map(i => Math.round(i.y)))].sort((a, b) => b - a);
+  const yT = ys.find(y => nums.filter(i => Math.abs(i.y - y) <= 2).length >= 5);
+  if (yT === undefined) throw new Error('não achei a linha de totais');
+  const L = nums.filter(i => Math.abs(i.y - yT) <= 2).sort((a, b) => a.x - b.x).map(i => num(i.s));
+  const n = L.length, mensal = L[n - 3], inss = L[n - 2], fgts = L[n - 1], ant = L[0], acum = Math.max(...L);
+  // “valor com abatimento” + valor pago = acumulado (férias); sem o par, nada foi pago
+  let saldo = acum, pago = 0; const resto = L.slice(1, n - 3).filter(v => v !== acum);
+  for (let a = 0; a < resto.length; a++) for (let b = 0; b < resto.length; b++) if (a !== b && Math.abs(resto[a] + resto[b] - acum) < 0.05 && resto[a] > resto[b]){ saldo = resto[a]; pago = resto[b]; }
+  return { grupo, m, ant, acum, pago, saldo, mensal, inss, fgts };
+}
+async function importarProvPdf(files){
+  if (!files.length) return;
+  if (!window.pdfjsLib){ msg('Leitor de PDF não carregou.', 'err'); return; }
+  $('btProvPdf').disabled = true;
+  for (const f of files){
+    try {
+      const R = await lerProvPdf(f), G = GRUPOS.find(x => x.id === R.grupo);
+      dados.rel = dados.rel || {}; (dados.rel[R.m] = dados.rel[R.m] || {})[R.grupo] = Object.assign({ arquivo: f.name, em: new Date().toISOString() }, R);
+      const tI = R.mensal ? R.inss / R.mensal : 0, tF = R.mensal ? R.fgts / R.mensal : 0;
+      const o = dados.valores[R.m] = dados.valores[R.m] || {};
+      o[R.grupo] = { prov: r2(R.saldo), inss: r2(R.saldo * tI), fgts: r2(R.saldo * tF) };
+      (dados.calc = dados.calc || {})[R.m + '|' + R.grupo] = true;
+      msg(`“${esc(f.name)}”: ${G.nome} de ${mesLbl(R.m)} — saldo ${fmt(R.saldo)} (acumulado ${fmt(R.acum)}${R.pago ? ' − pago no mês ' + fmt(R.pago) : ''}) · provisão do mês ${fmt(R.mensal)} · INSS ${fmt(R.inss)} · FGTS ${fmt(R.fgts)}.`, 'ok');
+      mesBase = R.m; ano = R.m.slice(0, 4);
+    } catch(e){ msg('Erro ao ler “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
+  }
+  $('btProvPdf').disabled = false;
+  salvar(); await render();
+}
+// razão do mês das contas de provisão (Book de conciliação)
+async function razaoProv(m){
+  const out = {}; if (!window.HubDB) return null;
+  let info = null; try { info = await HubDB.getMeta('razao'); } catch(e){}
+  if (!info || !info.agg || !info.agg[m]) return null;
+  for (const g of GRUPOS){ const c = dados.contas[g.id]; try { out[g.id] = await HubDB.lancamentosConta(c, [m]); } catch(e){ out[g.id] = []; } }
+  return out;
+}
+async function renderMov(){
+  const m = mesBase, rel = (dados.rel || {})[m] || {}, RZ = await razaoProv(m);
+  $('titMov').textContent = '· ' + mesLbl(m);
+  const L = (it, a, b, obs, cls) => { const d = isNaN(a) || isNaN(b) ? NaN : r2(b - a);
+    return `<tr class="${cls || ''}"><td class="wrap">${it}</td><td>${fmt(a)}</td><td>${fmt(b)}</td><td class="${isNaN(d) ? '' : ok(d) ? 'dok' : 'dbad'}">${isNaN(d) ? '' : ok(d) ? 'OK' : fmt(d)}</td><td class="wrap muted small">${obs || ''}</td></tr>`; };
+  let h = '', nDif = 0;
+  GRUPOS.forEach(g => {
+    const R = rel[g.id], Z = RZ ? RZ[g.id] || [] : null;
+    const cr = re => Z ? r2(Z.filter(l => l.cred && re(norm(l.hist))).reduce((a, l) => a + l.cred - (l.deb && re(norm(l.hist)) ? 0 : 0), 0)) : NaN;
+    const zI = cr(t => /INSS/.test(t)), zF = cr(t => /FGTS/.test(t)), zP = cr(t => !/INSS|FGTS/.test(t));
+    const zB = Z ? r2(Z.reduce((a, l) => a + (l.deb || 0), 0)) : NaN;
+    h += `<tr class="grp"><td colspan="5">${esc(g.nome)} · ${esc(dados.contas[g.id])}${R ? ' · “' + esc(R.arquivo) + '”' : ''}</td></tr>`;
+    if (!R && !Z){ h += `<tr><td colspan="5" class="muted small">Sem relatório e sem razão de ${mesLbl(m)}.</td></tr>`; return; }
+    const lin = [
+      ['Provisão do mês', R ? R.mensal : NaN, zP, 'Relatório: acumulado − mês anterior. Razão: créditos sem INSS/FGTS no histórico.'],
+      ['INSS sobre a provisão', R ? R.inss : NaN, zI, ''],
+      ['FGTS sobre a provisão', R ? R.fgts : NaN, zF, R && Z && R.fgts && !zF ? '<b>Nenhum FGTS provisionado no razão.</b>' : ''],
+      ['Total provisionado no mês', R ? r2(R.mensal + R.inss + R.fgts) : NaN, Z ? r2(zP + zI + zF) : NaN, '', 'tot'],
+      ['Baixas do mês (pagos)', R ? R.pago : NaN, zB, 'Relatório: valor pago no mês. Razão: débitos da conta (férias/13º pagos, abonos, rescisões e encargos).']
+    ];
+    lin.forEach(([a, b, c, d, cls]) => { if (!isNaN(b) && !isNaN(c) && !ok(r2(c - b)) && cls !== 'tot') nDif++; h += L(a, b, c, d, cls); });
+  });
+  $('movBody').innerHTML = h;
+  $('movInfo').innerHTML = RZ ? (nDif ? `<span class="dbad">${nDif} item(ns) do movimento de ${mesLbl(m)} com diferença.</span>` : '<span class="dok">Movimento do mês igual ao relatório.</span>') : `Sem razão de ${mesLbl(m)} no Book de conciliação: importe o razão do mês lá para conferir o movimento.`;
+}
 
 window.focoConta = function(){ window.abrirEtapa && abrirEtapa('conferencia'); };
 if (window.mesDoHub && mesDoHub()){ mesBase = mesDoHub(); ano = mesBase.slice(0, 4); }   // abre no mês escolhido no Book

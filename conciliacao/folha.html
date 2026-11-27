@@ -577,7 +577,7 @@ const CONTAS = {
   inss: ['2.1.10.1004', 'INSS folha a recolher'], irrf: ['2.1.10.1005', 'IRRF folha a recolher'], sind: ['2.1.10.1006', 'Contribuição sindical/assistencial'],
   resc: ['2.1.10.1010', 'Rescisões a pagar'], adi: ['1.1.02.2002', 'Adiantamento a empregados'], ant: ['1.1.02.2003', 'Antecipação de férias e 13º salário'],
   p13: ['1.1.02.2003', '1ª parcela do 13º salário (antecipação)'],
-  pfer: ['2.1.10.2001', 'Provisão de férias'], p13: ['2.1.10.2002', 'Provisão de 13º salário']
+  pfer: ['2.1.10.2001', 'Provisão de férias'], pdec: ['2.1.10.2002', 'Provisão de 13º salário']
 };
 async function carregarMeses(){
   mesesBal = [];
@@ -648,7 +648,7 @@ function calcular(m){
       como: 'Líquido da folha da 1ª parcela do 13º × débitos do mês na antecipação. Se a parcela for paga no mês seguinte, a conferência é na competência do pagamento (os débitos do mês também trazem as férias pagas).' }); }
   // provisões: conforme a tela Provisões Trab.
   { const sup = lsGet('aud-hub-suportes', {});
-    ['pfer', 'p13'].forEach(k => { const c = CONTAS[k][0], b = pas(c), s = sup[c] && sup[c].fonte === 'Provisões Trab.' ? sup[c] : null, esp = s ? r2(-s.saldo) : NaN;
+    ['pfer', 'pdec'].forEach(k => { const c = CONTAS[k][0], b = pas(c), s = sup[c] && sup[c].fonte === 'Provisões Trab.' ? sup[c] : null, esp = s ? r2(-s.saldo) : NaN;
       L.push({ k, folha: NaN, lanc: b ? b.lanc : NaN, dLanc: NaN, esp, sf: b ? b.sf : NaN, dif: b && !isNaN(esp) ? r2(b.sf - esp) : NaN, prov: true,
         como: s ? 'Saldo do controle da tela Provisões Trab. (' + esc(s.detalhe || '') + ')' : 'Abra a tela Provisões Trab. deste mês para trazer o saldo do controle.' }); }); }
   return L;
@@ -723,7 +723,7 @@ function renderConf(L){
   const by = k => L.filter(l => l.k === k);
   $('confBody').innerHTML = grupo('Obrigações trabalhistas (passivo: saldo credor positivo)') + ['sal', 'resc', 'pens', 'fgts', 'inss', 'irrf', 'sind'].flatMap(by).map(row).join('') +
     grupo('Adiantamentos (ativo: saldo devedor positivo)') + ['adi', 'ant', 'p13'].flatMap(by).map(row).join('') +
-    grupo('Provisões da folha (conciliadas na tela Provisões Trab.)') + ['pfer', 'p13'].flatMap(by).map(row).join('');
+    grupo('Provisões da folha (conciliadas na tela Provisões Trab.)') + ['pfer', 'pdec'].flatMap(by).map(row).join('');
   $('confInfo').innerHTML = '“Lançado no mês” = créditos no mês (passivo) ou baixas do mês (adiantamentos), pelo balancete. O saldo esperado de cada conta vai sozinho para o Book de conciliação como suporte (fonte “Fol. Pag.”).';
 }
 function renderResumo(md){
