@@ -311,7 +311,7 @@ table.pv tr.dif td{font-weight:600}
     <li>Os saldos do controle vão sozinhos para o <b>Book de conciliação</b> como suporte das contas.</li>
   </ol></div>
   <div class="box"><h2>Regras</h2><table><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
-    <tr><td>R1</td><td>Mapeamento igual ao Book NHD: cada bloco da aba “Trib Pagar” é uma conta (CSLL 2.1.15.1008, IRPJ 2.1.15.1009, ICMS 2.1.15.2001 e ISS 2.1.15.3001). PIS e COFINS ficam no painel <b>PIS/COFINS</b>; a DCTFWeb (2.1.15.1011, com CSRF, IRRF e INSS retido) fica no painel <b>DCTFWeb</b>. O ICMS ST a pagar (2.1.15.2004) e o ICMS DIFAL a recolher (2.1.15.2006) ficam no painel <b>ICMS DIFAL/ST</b>. Outras contas podem ser incluídas na etapa 5.</td></tr>
+    <tr><td>R1</td><td>Mapeamento igual ao Book NHD: cada bloco da aba “Trib Pagar” é uma conta (CSLL 2.1.15.1008, IRPJ 2.1.15.1009, ICMS 2.1.15.2001 e ISS 2.1.15.3001). PIS e COFINS ficam no painel <b>PIS/COFINS</b>; a DCTFWeb (2.1.15.1011, com CSRF, IRRF e INSS retido) fica no painel <b>DCTFWeb</b>. O ICMS a recolher (2.1.15.2001), o ICMS ST a pagar (2.1.15.2004) e o ICMS DIFAL a recolher (2.1.15.2006) ficam no painel <b>ICMS</b>. Outras contas podem ser incluídas na etapa 5.</td></tr>
     <tr><td>R2</td><td>Saldo do controle = soma dos lançamentos com data até a data-base (provisão negativa, pagamento positivo), igual à fórmula “Saldo findo dia” da planilha.</td></tr>
     <tr><td>R3</td><td>Diferença até R$ 0,01 é tratada como arredondamento.</td></tr>
     <tr><td>R4</td><td>Razão: em conta de passivo, <b>crédito = provisão</b> (entra negativo) e <b>débito = pagamento/compensação</b> (positivo). Os meses que vierem no razão substituem os lançamentos da planilha/razão daquele mês; o status e o check passam para o lançamento do razão de mesmo valor.</td></tr>
@@ -417,9 +417,9 @@ const difTd = d => isNaN(d) ? '<td>—</td>' : `<td class="${ok(d) ? 'dok' : 'db
 // contas = [{ conta, nome, itens:[{ id, data, desc, valor, status, origem }] }]
 // PIS (2.1.15.1002) e COFINS (2.1.15.1003) são conciliados no painel PIS/COFINS (apuração × guias × contabilidade)
 // DCTFWeb (2.1.15.1011) e as contas que alimentam ela (CSRF 2.1.15.1001, IRRF 2.1.15.1006, INSS retido 2.1.15.1007) são conciliadas no painel DCTFWeb (recibo × razão)
-// ICMS ST a pagar (2.1.15.2004) e ICMS DIFAL a recolher (2.1.15.2006) são conciliados no painel ICMS DIFAL/ST (saídas × guias Dootax × razão)
-const FORA_PIS_COFINS = ['2.1.15.1002', '2.1.15.1003', '2.1.15.1011', '2.1.15.1001', '2.1.15.1006', '2.1.15.1007', '2.1.15.2004', '2.1.15.2006'];
-const PAINEL_FORA = c => ['2.1.15.1002', '2.1.15.1003'].includes(c) ? 'PIS/COFINS' : ['2.1.15.2004', '2.1.15.2006'].includes(c) ? 'ICMS DIFAL/ST' : 'DCTFWeb';
+// ICMS a recolher (2.1.15.2001), ICMS ST a pagar (2.1.15.2004) e ICMS DIFAL a recolher (2.1.15.2006) são conciliados no painel ICMS (SPED × guias × razão)
+const FORA_PIS_COFINS = ['2.1.15.1002', '2.1.15.1003', '2.1.15.1011', '2.1.15.1001', '2.1.15.1006', '2.1.15.1007', '2.1.15.2001', '2.1.15.2004', '2.1.15.2006'];
+const PAINEL_FORA = c => ['2.1.15.1002', '2.1.15.1003'].includes(c) ? 'PIS/COFINS' : ['2.1.15.2001', '2.1.15.2004', '2.1.15.2006'].includes(c) ? 'ICMS' : 'DCTFWeb';
 const PADRAO = [['2.1.15.1008', 'CSLL a recolher'], ['2.1.15.1009', 'IRPJ a recolher'], ['2.1.15.2001', 'ICMS a recolher'], ['2.1.15.3001', 'ISS retido a recolher']];
 let dados = lsGet(LS, null);
 if (!dados || !Array.isArray(dados.contas)) dados = { contas: PADRAO.map(([conta, nome]) => ({ conta, nome, itens: [] })) };

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <script src="../empresa.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ICMS DIFAL e ST Audicon</title>
+<title>ICMS Audicon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -109,24 +109,26 @@ ol.steps li{margin:7px 0}
 @media print{header.top,nav.tabs,.upl,.toolbar{display:none!important}body{background:#fff}.box{box-shadow:none}section.panel{display:block!important}}
 </style>
 <script src="vendor/sheetjs/xlsx.full.min.js"></script>
+<script src="vendor/pdfjs/pdf.min.js"></script>
 <script src="hub-db.js?v=4"></script>
 <script src="mes-hub.js?v=3"></script>
 </head>
 <body>
 <header class="top"><div class="wrap">
   <div class="eyebrow">Audicon Contadores · Controladoria</div>
-  <h1>ICMS DIFAL e ST: saídas × guias × contabilidade</h1>
-  <p>NHD Foods · O ICMS ST e o DIFAL das notas de saída (relatório da Audicon) conferidos com a provisão no razão, e as guias pagas pela Dootax conferidas com as notas e com o pagamento lançado</p>
+  <h1>ICMS: normal, ST e DIFAL · SPED × guias × contabilidade</h1>
+  <p>NHD Foods · A apuração do SPED Fiscal conferida com as guias geradas e com os pagamentos no razão (ICMS a recolher), e o ST e o DIFAL das notas de saída conferidos com as guias da Dootax e com a provisão</p>
 </div></header>
 <nav class="tabs" role="navigation" aria-label="Etapas"><div class="wrap">
-  <span class="brand">ICMS DIFAL/ST</span>
+  <span class="brand">ICMS</span>
   <button type="button" class="toggler" id="navToggle" aria-expanded="false" aria-controls="menuAbas" aria-label="Alternar menu">☰ Menu</button>
   <div class="menu" id="menuAbas" role="tablist">
     <button type="button" role="tab" aria-selected="false" data-tab="processo">1 · Processo mensal</button>
-    <button type="button" role="tab" aria-selected="true" data-tab="conferencia">2 · Conferência do mês</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="st">3 · ST nota a nota</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="guias">4 · Guias Dootax</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="uf">5 · DIFAL por UF</button>
+    <button type="button" role="tab" aria-selected="true" data-tab="normal">2 · ICMS normal</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="conferencia">3 · ST e DIFAL</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="st">4 · ST nota a nota</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="guias">5 · Guias Dootax</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="uf">6 · DIFAL por UF</button>
   </div>
 </div></nav>
 <main class="wrap">
@@ -134,6 +136,18 @@ ol.steps li{margin:7px 0}
 <div class="box">
   <div class="upl">
     <div class="upl-grid">
+      <div>
+        <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 3.5h11v9h-11zM2.5 6.5h11M6 6.5v6"/></svg>SPED Fiscal (EFD ICMS/IPI)</h3>
+        <div class="muted small">TXT do SPED Fiscal finalizado, um por filial e mês. Lê a apuração do ICMS próprio (E110), o ST por UF (E210) e o DIFAL/FCP por UF (E310). O mesmo mês e filial de novo substitui.</div>
+        <div class="paste-actions"><button class="primary" type="button" id="btSped" onclick="$('inSped').click()">Importar SPED (.txt)</button></div>
+        <div class="chips" id="chSped"></div>
+      </div>
+      <div>
+        <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h8v13l-2-1.2-2 1.2-2-1.2-2 1.2zM6 5h4M6 8h4M6 11h2"/></svg>Guias geradas (Audicon)</h3>
+        <div class="muted small">PDF das guias do mês: DAE (MG), DARE (SP) e GNRE de ICMS normal, TTD, ST, DIFAL e uso/consumo. Lê valor, vencimento, competência, UF e filial (pelo nome do arquivo e pelo texto). Aceita vários arquivos; o mesmo arquivo de novo substitui.</div>
+        <div class="paste-actions"><button class="primary" type="button" id="btGuiasN" onclick="$('inGuiasN').click()">Importar guias (PDF)</button></div>
+        <div class="chips" id="chGuiasN"></div>
+      </div>
       <div>
         <h3><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 1.5h5.5L12 4v10.5H4zM9.5 1.5V4H12M6 7.5h4M6 10h4M6 12.5h2"/></svg>Relação de saídas (Audicon)</h3>
         <div class="muted small">TXT “Saídas por produtos — Audicon padrão”, um por filial e mês (ex.: <i>082026 - RelacaoSaidas Filial 2.txt</i>). Lê nota a nota o ICMS ST, o FCP ST, o DIFAL e o FCP DIFAL. Aceita vários arquivos; o mesmo mês e filial de novo substitui.</div>
@@ -147,9 +161,11 @@ ol.steps li{margin:7px 0}
         <div class="chips" id="chDootax"></div>
       </div>
     </div>
+    <input type="file" id="inSped" accept=".txt" multiple onchange="importarSped([...this.files]);this.value=''">
+    <input type="file" id="inGuiasN" accept=".pdf" multiple onchange="importarGuiasN([...this.files]);this.value=''">
     <input type="file" id="inSaidas" accept=".txt" multiple onchange="importarSaidas([...this.files]);this.value=''">
     <input type="file" id="inDootax" accept=".xlsx,.xls" onchange="importarDootax(this.files[0]);this.value=''">
-    <div class="muted small" style="margin-top:10px">O razão vem do <b>Book de conciliação</b> (contas 2.1.15.2004 ICMS ST a pagar, 2.1.15.2006 ICMS DIFAL a recolher, 2.1.15.2001 ICMS a recolher, 3.1.01.2008 e 3.1.01.2009). Tudo fica neste navegador, como o razão.</div>
+    <div class="muted small" style="margin-top:10px">O razão vem do <b>Book de conciliação</b> (contas 2.1.15.2001 ICMS a recolher, 2.1.15.2004 ICMS ST a pagar, 2.1.15.2006 ICMS DIFAL a recolher, 3.1.01.2008 e 3.1.01.2009). Tudo fica neste navegador, como o razão.</div>
   </div>
   <div class="toolbar" style="margin-top:12px">
     <label>Mês:<select id="selMes" onchange="mesAtual=this.value;render()"></select></label>
@@ -159,7 +175,37 @@ ol.steps li{margin:7px 0}
   <div id="msgs"></div>
 </div>
 
-<section class="panel active" id="tab-conferencia">
+<section class="panel" id="tab-normal">
+  <div class="kpis" id="kpisN"></div>
+  <div class="box">
+    <h2>Guias geradas da competência <span class="muted small" id="titGuiasN"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Cada guia da competência e o pagamento encontrado na 2.1.15.2001 (débito contra o banco com o mesmo valor, a partir da competência). O tipo e a filial podem ser corrigidos aqui quando o arquivo não deixar claro.</div>
+    <div class="tscroll"><table>
+      <thead><tr><th>Filial</th><th class="left">Tipo</th><th>UF</th><th>Receita</th><th>Vencimento</th><th>Valor da guia</th><th class="left">Pagamento no razão</th><th class="left">Arquivo</th><th></th></tr></thead>
+      <tbody id="gnnBody"></tbody><tfoot id="gnnFoot"></tfoot>
+    </table></div>
+  </div>
+  <div class="box">
+    <h2>SPED × guias por filial e UF <span class="muted small" id="titSpedG"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">Valor a recolher apurado no SPED contra as guias geradas da competência. No ST e no DIFAL entram também as guias por nota da Dootax das notas do mês (UFs em que a empresa não tem inscrição).</div>
+    <div class="tscroll" style="max-height:none"><table>
+      <thead><tr><th>Filial</th><th class="left">Item</th><th>SPED a recolher</th><th>Guias geradas</th><th>Guias Dootax (por nota)</th><th>Diferença</th><th class="left">Conferência</th></tr></thead>
+      <tbody id="spedBody"></tbody>
+    </table></div>
+    <div class="muted small" id="spedInfo" style="margin-top:8px"></div>
+  </div>
+  <div class="box">
+    <h2>Saldo final da 2.1.15.2001 · ICMS a recolher <span class="muted small" id="titSaldoN"></span></h2>
+    <div class="muted small" style="margin-bottom:10px">O que a conta deveria ter no último dia do mês: as guias geradas (da competência e de meses anteriores) que ainda não tinham sido pagas nessa data. Vai sozinho para o Book de conciliação como suporte da 2.1.15.2001.</div>
+    <div class="tscroll" style="max-height:none"><table>
+      <thead><tr><th>Item</th><th>Valor</th><th class="left">Como chega</th></tr></thead>
+      <tbody id="saldoNBody"></tbody>
+    </table></div>
+    <div class="muted small" id="saldoNInfo" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<section class="panel" id="tab-conferencia">
   <div class="kpis" id="kpis"></div>
   <div class="box">
     <h2>Saldo final a pagar <span class="muted small" id="titSaldo"></span></h2>
@@ -248,6 +294,10 @@ ol.steps li{margin:7px 0}
     <li>As etapas 3 a 5 mostram nota a nota e por UF onde está a diferença. O botão <b>Baixar Excel do mês</b> leva tudo para planilha.</li>
   </ol></div>
   <div class="box"><h2>Regras</h2><table class="regras"><thead><tr><th>Regra</th><th>Definição</th></tr></thead><tbody>
+    <tr><td>N1</td><td><b>ICMS normal</b>: o SPED Fiscal de cada filial dá o valor a recolher do ICMS próprio (E110), do ST por UF (E210) e do DIFAL + FCP por UF (E310); cada um é conferido com as guias geradas da competência (no ST e no DIFAL, somadas às guias por nota da Dootax das notas do mês).</td></tr>
+    <tr><td>N2</td><td>Guia em PDF: tipo, UF e filial pelo nome do arquivo e pelo texto (código de receita, inscrição estadual, CNPJ); valor = maior valor da guia (total a recolher); vencimento = data mais adiante na guia; competência pelo nome (“08.2026”) ou pelo texto. Tipo e filial podem ser corrigidos na tela.</td></tr>
+    <tr><td>N3</td><td>Pagamento da guia = débito da 2.1.15.2001 contra o banco (1.1.01.x) com o mesmo valor, a partir da competência (DEB-DAE, DEB-NF…); os DEB-TX da Dootax ficam de fora.</td></tr>
+    <tr><td>N4</td><td><b>Saldo final esperado da 2.1.15.2001</b> = guias geradas da competência e de meses anteriores que não estavam pagas no último dia do mês. Vai ao Book como suporte da conta.</td></tr>
     <tr><td>R1</td><td>Relatório de saídas: colunas ICMS ST, FCP ST, DIFAL (DIFAL DES) e FCP DIFAL somadas por nota (a nota tem uma linha por produto).</td></tr>
     <tr><td>R2</td><td><b>ST</b>: a provisão é nota a nota, débito “VE-SPED -nota” na 3.1.01.2008 contra a 2.1.15.2004 (ICMS ST a pagar, transferida no fim do mês para a 2.1.15.2001) ou direto contra a 2.1.15.2001. A nota bate quando a provisão é igual ao ST ou ao ST + FCP ST da nota. Despesa lançada contra outra conta (ex.: 1.1.03.2001) é apontada. Devoluções (DE-SPED) ficam fora, porque o relatório é só de saídas.</td></tr>
     <tr><td>R3</td><td><b>DIFAL</b>: a provisão é um lançamento por filial no fim do mês na 2.1.15.2006 (“VR REC DIFAL MÊS”, contra 2.1.15.2001, e 3.1.01.2009 contra 3.1.01.2002), conferida com DIFAL + FCP DIFAL das notas da filial.</td></tr>
@@ -534,16 +584,271 @@ function calcular(m){
   return C;
 }
 
+// ===================== ICMS normal: SPED Fiscal e guias geradas (PDF) =====================
+// 'icms-sped:aaaa-mm' -> { fil: { '3': { arquivo, em, uf, ie, cnpj, e110:{...}, st:{UF:recolher}, dif:{UF:{dif,fcp}} } } }
+// 'icms-guias'        -> { lista: [{ id, arquivo, fil, comp, tipo, uf, valor, venc, rec, em }] }
+const UFS = 'AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO'.split(' ');
+const TIPO_G = { proprio: 'ICMS próprio', ttd: 'ICMS TTD (subvenção)', st: 'ICMS ST', dif: 'DIFAL não contribuinte', da: 'Dif. alíquota uso/consumo', dast: 'ST uso/consumo', outro: 'Outro' };
+const nz = v => { const n = num(v); return isNaN(n) ? 0 : n; };
+const mesIni = m => m + '-01';
+let SPED = null, GUIAS = [], RAZ_REC = [], PAGTO = new Map(), CN = null, IDENT = {};
+async function mesesSped(){ try { return (await HubDB.metaKeys()).filter(k => String(k).indexOf('icms-sped:') === 0).map(k => k.slice(10)).sort(); } catch(e){ return []; } }
+
+function lerSped(txt){
+  const L = txt.split(/\r?\n/); let per = '', fil = '', uf = '', ie = '', cnpj = '', ufAt = '';
+  const o = { e110: null, st: {}, dif: {} };
+  for (const ln of L){
+    if (ln.charCodeAt(0) !== 124) continue;
+    const p = ln.split('|'), r = p[1];
+    if (r === '0000'){ per = p[4].slice(4, 8) + '-' + p[4].slice(2, 4); cnpj = dig(p[7]); fil = String(+cnpj.slice(8, 12)); uf = p[9]; ie = dig(p[10]); }
+    else if (r === 'E110') o.e110 = { deb: nz(p[2]), ajDeb: nz(p[4]), estCred: nz(p[5]), cred: nz(p[6]), ajCred: nz(p[8]), estDeb: nz(p[9]), sldAnt: nz(p[10]), apurado: nz(p[11]), ded: nz(p[12]), recolher: nz(p[13]), sldTransp: nz(p[14]), debEsp: nz(p[15]) };
+    else if (r === 'E200' || r === 'E300') ufAt = p[2];
+    else if (r === 'E210') o.st[ufAt] = r2((o.st[ufAt] || 0) + nz(p[13]));
+    else if (r === 'E310'){ const d = o.dif[ufAt] = o.dif[ufAt] || { dif: 0, fcp: 0 }; d.dif = r2(d.dif + nz(p[10])); d.fcp = r2(d.fcp + nz(p[20])); }
+  }
+  if (!per || !fil) throw new Error('não achei o registro 0000 (período e CNPJ): não parece um SPED Fiscal');
+  return Object.assign(o, { per, fil, uf, ie, cnpj });
+}
+async function importarSped(files){
+  if (!files.length) return;
+  $('btSped').disabled = true;
+  for (const f of files){
+    try {
+      const s = lerSped(new TextDecoder('windows-1252').decode(await f.arrayBuffer()));
+      const K = 'icms-sped:' + s.per, o = (await getMeta(K)) || { fil: {} };
+      o.fil[s.fil] = { arquivo: f.name, em: new Date().toISOString(), uf: s.uf, ie: s.ie, cnpj: s.cnpj, e110: s.e110, st: s.st, dif: s.dif };
+      await setMeta(K, o);
+      const st = Object.values(s.st).reduce((a, v) => a + v, 0), di = Object.values(s.dif).reduce((a, v) => a + v.dif + v.fcp, 0);
+      msg(`“${esc(f.name)}”: SPED da ${filLbl(s.fil)} (${s.uf}) · ${mesLbl(s.per)} — ICMS próprio a recolher ${fmt(s.e110 ? s.e110.recolher : NaN)} · ST ${fmt(st)} · DIFAL + FCP ${fmt(di)}.` + (s.e110 && !s.e110.deb && !s.e110.recolher ? ' <b>A apuração do ICMS próprio (E110) está zerada neste arquivo.</b>' : ''), s.e110 && !s.e110.deb && !s.e110.recolher ? 'warn' : 'ok');
+      mesAtual = s.per;
+    } catch(e){ msg('Erro ao importar “' + esc(f.name) + '”: ' + esc(e.message), 'err'); }
+  }
+  $('btSped').disabled = false;
+  await render();
+}
+async function tirarSped(m, fil){
+  if (!confirm('Remover o SPED da ' + filLbl(fil) + ' de ' + mesLbl(m) + '?')) return;
+  const K = 'icms-sped:' + m, o = await getMeta(K); if (!o) return;
+  delete o.fil[fil]; if (Object.keys(o.fil).length) await setMeta(K, o); else await HubDB.delMeta(K);
+  await render();
+}
+
+// ---- guias em PDF (pdf.js) ----
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+async function textoPdf(f){
+  let buf = new Uint8Array(await f.arrayBuffer());
+  // alguns PDFs salvos do portal vêm sem o último byte (“%%EO”): completa só na leitura
+  let fim = buf.length; while (fim && (buf[fim - 1] === 0 || buf[fim - 1] === 10 || buf[fim - 1] === 13 || buf[fim - 1] === 32)) fim--;
+  if (fim >= 4 && String.fromCharCode(...buf.slice(fim - 4, fim)) === '%%EO'){ const b = new Uint8Array(fim + 2); b.set(buf.slice(0, fim)); b[fim] = 70; b[fim + 1] = 10; buf = b; }
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise; let t = '';
+  for (let i = 1; i <= pdf.numPages; i++){ const c = await (await pdf.getPage(i)).getTextContent(); t += c.items.map(x => x.str + (x.hasEOL ? '\n' : ' ')).join('') + '\n'; }
+  return t;
+}
+// identificação da filial: nome do arquivo (“FL 02”, “filial 3”), inscrição estadual ou CNPJ lidos nos SPEDs importados
+async function carregarIdent(){
+  IDENT = {};
+  for (const m of await mesesSped()){ const o = await getMeta('icms-sped:' + m); Object.keys((o && o.fil) || {}).forEach(f => { const x = o.fil[f]; if (x.ie) IDENT[x.ie] = f; if (x.cnpj) IDENT[x.cnpj] = f; }); }
+}
+function lerGuia(t, nome){
+  const N = norm(String(nome).replace(/\.pdf$/i, '').replace(/[_]/g, ' ')), T = String(t), TN = norm(T);
+  const td = T.replace(/(\d)[.\/-](?=\d)/g, '$1');
+  // filial
+  let fil = ''; let m = N.match(/\b(?:FL|FILIAL)\s*0?(\d{1,2})\b/);
+  if (m) fil = String(+m[1]);
+  if (!fil){ for (const k of Object.keys(IDENT)) if (k.length >= 9 && td.indexOf(k) >= 0){ fil = IDENT[k]; break; } }
+  if (!fil){ m = td.match(/\b\d{8}(\d{4})\d{2}\b/); if (m) fil = String(+m[1]); }
+  // valores e datas
+  const vals = (T.match(/(?<![\d.,])\d{1,3}(?:\.\d{3})*,\d{2}(?![\d,])/g) || []).map(num).filter(v => !isNaN(v));
+  const valor = vals.length ? r2(Math.max(...vals)) : NaN;
+  const datas = (T.match(/\b\d{2}\/\d{2}\/20\d{2}\b/g) || []).map(d => d.slice(6) + '-' + d.slice(3, 5) + '-' + d.slice(0, 2)).sort();
+  // competência: nome do arquivo (“08.2026”), senão o texto (“08 / 2026”, “MES REF. 08/2026”, “01 a 31/08/2026”)
+  let comp = '';
+  m = N.match(/(?:^|\D)(\d{2})[.\-\/](20\d{2})(?!\d)/); if (m && +m[1] >= 1 && +m[1] <= 12) comp = m[2] + '-' + m[1];
+  if (!comp){ m = T.match(/(?<![\d\/])(\d{2})\s?\/\s?(20\d{2})(?!\d)/); if (m && +m[1] >= 1 && +m[1] <= 12) comp = m[2] + '-' + m[1]; }
+  if (!comp){ m = T.match(/\d{2}\s+a\s+\d{2}\/(\d{2})\/(20\d{2})/); if (m) comp = m[2] + '-' + m[1]; }
+  // receita, UF e tipo
+  const recs = T.match(/\b\d{3}-\d\b/g) || []; m = T.match(/\b([A-Z]{2})\s+(1\d{5})\b/);
+  const rec = m && UFS.includes(m[1]) ? m[2] : (recs.find(r => /^(120|121|219|220|046|246|102)-/.test(r)) || recs[0] || '');
+  let uf = (N.match(new RegExp('\\b(' + UFS.join('|') + ')\\b(?!.*\\b(' + UFS.join('|') + ')\\b)')) || [])[1] || '';
+  if (!uf && m && UFS.includes(m[1])) uf = m[1];
+  if (!uf && /^(046|246|102)-/.test(rec)) uf = 'SP';
+  if (!uf && /MINAS GERAIS/.test(TN)) uf = 'MG';
+  let tipo = '';
+  if (/CONSUMO|DIFERENCIAL DE ALIQUOTA/.test(N)) tipo = /\bST\b|ICMS-ST/.test(N) ? 'dast' : 'da';
+  else if (/\bTDD\b|\bTTD\b/.test(N)) tipo = 'ttd';
+  else if (/DIFAL/.test(N)) tipo = 'dif';
+  else if (/\bST\b|ICMS-ST/.test(N)) tipo = 'st';
+  else if (/NORMAL|\bOP\b|PROPRIO/.test(N)) tipo = 'proprio';
+  else if (/^(120|121|046)-/.test(rec)) tipo = 'proprio';
+  else if (/^219-/.test(rec)) tipo = 'ttd';
+  else if (/^(220|246)-|^100048$|^100099$/.test(rec)) tipo = 'st';
+  else if (/^102-|^100110$|^100102$/.test(rec)) tipo = 'dif';
+  else tipo = 'outro';
+  // marcas da filial para reconhecer outras guias dela: CEP do endereço e inscrições escritas depois do nome da empresa
+  const tok = [...new Set((T.match(/\b\d{5}-\d{3}\b/g) || []).concat((T.match(/(?:LTDA|EXPORTA[CÇ][AÃ]O)\s+(\d{6,14})\b/gi) || []).map(x => dig(x))))];
+  return { fil: fil || '?', comp, tipo, uf, valor, venc: datas[datas.length - 1] || '', rec, tok };
+}
+// guia sem filial no nome nem CNPJ/IE da filial no texto (ex.: GNRE de outro estado traz a inscrição do destino):
+// usa o CEP / a inscrição de outra guia da mesma filial já identificada
+function filialPorMarca(lista){
+  const mapa = {}; lista.forEach(g => { if (g.fil && g.fil !== '?') (g.tok || []).forEach(t => { if (!(t in mapa)) mapa[t] = g.fil; else if (mapa[t] !== g.fil) mapa[t] = null; }); });
+  let n = 0; lista.forEach(g => { if (g.fil !== '?' || g.manual) return; const f = (g.tok || []).map(t => mapa[t]).find(Boolean); if (f){ g.fil = f; g.filPor = 'marca'; n++; } });
+  return n;
+}
+async function importarGuiasN(files){
+  if (!files.length) return;
+  if (!window.pdfjsLib){ msg('Leitor de PDF não carregou.', 'err'); return; }
+  $('btGuiasN').disabled = true; await carregarIdent();
+  const o = (await getMeta('icms-guias')) || { lista: [] }, feitas = [], ruins = [];
+  for (const f of files){
+    try {
+      const g = lerGuia(await textoPdf(f), f.name);
+      if (isNaN(g.valor)) throw new Error('não achei o valor na guia');
+      if (!g.comp) throw new Error('não achei a competência (mês/ano) no nome nem no texto');
+      o.lista = o.lista.filter(x => x.arquivo !== f.name);
+      o.lista.push(Object.assign({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), arquivo: f.name, em: new Date().toISOString() }, g));
+      feitas.push(g); if (!mesAtual) mesAtual = g.comp;
+    } catch(e){ ruins.push('“' + esc(f.name) + '”: ' + esc(e.message)); }
+  }
+  filialPorMarca(o.lista);
+  await setMeta('icms-guias', o);
+  if (feitas.length) msg(`${feitas.length} guia(s) importada(s): ${fmt(feitas.reduce((a, g) => a + g.valor, 0))} (${[...new Set(feitas.map(g => mesLbl(g.comp)))].join(', ')}).` + (o.lista.some(g => g.fil === '?') ? ' <b>Há guia sem filial identificada: corrija na aba ICMS normal.</b>' : ''), o.lista.some(g => g.fil === '?') ? 'warn' : 'ok');
+  if (ruins.length) msg('Não importadas: ' + ruins.join(' · '), 'err');
+  $('btGuiasN').disabled = false;
+  await render();
+}
+async function tirarGuiaN(id){
+  const o = await getMeta('icms-guias'); if (!o) return; const g = o.lista.find(x => x.id === id);
+  if (!g || !confirm('Remover a guia “' + g.arquivo + '”?')) return;
+  o.lista = o.lista.filter(x => x.id !== id); await setMeta('icms-guias', o); await render();
+}
+async function tirarGuiasMes(m){
+  const o = await getMeta('icms-guias'); if (!o) return; const n = o.lista.filter(x => x.comp === m).length;
+  if (!n || !confirm('Remover as ' + n + ' guias de ' + mesLbl(m) + '?')) return;
+  o.lista = o.lista.filter(x => x.comp !== m); await setMeta('icms-guias', o); await render();
+}
+async function setGuiaN(id, k, v){
+  const o = await getMeta('icms-guias'); if (!o) return; const g = o.lista.find(x => x.id === id); if (!g) return;
+  g[k] = v; g.manual = true; await setMeta('icms-guias', o); await render();
+}
+
+// ---- pagamentos: débitos da 2.1.15.2001 contra o banco (DEB-DAE, DEB-NF, DEB-DAR…), menos as guias por nota da Dootax (DEB-TX)
+async function carregarRazaoRec(){
+  RAZ_REC = []; if (!window.HubDB) return;
+  try { RAZ_REC = await HubDB.lancamentosConta(CT.rec); } catch(e){}
+}
+const ehPagto = l => l.deb > 0 && /^1\.1\.01\./.test(l.cp || '') && !/^DEB-TX/i.test(l.hist);
+function casarPagamentos(){
+  // cada guia (da mais antiga para a mais nova) fica com o débito de mesmo valor ainda livre, a partir da competência,
+  // preferindo a mesma filial e a data mais próxima do vencimento
+  PAGTO = new Map(); const livres = RAZ_REC.filter(ehPagto).map(l => Object.assign({}, l, { usado: false }));
+  GUIAS.slice().sort((a, b) => (a.comp + a.venc).localeCompare(b.comp + b.venc)).forEach(g => {
+    const cands = livres.filter(l => !l.usado && Math.abs(l.deb - g.valor) <= 0.01 && l.data >= mesIni(g.comp));
+    if (!cands.length) return;
+    const dist = l => (filN(l.fil) === g.fil ? 0 : 1e6) + Math.abs(new Date(l.data) - new Date(g.venc || l.data)) / 864e5;
+    const l = cands.sort((a, b) => dist(a) - dist(b))[0]; l.usado = true; PAGTO.set(g.id, l);
+  });
+  return livres;
+}
+function calcNormal(m){
+  const fim = fimDoMesHub(m), C = { m, fim, guias: GUIAS.filter(g => g.comp === m), linhas: [], abertas: [], semGuia: [] };
+  const livres = casarPagamentos();
+  const mesesRaz = new Set(RAZ_REC.map(l => l.mes));
+  C.guias.forEach(g => { const p = PAGTO.get(g.id); g._pg = p || null;
+    g._sit = p ? 'pago' : (g.venc && mesesRaz.has(g.venc.slice(0, 7)) ? 'semraz' : 'aberto'); });
+  // saldo esperado: guias da competência ou anteriores ainda não pagas no último dia do mês
+  GUIAS.filter(g => g.comp <= m).forEach(g => { const p = PAGTO.get(g.id); if (!p || p.data > fim) C.abertas.push(g); });
+  C.esperado = r2(C.abertas.reduce((a, g) => a + g.valor, 0));
+  C.porTipo = {}; C.abertas.forEach(g => { const k = g.comp === m ? 'mes' : 'ant'; C.porTipo[k] = (C.porTipo[k] || 0) + g.valor; });
+  // pagamentos do mês na 2.1.15.2001 sem guia importada
+  C.semGuia = livres.filter(l => !l.usado && l.mes === m);
+  // SPED × guias por filial e UF
+  const sp = (SPED && SPED.fil) || {}, fils = [...new Set(Object.keys(sp).concat(C.guias.map(g => g.fil)))].sort((a, b) => a - b);
+  const doo = {}; ((DOO && DOO.guias) || []).forEach(g => { if (g[4].slice(0, 7) !== m) return; const k = g[0] + '|' + (g[2] === 'st' ? 'st' : 'dif') + '|' + g[6]; doo[k] = (doo[k] || 0) + g[3]; });
+  const somaG = (f, tipos, uf) => r2(C.guias.filter(g => g.fil === f && tipos.includes(g.tipo) && (!uf || g.uf === uf)).reduce((a, g) => a + g.valor, 0));
+  fils.forEach(f => {
+    const s = sp[f];
+    const gP = somaG(f, ['proprio', 'ttd']);
+    if (s || gP) C.linhas.push({ f, item: 'ICMS próprio (E110)' + (somaG(f, ['ttd']) ? ' · guia normal + TTD' : ''), sped: s && s.e110 ? s.e110.recolher : NaN, g: gP, doo: 0, zero: !!(s && s.e110 && !s.e110.deb && !s.e110.recolher) });
+    const ufsSt = [...new Set(Object.keys((s && s.st) || {}).concat(C.guias.filter(g => g.fil === f && g.tipo === 'st').map(g => g.uf)))].filter(u => (s && s.st[u]) || somaG(f, ['st'], u) || doo[f + '|st|' + u]).sort();
+    ufsSt.forEach(u => C.linhas.push({ f, item: 'ICMS ST · ' + u + ' (E210)', sped: s && u in s.st ? s.st[u] : NaN, g: somaG(f, ['st'], u), doo: r2(doo[f + '|st|' + u] || 0) }));
+    const ufsDi = [...new Set(Object.keys((s && s.dif) || {}).concat(C.guias.filter(g => g.fil === f && g.tipo === 'dif').map(g => g.uf)))].filter(u => (s && s.dif[u] && (s.dif[u].dif || s.dif[u].fcp)) || somaG(f, ['dif'], u) || doo[f + '|dif|' + u]).sort();
+    ufsDi.forEach(u => C.linhas.push({ f, item: 'DIFAL + FCP · ' + u + ' (E310)', sped: s && s.dif[u] ? r2(s.dif[u].dif + s.dif[u].fcp) : NaN, g: somaG(f, ['dif'], u), doo: r2(doo[f + '|dif|' + u] || 0) }));
+    const gO = somaG(f, ['da', 'dast', 'outro']);
+    if (gO) C.linhas.push({ f, item: 'Uso/consumo e outras guias (sem apuração no SPED)', sped: NaN, g: gO, doo: 0, info: true });
+  });
+  C.linhas.forEach(l => { l.dif = isNaN(l.sped) ? NaN : r2(l.sped - l.g - l.doo); });
+  return C;
+}
+function renderNormal(){
+  const C = CN, fim = C.fim;
+  const card = (t, v, s, cls) => `<div class="kpi ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div><div class="s">${s || ''}</div></div>`;
+  const pagas = C.guias.filter(g => g._pg), nDifS = C.linhas.filter(l => !l.info && !isNaN(l.dif) && !ok(l.dif, TOLT)).length;
+  const bal = saldoBal(CT.rec), dSal = isNaN(bal) ? NaN : r2(bal - C.esperado);
+  $('kpisN').innerHTML =
+    card('Guias da competência', fmt(C.guias.reduce((a, g) => a + g.valor, 0)), C.guias.length ? C.guias.length + ' guia(s) de ' + mesLbl(C.m) : 'importe as guias do mês') +
+    card('Pagas no razão (2.1.15.2001)', fmt(pagas.reduce((a, g) => a + g.valor, 0)), C.guias.length ? pagas.length + ' de ' + C.guias.length + ' guia(s)' : '—', C.guias.length ? (pagas.length === C.guias.length ? 'ok' : '') : '') +
+    card('SPED × guias', SPED ? (nDifS ? nDifS + ' item(ns)' : '✓') : '—', SPED ? (nDifS ? 'com diferença' : 'tudo bate') : 'importe o SPED do mês', SPED ? (nDifS ? 'bad' : 'ok') : '') +
+    card('Saldo esperado 2.1.15.2001', fmt(C.esperado), 'guias não pagas até ' + br(fim)) +
+    card('Saldo no balancete', fmt(bal), isNaN(dSal) ? (BAL ? '' : 'sem balancete do mês no Book') : ok(dSal, TOLT) ? '✓ conciliado' : 'diferença ' + fmt(dSal), isNaN(dSal) ? '' : ok(dSal, TOLT) ? 'ok' : 'bad');
+  // guias
+  const fils = ['1', '2', '3', '4', '?'].concat(Object.keys(IDENT).map(k => IDENT[k])).filter((v, i, a) => a.indexOf(v) === i);
+  const selT = g => `<select onchange="setGuiaN('${g.id}','tipo',this.value)">${Object.keys(TIPO_G).map(k => `<option value="${k}" ${k === g.tipo ? 'selected' : ''}>${TIPO_G[k]}</option>`).join('')}</select>`;
+  const selF = g => `<select onchange="setGuiaN('${g.id}','fil',this.value)">${fils.map(f => `<option value="${f}" ${f === g.fil ? 'selected' : ''}>${f === '?' ? '?' : 'Filial ' + f}</option>`).join('')}</select>`;
+  const sit = g => g._pg ? `<span class="pill ok">pago em ${br(g._pg.data)}</span> <span class="muted small">${esc(g._pg.hist)}</span>` : g._sit === 'semraz' ? '<span class="pill bad">sem pagamento no razão</span>' : `<span class="pill info">a pagar · vence ${br(g.venc)}</span>`;
+  const G = C.guias.slice().sort((a, b) => (a.fil + a.tipo + a.uf).localeCompare(b.fil + b.tipo + b.uf));
+  $('gnnBody').innerHTML = G.length ? G.map(g => `<tr><td>${selF(g)}</td><td class="left">${selT(g)}</td><td>${esc(g.uf)}</td><td>${esc(g.rec)}</td><td>${br(g.venc)}</td><td>${fmt(g.valor)}</td><td class="ex">${sit(g)}</td><td class="ex">${esc(g.arquivo)}</td><td><button type="button" class="lupa" onclick="tirarGuiaN('${g.id}')" aria-label="Remover" title="Remover guia">×</button></td></tr>`).join('')
+    : `<tr><td colspan="9" class="empty">Sem guias geradas de ${mesLbl(C.m)}. Importe os PDFs das guias no topo.</td></tr>`;
+  const tt = {}; G.forEach(g => tt[g.tipo] = (tt[g.tipo] || 0) + g.valor);
+  $('gnnFoot').innerHTML = G.length ? `<tr><td colspan="5">${G.length} guia(s) · ${Object.keys(tt).map(k => TIPO_G[k] + ' ' + fmt(tt[k])).join(' · ')}</td><td>${fmt(G.reduce((a, g) => a + g.valor, 0))}</td><td colspan="3"></td></tr>` : '';
+  // SPED × guias
+  $('spedBody').innerHTML = C.linhas.length ? C.linhas.map(l => {
+    const conf = l.info ? '<span class="muted small">só guia</span>' : isNaN(l.sped) ? '<span class="muted small">sem SPED da filial</span>' : l.zero ? '<span class="dbad">apuração zerada no SPED</span>' : (!l.sped && l.g && !ok(l.dif, TOLT)) ? '<span class="dbad">guia mensal sem valor desta UF no SPED</span>' : chk(l.dif, TOLT);
+    return `<tr><td>${filLbl(l.f)}</td><td class="left">${l.item}</td><td>${fmt(l.sped)}</td><td>${fmt(l.g)}</td><td>${l.doo ? fmt(l.doo) : ''}</td><td class="${isNaN(l.dif) || ok(l.dif, TOLT) ? '' : 'dbad'}">${fmt(l.dif)}</td><td class="ex">${conf}</td></tr>`; }).join('')
+    : `<tr><td colspan="7" class="empty">Importe o SPED Fiscal e as guias de ${mesLbl(C.m)}.</td></tr>`;
+  const zeros = C.linhas.filter(l => l.zero).map(l => filLbl(l.f));
+  $('spedInfo').innerHTML = 'Diferença = SPED − guias geradas − guias Dootax.' + (zeros.length ? ` <b>${zeros.join(', ')}: o E110 (ICMS próprio) está zerado no SPED importado</b>, então a guia não tem com o que ser conferida aqui (confira com a DAPI/GIA ou com o livro de apuração).` : '') +
+    (C.linhas.some(l => /TTD/.test(l.item)) ? ' Na filial com TTD, o E110 traz o ICMS sem o crédito presumido do TTD: a diferença costuma ser o benefício (estorno de débito da subvenção).' : '');
+  // saldo esperado
+  const L = (i, v, ex, cls) => `<tr class="${cls || ''}"><td>${i}</td><td>${v}</td><td class="ex">${ex || ''}</td></tr>`;
+  const antes = C.abertas.filter(g => g.comp < C.m), doMes = C.abertas.filter(g => g.comp === C.m);
+  let h = '';
+  h += L('Guias da competência ' + mesLbl(C.m) + ' não pagas até ' + br(fim), fmt(r2(doMes.reduce((a, g) => a + g.valor, 0))), doMes.length + ' guia(s): vencem em ' + mesLbl(mesSeg(C.m)) + ' ou depois');
+  h += L('(+) Guias de meses anteriores ainda não pagas', fmt(r2(antes.reduce((a, g) => a + g.valor, 0))), antes.length ? antes.map(g => mesLbl(g.comp) + ' ' + TIPO_G[g.tipo] + ' ' + g.uf + ' ' + fmt(g.valor)).join('; ') : 'Nenhuma (só entram as guias importadas aqui)');
+  h += L('= <b>Saldo final esperado</b>', fmt(C.esperado), 'Suporte da 2.1.15.2001 no Book', 'res');
+  h += L('Saldo no balancete', fmt(bal), BAL ? 'Book de conciliação (credor = a pagar)' : '<span class="dbad">Sem balancete de ' + mesLbl(C.m) + ' no Book.</span>', 'sub');
+  h += L('Diferença (balancete − esperado)', chk(dSal, TOLT), 'Positivo = a conta tem mais a pagar do que as guias em aberto');
+  $('saldoNBody').innerHTML = h;
+  const sg = C.semGuia;
+  $('saldoNInfo').innerHTML = (sg.length ? `<b>${sg.length} pagamento(s) na 2.1.15.2001 em ${mesLbl(C.m)} sem guia importada</b> (${fmt(sg.reduce((a, l) => a + l.deb, 0))}): ` + sg.slice(0, 12).map(l => br(l.data) + ' ' + esc(l.hist) + ' ' + fmt(l.deb)).join('; ') + (sg.length > 12 ? '; …' : '') + '. Normalmente são guias da competência anterior que não foram importadas aqui. ' : (RAZ_REC.some(l => l.mes === C.m) ? 'Todos os pagamentos do mês na 2.1.15.2001 têm guia importada. ' : '')) +
+    'A 2.1.15.2001 também recebe as provisões nota a nota (VE-SPED), o ST e o DIFAL do mês e os pagamentos por nota da Dootax (DEB-TX); o saldo esperado considera só as guias geradas em aberto.';
+  publicarSuporteN(C.guias.length || C.abertas.length ? C.esperado : null);
+}
+function publicarSuporteN(v){
+  let sup = {}; try { sup = JSON.parse(localStorage.getItem('aud-hub-suportes') || '{}') || {}; } catch(e){}
+  if (sup[CT.rec] && /^ICMS/.test(sup[CT.rec].fonte || '')) delete sup[CT.rec];
+  if (v !== null) sup[CT.rec] = { fonte: 'ICMS', saldo: r2(-v), data: fimDoMesHub(mesAtual), detalhe: 'ICMS · guias geradas não pagas até ' + br(fimDoMesHub(mesAtual)) };
+  try { localStorage.setItem('aud-hub-suportes', JSON.stringify(sup)); } catch(e){}
+}
+async function renderChipsN(){
+  const ms = await mesesSped(), ch = [];
+  for (const m of ms.slice().reverse()){ const o = await getMeta('icms-sped:' + m); Object.keys((o && o.fil) || {}).sort().forEach(f => ch.push(`<span class="chip" title="${esc(o.fil[f].arquivo)}">${mesLbl(m)} · ${filLbl(f)}<button type="button" onclick="tirarSped('${m}','${f}')" aria-label="Remover">×</button></span>`)); }
+  $('chSped').innerHTML = ch.join('') || '<span class="muted small">Nenhum SPED importado.</span>';
+  const pc = {}; GUIAS.forEach(g => { const o = pc[g.comp] = pc[g.comp] || { n: 0, v: 0 }; o.n++; o.v += g.valor; });
+  $('chGuiasN').innerHTML = Object.keys(pc).sort().reverse().map(m => `<span class="chip">${mesLbl(m)} · ${pc[m].n} guia(s) · ${fmt(pc[m].v)}<button type="button" onclick="tirarGuiasMes('${m}')" aria-label="Remover">×</button></span>`).join('') || '<span class="muted small">Nenhuma guia importada.</span>';
+}
+
 // ===================== telas =====================
 async function carregarMeses(){
   const ms = await mesesSaidas(); let raz = [];
   const info = await getMeta('razao'); if (info && info.agg) raz = Object.keys(info.agg);
-  const todos = [...new Set(ms.concat(raz))].sort();
+  const outros = (await mesesSped()).concat(((await getMeta('icms-guias')) || { lista: [] }).lista.map(g => g.comp));
+  const todos = [...new Set(ms.concat(raz, outros))].sort();
   const mHub = window.mesDoHub ? mesDoHub() : '';
   if (!mesAtual) mesAtual = (mHub && todos.includes(mHub)) ? mHub : (ms[ms.length - 1] || mHub || todos[todos.length - 1] || new Date().toISOString().slice(0, 7));
   if (!todos.includes(mesAtual)) todos.push(mesAtual);
   todos.sort();
-  $('selMes').innerHTML = todos.slice().reverse().map(m => `<option value="${m}" ${m === mesAtual ? 'selected' : ''}>${mesLbl(m)}${ms.includes(m) ? '' : ' (sem saídas)'}${raz.includes(m) ? '' : ' (sem razão)'}</option>`).join('');
+  $('selMes').innerHTML = todos.slice().reverse().map(m => `<option value="${m}" ${m === mesAtual ? 'selected' : ''}>${mesLbl(m)}${raz.includes(m) ? '' : ' (sem razão)'}</option>`).join('');
   return ms;
 }
 async function render(){
@@ -551,13 +856,16 @@ async function render(){
   SAI = await getMeta('icms-saidas:' + mesAtual);
   DOO = await getMeta('icms-dootax');
   BAL = await getMeta('balancete:' + mesAtual);
-  await carregarRazao(mesAtual);
+  SPED = await getMeta('icms-sped:' + mesAtual);
+  GUIAS = ((await getMeta('icms-guias')) || { lista: [] }).lista;
+  await carregarRazao(mesAtual); await carregarRazaoRec(); await carregarIdent();
   CALC = calcular(mesAtual);
+  CN = calcNormal(mesAtual);
   const fs = SAI ? Object.keys(SAI.fil).sort() : [];
   $('stTopo').textContent = (fs.length ? 'Saídas de ' + mesLbl(mesAtual) + ': ' + fs.map(filLbl).join(', ') : 'Sem relação de saídas de ' + mesLbl(mesAtual)) + ' · ' + (RAZ.__ok ? 'razão do mês carregado do Book' : 'sem razão do mês no Book') + ' · ' + (DOO ? DOO.guias.length.toLocaleString('pt-BR') + ' guias Dootax' : 'sem guias Dootax') + '.';
-  await renderChips(ms);
-  ['titSaldo', 'titST', 'titDif', 'titPg', 'titStN', 'titPgN', 'titGn', 'titUf'].forEach(id => $(id).textContent = '· ' + mesLbl(mesAtual));
-  renderKpis(); renderSaldo(); renderST(); renderDif(); renderPg(); renderStNotas(); renderPgNotas(); renderGuiaNota(); renderUf();
+  await renderChips(ms); await renderChipsN();
+  ['titGuiasN', 'titSpedG', 'titSaldoN', 'titSaldo', 'titST', 'titDif', 'titPg', 'titStN', 'titPgN', 'titGn', 'titUf'].forEach(id => $(id).textContent = '· ' + mesLbl(mesAtual));
+  renderNormal(); renderKpis(); renderSaldo(); renderST(); renderDif(); renderPg(); renderStNotas(); renderPgNotas(); renderGuiaNota(); renderUf();
 }
 async function renderChips(ms){
   const ch = [];
@@ -611,17 +919,17 @@ function renderSaldo(){
   if (CALC.ctaSt[CT.rec]) obs.push('Neste mês a provisão de ST foi lançada direto na 2.1.15.2001 (' + fmt(CALC.ctaSt[CT.rec]) + '), não na 2.1.15.2004.');
   if (CALC.transfSt) obs.push('A 2.1.15.2004 foi transferida para a 2.1.15.2001 no fim do mês (' + fmt(CALC.transfSt) + '): o ST a pagar está na 2.1.15.2001, por isso a 2.1.15.2004 não fica com o saldo esperado.');
   if (!CALC.difL.some(l => l.deb) && CALC.difL.length) obs.push('Os pagamentos das guias de DIFAL vão para a 2.1.15.2001 (DEB-TX) e nunca baixam a 2.1.15.2006: o saldo dela é o acumulado das provisões, não o que falta pagar.');
-  $('saldoInfo').innerHTML = (obs.length ? '<b>Por que o balancete não bate:</b> ' + obs.join(' ') + ' ' : '') + 'O saldo esperado foi enviado ao Book como suporte das contas ' + CT.st + ' e ' + CT.dif + ' (fonte “ICMS DIFAL/ST”).';
+  $('saldoInfo').innerHTML = (obs.length ? '<b>Por que o balancete não bate:</b> ' + obs.join(' ') + ' ' : '') + 'O saldo esperado foi enviado ao Book como suporte das contas ' + CT.st + ' e ' + CT.dif + ' (fonte “ICMS”).';
   publicarSuportes({ st: espSt, di: espDi });
 }
 // suporte das contas no Book de conciliação (passivo credor = negativo, como no balancete)
 function publicarSuportes(v){
   let sup = {}; try { sup = JSON.parse(localStorage.getItem('aud-hub-suportes') || '{}') || {}; } catch(e){}
-  Object.keys(sup).forEach(c => { if (sup[c] && sup[c].fonte === 'ICMS DIFAL/ST') delete sup[c]; });
+  [CT.st, CT.dif].forEach(c => { if (sup[c] && /^ICMS/.test(sup[c].fonte || '')) delete sup[c]; });
   if (v){
     const fim = fimDoMesHub(mesAtual);
-    sup[CT.st] = { fonte: 'ICMS DIFAL/ST', saldo: r2(-v.st), data: fim, detalhe: 'ICMS DIFAL/ST · ST das notas de ' + mesLbl(mesAtual) + ' ainda não pago no fim do mês' };
-    sup[CT.dif] = { fonte: 'ICMS DIFAL/ST', saldo: r2(-v.di), data: fim, detalhe: 'ICMS DIFAL/ST · DIFAL + FCP das notas de ' + mesLbl(mesAtual) + ' ainda não pago no fim do mês' };
+    sup[CT.st] = { fonte: 'ICMS', saldo: r2(-v.st), data: fim, detalhe: 'ICMS · ST das notas de ' + mesLbl(mesAtual) + ' ainda não pago no fim do mês' };
+    sup[CT.dif] = { fonte: 'ICMS', saldo: r2(-v.di), data: fim, detalhe: 'ICMS · DIFAL + FCP das notas de ' + mesLbl(mesAtual) + ' ainda não pago no fim do mês' };
   }
   try { localStorage.setItem('aud-hub-suportes', JSON.stringify(sup)); } catch(e){}
 }
@@ -724,7 +1032,7 @@ function baixarXlsx(){
   XLSX.writeFile(wb, 'icms-difal-st-' + mesAtual + '.xlsx');
 }
 
-window.focoConta = function(c){ window.abrirEtapa && abrirEtapa(c === CT.dSt ? 'st' : 'conferencia'); };
+window.focoConta = function(c){ window.abrirEtapa && abrirEtapa(c === CT.dSt ? 'st' : c === CT.rec ? 'normal' : 'conferencia'); };
 (async () => { await render(); })();
 if (window.aoMudarMesHub) aoMudarMesHub(m => { mesAtual = m; render(); });   // mês trocado no Book
 </script>
@@ -744,7 +1052,7 @@ if (window.aoMudarMesHub) aoMudarMesHub(m => { mesAtual = m; render(); });   // 
   var tg = document.getElementById('navToggle');
   if (tg) tg.addEventListener('click', function(){ var m = document.getElementById('menuAbas'); var o = m.classList.toggle('open'); tg.setAttribute('aria-expanded', o ? 'true' : 'false'); });
   var salvo = null; try { salvo = sessionStorage.getItem(KEY); } catch(e){}
-  abrir(salvo || 'conferencia');
+  abrir(salvo || 'normal');
 })();
 </script>
 </body>
